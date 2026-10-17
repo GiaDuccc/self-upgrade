@@ -749,14 +749,75 @@ input {
 }
 
 .day-score-summary-card {
-  min-width: 340px;
+  min-width: 520px;
+  max-width: 680px;
+  flex: 1 1 520px;
   background-color: var(--bg-mixed);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.score-card-state-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.score-card-state-row .personal-state-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.score-card-state-row .state-chip {
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.score-card-state-row .state-chip:hover {
+  background-color: var(--bg-surface);
+  border-color: var(--text-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Đổi màu của tên trạng thái (chữ đậm) theo 4 cấp độ: Xấu - Vừa - Tốt - Hoàn Hảo */
+.state-text-val {
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+.state-text-bad {
+  color: var(--state-bad, #DC2626) !important;
+}
+
+.state-text-medium {
+  color: var(--state-medium, #EA580C) !important;
+}
+
+.state-text-good {
+  color: var(--state-good, #D97706) !important;
+}
+
+.state-text-perfect {
+  color: var(--state-perfect, #16A34A) !important;
+}
+
+.btn-state-quick {
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .day-score-main {
@@ -1539,6 +1600,7 @@ input {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .scope-radio-indicator {
@@ -1569,6 +1631,99 @@ input {
   color: var(--text-secondary);
   line-height: 1.35;
   padding-left: 24px;
+}
+
+/* Hiệu ứng chọn cho các mục 2, 3, 4 (Xấu - Đỏ, Vừa - Cam, Tốt - Vàng, Hoàn Hảo - Xanh) */
+.scope-option-card.scope-selected-bad {
+  border-color: var(--state-bad, #DC2626) !important;
+  background-color: rgba(220, 38, 38, 0.06) !important;
+  box-shadow: 0 0 0 1px var(--state-bad, #DC2626), 0 3px 10px rgba(220, 38, 38, 0.08) !important;
+}
+.scope-option-card.scope-selected-bad .scope-title {
+  color: var(--state-bad, #DC2626) !important;
+}
+.scope-option-card.scope-selected-bad .scope-radio-indicator {
+  border-color: var(--state-bad, #DC2626) !important;
+}
+.scope-option-card.scope-selected-bad .scope-radio-dot {
+  background-color: var(--state-bad, #DC2626) !important;
+}
+
+.scope-option-card.scope-selected-medium {
+  border-color: var(--state-medium, #EA580C) !important;
+  background-color: rgba(234, 88, 12, 0.06) !important;
+  box-shadow: 0 0 0 1px var(--state-medium, #EA580C), 0 3px 10px rgba(234, 88, 12, 0.08) !important;
+}
+.scope-option-card.scope-selected-medium .scope-title {
+  color: var(--state-medium, #EA580C) !important;
+}
+.scope-option-card.scope-selected-medium .scope-radio-indicator {
+  border-color: var(--state-medium, #EA580C) !important;
+}
+.scope-option-card.scope-selected-medium .scope-radio-dot {
+  background-color: var(--state-medium, #EA580C) !important;
+}
+
+.scope-option-card.scope-selected-good {
+  border-color: var(--state-good, #D97706) !important;
+  background-color: rgba(217, 119, 6, 0.07) !important;
+  box-shadow: 0 0 0 1px var(--state-good, #D97706), 0 3px 10px rgba(217, 119, 6, 0.08) !important;
+}
+.scope-option-card.scope-selected-good .scope-title {
+  color: #B45309 !important;
+}
+.scope-option-card.scope-selected-good .scope-radio-indicator {
+  border-color: var(--state-good, #D97706) !important;
+}
+.scope-option-card.scope-selected-good .scope-radio-dot {
+  background-color: var(--state-good, #D97706) !important;
+}
+
+.scope-option-card.scope-selected-perfect {
+  border-color: var(--state-perfect, #16A34A) !important;
+  background-color: rgba(22, 163, 74, 0.06) !important;
+  box-shadow: 0 0 0 1px var(--state-perfect, #16A34A), 0 3px 10px rgba(22, 163, 74, 0.08) !important;
+}
+.scope-option-card.scope-selected-perfect .scope-title {
+  color: #15803D !important;
+}
+.scope-option-card.scope-selected-perfect .scope-radio-indicator {
+  border-color: var(--state-perfect, #16A34A) !important;
+}
+.scope-option-card.scope-selected-perfect .scope-radio-dot {
+  background-color: var(--state-perfect, #16A34A) !important;
+}
+
+/* Badge hiển thị cấp độ trong modal */
+.tier-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  margin-left: auto;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+}
+.tier-badge-bad {
+  color: var(--state-bad, #DC2626);
+  background-color: rgba(220, 38, 38, 0.09);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+.tier-badge-medium {
+  color: var(--state-medium, #EA580C);
+  background-color: rgba(234, 88, 12, 0.09);
+  border-color: rgba(234, 88, 12, 0.25);
+}
+.tier-badge-good {
+  color: #B45309;
+  background-color: rgba(217, 119, 6, 0.09);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+.tier-badge-perfect {
+  color: #15803D;
+  background-color: rgba(22, 163, 74, 0.09);
+  border-color: rgba(22, 163, 74, 0.25);
 }
 
 .modal-footer {

@@ -203,6 +203,57 @@ export function DayDetailPanel({
             </div>
           </div>
 
+          {/* DÒNG TRẠNG THÁI THỂ CHẤT, TINH THẦN, CẢM XÚC & NÚT CẬP NHẬT TRẠNG THÁI */}
+          <div className="score-card-state-row">
+            <div className="personal-state-strip">
+              <span
+                className="state-chip"
+                title={personalizedInsight.physObj.desc}
+                onClick={onOpenProfileModal}
+                style={{ cursor: 'pointer' }}
+              >
+                Thể chất:{' '}
+                <strong className={`state-text-val state-text-${personalizedInsight.physObj.tier || 'good'}`}>
+                  {personalizedInsight.physObj.label.split('/')[0].trim()}
+                </strong>
+              </span>
+              <span
+                className="state-chip"
+                title={personalizedInsight.mentObj.desc}
+                onClick={onOpenProfileModal}
+                style={{ cursor: 'pointer' }}
+              >
+                Tinh thần:{' '}
+                <strong className={`state-text-val state-text-${personalizedInsight.mentObj.tier || 'good'}`}>
+                  {personalizedInsight.mentObj.label.split('/')[0].trim()}
+                </strong>
+              </span>
+              <span
+                className="state-chip"
+                title={personalizedInsight.emoObj.desc}
+                onClick={onOpenProfileModal}
+                style={{ cursor: 'pointer' }}
+              >
+                Cảm xúc:{' '}
+                <strong className={`state-text-val state-text-${personalizedInsight.emoObj.tier || 'good'}`}>
+                  {personalizedInsight.emoObj.label.split('/')[0].trim()}
+                </strong>
+              </span>
+            </div>
+
+            {onOpenProfileModal && (
+              <button
+                type="button"
+                className="btn-minimal btn-sm btn-state-quick"
+                onClick={onOpenProfileModal}
+                title="Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân"
+              >
+                <UserCheck size={14} />
+                <span>Trạng thái</span>
+              </button>
+            )}
+          </div>
+
           <div className="progress-bar-track">
             <div
               className="progress-bar-fill"
@@ -353,41 +404,15 @@ export function DayDetailPanel({
                 </span>
               </div>
 
-              <div className="feedback-top-btns">
-                {onOpenProfileModal && (
-                  <button
-                    type="button"
-                    className="btn-minimal btn-sm"
-                    onClick={onOpenProfileModal}
-                    title="Cập nhật Thể chất, Tinh thần & Cảm xúc"
-                  >
-                    <UserCheck size={13} />
-                    <span>Trạng thái</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="btn-minimal btn-sm"
-                  onClick={handleShuffleQuote}
-                  title="Đổi ngẫu nhiên câu nhận xét khác theo mức điểm hiện tại"
-                >
-                  <Shuffle size={13} />
-                  <span>Đổi câu</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Thanh tóm tắt Thể chất - Tinh thần - Cảm xúc hiện tại */}
-            <div className="personal-state-strip">
-              <span className="state-chip">
-                Thể chất: <strong>{personalizedInsight.physObj.label.split('/')[0].trim()}</strong>
-              </span>
-              <span className="state-chip">
-                Tinh thần: <strong>{personalizedInsight.mentObj.label.split('/')[0].trim()}</strong>
-              </span>
-              <span className="state-chip">
-                Cảm xúc: <strong>{personalizedInsight.emoObj.label.split('/')[0].trim()}</strong>
-              </span>
+              <button
+                type="button"
+                className="btn-minimal btn-sm"
+                onClick={handleShuffleQuote}
+                title="Đổi ngẫu nhiên câu nhận xét khác theo mức điểm hiện tại"
+              >
+                <Shuffle size={13} />
+                <span>Đổi câu</span>
+              </button>
             </div>
 
             {/* Nhận xét cá nhân hóa trực diện dựa trên trạng thái & điểm */}

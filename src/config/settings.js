@@ -44,6 +44,12 @@ export const THEME = {
   radiusLg: '14px',
   fontSans: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
   fontMono: "'JetBrains Mono', monospace",
+
+  // 6. Màu trạng thái cá nhân hóa (Xấu - Đỏ, Vừa - Cam, Tốt - Vàng, Hoàn Hảo - Xanh)
+  stateBad: '#DC2626',       // Đỏ (Xấu)
+  stateMedium: '#ee651b',    // Cam (Vừa)
+  stateGood: '#ffbb00',      // Vàng (Tốt)
+  statePerfect: '#16A34A',   // Xanh (Hoàn Hảo)
 };
 
 /**
@@ -399,6 +405,10 @@ export function applyThemeToRoot(customTheme = THEME) {
     '--radius-lg': customTheme.radiusLg,
     '--font-sans': customTheme.fontSans,
     '--font-mono': customTheme.fontMono,
+    '--state-bad': customTheme.stateBad || '#DC2626',
+    '--state-medium': customTheme.stateMedium || '#EA580C',
+    '--state-good': customTheme.stateGood || '#D97706',
+    '--state-perfect': customTheme.statePerfect || '#16A34A',
   };
 
   Object.entries(cssVarMap).forEach(([key, value]) => {
@@ -409,87 +419,124 @@ export function applyThemeToRoot(customTheme = THEME) {
 /**
  * ============================================================================
  * CẤU HÌNH CÁ NHÂN HÓA: THỂ CHẤT, TINH THẦN, CẢM XÚC & MỤC TIÊU TRỌNG TÂM
+ * Thang 4 mức độ: Xấu (Đỏ) -> Vừa (Cam) -> Tốt (Vàng) -> Hoàn hảo (Xanh)
  * ============================================================================
  */
 export const PERSONALIZATION_OPTIONS = {
   physicalStates: [
     {
-      id: 'PEAK',
-      label: 'Sung sức / Đỉnh cao',
-      desc: 'Cơ thể tràn đầy năng lượng, sẵn sàng tải cường độ cao',
-      resilienceBonus: 0,
-    },
-    {
-      id: 'NORMAL',
-      label: 'Bình thường / Ổn định',
-      desc: 'Thể trạng tiêu chuẩn hàng ngày, đủ sức hoàn thành hết việc',
-      resilienceBonus: 0,
+      id: 'EXHAUSTED',
+      tier: 'bad',
+      tierLabel: 'Xấu',
+      color: '#DC2626',
+      label: 'Đang ốm / Kiệt sức',
+      desc: 'Cần ưu tiên hồi phục (+10% điểm bản lĩnh khi cố gắng hoàn thành việc)',
+      resilienceBonus: 10,
     },
     {
       id: 'TIRED',
+      tier: 'medium',
+      tierLabel: 'Vừa',
+      color: '#EA580C',
       label: 'Mệt mỏi / Đau cơ / Thiếu ngủ',
       desc: 'Cơ thể uể oải (+5% điểm vượt khó khi vẫn duy trì kỷ luật)',
       resilienceBonus: 5,
     },
     {
-      id: 'EXHAUSTED',
-      label: 'Đang ốm / Kiệt sức',
-      desc: 'Cần ưu tiên hồi phục (+10% điểm bản lĩnh khi cố gắng hoàn thành việc)',
-      resilienceBonus: 10,
+      id: 'NORMAL',
+      tier: 'good',
+      tierLabel: 'Tốt',
+      color: '#D97706',
+      label: 'Bình thường / Ổn định',
+      desc: 'Thể trạng tiêu chuẩn hàng ngày, đủ sức hoàn thành hết việc',
+      resilienceBonus: 0,
+    },
+    {
+      id: 'PEAK',
+      tier: 'perfect',
+      tierLabel: 'Hoàn hảo',
+      color: '#16A34A',
+      label: 'Sung sức / Đỉnh cao',
+      desc: 'Cơ thể tràn đầy năng lượng, sẵn sàng tải cường độ cao',
+      resilienceBonus: 0,
     },
   ],
 
   mentalStates: [
     {
-      id: 'SHARP',
-      label: 'Minh mẫn / Tập trung cao',
-      desc: 'Đầu óc sắc bén, thời điểm vàng để Học code, Tiếng Anh, Làm việc',
-      resilienceBonus: 0,
-    },
-    {
-      id: 'STEADY',
-      label: 'Ổn định / Bình thường',
-      desc: 'Tâm trí bình thường, duy trì nhịp độ làm việc đều đặn',
-      resilienceBonus: 0,
+      id: 'STRESSED',
+      tier: 'bad',
+      tierLabel: 'Xấu',
+      color: '#DC2626',
+      label: 'Căng thẳng / Quá tải (Burnout)',
+      desc: 'Áp lực tinh thần cao (+6% điểm khích lệ khi vẫn giữ nhịp sinh hoạt)',
+      resilienceBonus: 6,
     },
     {
       id: 'DISTRACTED',
+      tier: 'medium',
+      tierLabel: 'Vừa',
+      color: '#EA580C',
       label: 'Dễ xao nhãng / Mất tập trung',
       desc: 'Tâm trí dễ bị phân tán (+3% điểm nếu kiểm soát tốt kỷ luật)',
       resilienceBonus: 3,
     },
     {
-      id: 'STRESSED',
-      label: 'Căng thẳng / Quá tải (Burnout)',
-      desc: 'Áp lực tinh thần cao (+6% điểm khích lệ khi vẫn giữ nhịp sinh hoạt)',
-      resilienceBonus: 6,
+      id: 'STEADY',
+      tier: 'good',
+      tierLabel: 'Tốt',
+      color: '#D97706',
+      label: 'Ổn định / Bình thường',
+      desc: 'Tâm trí bình thường, duy trì nhịp độ làm việc đều đặn',
+      resilienceBonus: 0,
+    },
+    {
+      id: 'SHARP',
+      tier: 'perfect',
+      tierLabel: 'Hoàn hảo',
+      color: '#16A34A',
+      label: 'Minh mẫn / Tập trung cao',
+      desc: 'Đầu óc sắc bén, thời điểm vàng để Học code, Tiếng Anh, Làm việc',
+      resilienceBonus: 0,
     },
   ],
 
   emotionalStates: [
     {
-      id: 'FIRED_UP',
-      label: 'Hào hứng / Quyết tâm cao',
-      desc: 'Động lực mạnh mẽ — đòi hỏi kết quả phải xứng tầm quyết tâm',
-      resilienceBonus: 0,
-    },
-    {
-      id: 'CALM',
-      label: 'Bình tĩnh / Cân bằng',
-      desc: 'Tâm trạng điềm tĩnh, làm chủ tốt cảm xúc và thói quen',
-      resilienceBonus: 0,
+      id: 'LOW_MOOD',
+      tier: 'bad',
+      tierLabel: 'Xấu',
+      color: '#DC2626',
+      label: 'Chán nản / Tụt mood',
+      desc: 'Tâm trạng đi xuống (+6% điểm bản lĩnh nếu không buông xuôi)',
+      resilienceBonus: 6,
     },
     {
       id: 'ANXIOUS',
+      tier: 'medium',
+      tierLabel: 'Vừa',
+      color: '#EA580C',
       label: 'Lo âu / Bồn chồn',
       desc: 'Có nhiều nỗi lo ngổn ngang (+3% điểm vượt rào cản cảm xúc)',
       resilienceBonus: 3,
     },
     {
-      id: 'LOW_MOOD',
-      label: 'Chán nản / Tụt mood',
-      desc: 'Tâm trạng đi xuống (+6% điểm bản lĩnh nếu không buông xuôi)',
-      resilienceBonus: 6,
+      id: 'CALM',
+      tier: 'good',
+      tierLabel: 'Tốt',
+      color: '#D97706',
+      label: 'Bình tĩnh / Cân bằng',
+      desc: 'Tâm trạng điềm tĩnh, làm chủ tốt cảm xúc và thói quen',
+      resilienceBonus: 0,
+    },
+    {
+      id: 'FIRED_UP',
+      tier: 'perfect',
+      tierLabel: 'Hoàn hảo',
+      color: '#16A34A',
+      label: 'Hào hứng / Quyết tâm cao',
+      desc: 'Động lực mạnh mẽ — đòi hỏi kết quả phải xứng tầm quyết tâm',
+      resilienceBonus: 0,
     },
   ],
 
@@ -597,13 +644,16 @@ export function buildPersonalizedCoaching(
 
   const physObj =
     PERSONALIZATION_OPTIONS.physicalStates.find((x) => x.id === p.physicalState) ||
-    PERSONALIZATION_OPTIONS.physicalStates[1];
+    PERSONALIZATION_OPTIONS.physicalStates.find((x) => x.id === 'NORMAL') ||
+    PERSONALIZATION_OPTIONS.physicalStates[0];
   const mentObj =
     PERSONALIZATION_OPTIONS.mentalStates.find((x) => x.id === p.mentalState) ||
-    PERSONALIZATION_OPTIONS.mentalStates[1];
+    PERSONALIZATION_OPTIONS.mentalStates.find((x) => x.id === 'STEADY') ||
+    PERSONALIZATION_OPTIONS.mentalStates[0];
   const emoObj =
     PERSONALIZATION_OPTIONS.emotionalStates.find((x) => x.id === p.emotionalState) ||
-    PERSONALIZATION_OPTIONS.emotionalStates[1];
+    PERSONALIZATION_OPTIONS.emotionalStates.find((x) => x.id === 'CALM') ||
+    PERSONALIZATION_OPTIONS.emotionalStates[0];
   const goalObj =
     PERSONALIZATION_OPTIONS.focusGoals.find((x) => x.id === p.focusGoal) ||
     PERSONALIZATION_OPTIONS.focusGoals[0];

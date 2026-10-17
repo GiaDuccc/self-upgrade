@@ -25,6 +25,18 @@ export function ProfileModal({
     ...(userProfile || {}),
   });
 
+  // Khóa scroll trang nền khi modal đang mở
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -208,8 +220,8 @@ export function ProfileModal({
                 return (
                   <label
                     key={item.id}
-                    className={`scope-option-card ${
-                      isSelected ? 'scope-option-selected' : ''
+                    className={`scope-option-card scope-tier-${item.tier} ${
+                      isSelected ? `scope-option-selected scope-selected-${item.tier}` : ''
                     }`}
                   >
                     <input
@@ -225,6 +237,9 @@ export function ProfileModal({
                           {isSelected && <span className="scope-radio-dot" />}
                         </span>
                         <strong className="scope-title">{item.label}</strong>
+                        <span className={`tier-badge tier-badge-${item.tier}`}>
+                          {item.tierLabel}
+                        </span>
                       </div>
                       <p className="scope-desc">{item.desc}</p>
                     </div>
@@ -246,8 +261,8 @@ export function ProfileModal({
                 return (
                   <label
                     key={item.id}
-                    className={`scope-option-card ${
-                      isSelected ? 'scope-option-selected' : ''
+                    className={`scope-option-card scope-tier-${item.tier} ${
+                      isSelected ? `scope-option-selected scope-selected-${item.tier}` : ''
                     }`}
                   >
                     <input
@@ -263,6 +278,9 @@ export function ProfileModal({
                           {isSelected && <span className="scope-radio-dot" />}
                         </span>
                         <strong className="scope-title">{item.label}</strong>
+                        <span className={`tier-badge tier-badge-${item.tier}`}>
+                          {item.tierLabel}
+                        </span>
                       </div>
                       <p className="scope-desc">{item.desc}</p>
                     </div>
@@ -284,8 +302,8 @@ export function ProfileModal({
                 return (
                   <label
                     key={item.id}
-                    className={`scope-option-card ${
-                      isSelected ? 'scope-option-selected' : ''
+                    className={`scope-option-card scope-tier-${item.tier} ${
+                      isSelected ? `scope-option-selected scope-selected-${item.tier}` : ''
                     }`}
                   >
                     <input
@@ -301,6 +319,9 @@ export function ProfileModal({
                           {isSelected && <span className="scope-radio-dot" />}
                         </span>
                         <strong className="scope-title">{item.label}</strong>
+                        <span className={`tier-badge tier-badge-${item.tier}`}>
+                          {item.tierLabel}
+                        </span>
                       </div>
                       <p className="scope-desc">{item.desc}</p>
                     </div>

@@ -28,6 +28,18 @@ export function TaskModal({
   const [scope, setScope] = useState('all'); // 'day' | 'week' | 'month' | 'all'
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Khóa scroll trang nền khi modal đang mở
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Khi modal mở lên, load dữ liệu
   useEffect(() => {
     if (isOpen) {
