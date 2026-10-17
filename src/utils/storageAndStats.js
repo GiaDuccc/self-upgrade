@@ -1,11 +1,12 @@
 import {
   DAILY_TASKS,
   SCORING,
-  MAX_DAILY_POINTS,
+  MAX_POINTS_PER_TASK,
   getDailyRank,
 } from '../config/settings';
 
 const STORAGE_KEY = 'self_upgrade_records_v1';
+const STORAGE_TASK_CONFIG_KEY = 'self_upgrade_task_config_v1';
 
 /**
  * Chuẩn hóa chuỗi ngày YYYY-MM-DD
@@ -49,7 +50,29 @@ export function getWeekdayLabel(year, month, day) {
 }
 
 /**
- * Đọc dữ liệu từ LocalStorage
+ * Lấy danh sách 7 ngày trong tuần chứa dateKey (Thứ 2 đến Chủ Nhật)
+ */
+export function getWeekDates(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const dayOfWeek = date.getDay(); // 0 is Sunday, 1 is Monday...
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(date);
+  monday.setDate(date.getDate() + diffToMonday);
+
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const cur = new Date(monday);
+    cur.setDate(monday.getDate() + i);
+    dates.push(
+      formatDateKey(cur.getFullYear(), cur.getMonth() + 1, cur.getDate())
+    );
+  }
+  return dates;
+}
+
+/**
+ * Đọc dữ liệu ghi nhận ngày từ LocalStorage
  */
 export function loadAllRecords() {
   try {
@@ -63,7 +86,7 @@ export function loadAllRecords() {
 }
 
 /**
- * Lưu dữ liệu vào LocalStorage
+ * Lưu dữ liệu ghi nhận ngày vào LocalStorage
  */
 export function saveAllRecords(records) {
   try {
@@ -74,10 +97,98 @@ export function saveAllRecords(records) {
 }
 
 /**
- * Tính toán điểm và thống kê chi tiết cho 1 ngày
- * @param {Object} dayTaskMap - Map { [taskId]: 'BAD' | 'GOOD' | 'PERFECT' } và note (nếu có)
+ * Đọc cấu hình danh sách công việc (Global + Tuỳ chỉnh theo ngày/tuần/tháng)
  */
-export function calculateDayStats(dayRecord = {}) {
+export function loadTaskConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_TASK_CONFIG_KEY);
+    if (!raw) {
+      return {
+        globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
+        customTasks: [],
+        excludedTaskIds: {},
+        taskOverrides: {},
+      };
+    }
+    const parsed = JSON.parse(raw);
+    return {
+      globalTasks: parsed.globalTasks || DAILY_TASKS.map((t) => ({ ...t })),
+      customTasks: parsed.customTasks || [],
+      excludedTaskIds: parsed.excludedTaskIds || {},
+      taskOverrides: parsed.taskOverrides || {},
+    };
+  } catch (err) {
+    console.error('Lỗi đọc cấu hình công việc từ localStorage:', err);
+    return {
+      globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
+      customTasks: [],
+      excludedTaskIds: {},
+      taskOverrides: {},
+    };
+  }
+}
+
+/**
+ * Lưu cấu hình công việc vào LocalStorage
+ */
+export function saveTaskConfig(config) {
+  try {
+    localStorage.setItem(STORAGE_TASK_CONFIG_KEY, JSON.stringify(config));
+  } catch (err) {
+    console.error('Lỗi lưu cấu hình công việc vào localStorage:', err);
+  }
+}
+
+/**
+ * Lấy danh sách đầu việc thực tế áp dụng cho một ngày cụ thể (dateKey)
+ */
+export function getTasksForDate(dateKey, taskConfig) {
+  if (!taskConfig) return DAILY_TASKS;
+
+  const monthKey = dateKey.substring(0, 7); // 'YYYY-MM'
+
+  // 1. Khởi đầu với danh sách công việc chung (Global)
+  const baseTasks = (taskConfig.globalTasks || DAILY_TASKS).map((t) => ({
+    ...t,
+  }));
+
+  // 2. Lấy các công việc tuỳ chỉnh được gán cho ngày này, tuần này, tháng này, hoặc tất cả
+  const custom = (taskConfig.customTasks || []).filter((ct) => {
+    if (ct.scope === 'day' && ct.dateKey === dateKey) return true;
+    if (ct.scope === 'week' && ct.weekDates && ct.weekDates.includes(dateKey))
+      return true;
+    if (ct.scope === 'month' && ct.monthKey === monthKey) return true;
+    if (ct.scope === 'all') return true;
+    return false;
+  });
+
+  let allTasks = [...baseTasks];
+  custom.forEach((add) => {
+    if (!allTasks.some((t) => t.id === add.id)) {
+      allTasks.push({ ...add });
+    }
+  });
+
+  // 3. Loại bỏ các công việc đã bị xoá cho ngày này
+  const excludedForDate = taskConfig.excludedTaskIds?.[dateKey] || [];
+  allTasks = allTasks.filter((t) => !excludedForDate.includes(t.id));
+
+  // 4. Áp dụng các chỉnh sửa chi tiết (Overrides) cho ngày này
+  const overridesForDate = taskConfig.taskOverrides?.[dateKey] || {};
+  allTasks = allTasks.map((t) => {
+    if (overridesForDate[t.id]) {
+      return { ...t, ...overridesForDate[t.id] };
+    }
+    return t;
+  });
+
+  return allTasks;
+}
+
+/**
+ * Tính toán điểm và thống kê chi tiết cho 1 ngày dựa trên danh sách việc của ngày đó
+ */
+export function calculateDayStats(dayRecord = {}, tasksForDay = DAILY_TASKS) {
   const tasksMap = dayRecord?.tasks || {};
   let rawPoints = 0;
   const counts = {
@@ -87,38 +198,49 @@ export function calculateDayStats(dayRecord = {}) {
     NONE: 0,
   };
 
-  DAILY_TASKS.forEach((task) => {
+  const tasksList = tasksForDay && tasksForDay.length > 0 ? tasksForDay : [];
+
+  tasksList.forEach((task) => {
     const statusKey = tasksMap[task.id] || 'NONE';
     const scoreDef = SCORING[statusKey] || SCORING.NONE;
     rawPoints += scoreDef.points;
     counts[scoreDef.key] = (counts[scoreDef.key] || 0) + 1;
   });
 
-  const checkedCount = DAILY_TASKS.length - counts.NONE;
-  const exactPercentage = (rawPoints / MAX_DAILY_POINTS) * 100;
+  const totalTasks = tasksList.length;
+  const maxPoints = Math.max(10, totalTasks * MAX_POINTS_PER_TASK);
+  const checkedCount = totalTasks - counts.NONE;
+  const exactPercentage = totalTasks > 0 ? (rawPoints / maxPoints) * 100 : 0;
   const percentage = Math.round(exactPercentage * 10) / 10;
   const rank = getDailyRank(percentage, checkedCount);
 
   return {
     rawPoints,
-    maxPoints: MAX_DAILY_POINTS,
+    maxPoints,
     percentage,
     checkedCount,
-    totalTasks: DAILY_TASKS.length,
+    totalTasks,
     counts,
     rank,
     note: dayRecord?.note || '',
+    tasksList,
   };
 }
 
 /**
  * Tính toán thống kê cho toàn bộ tháng (year, month)
  */
-export function calculateMonthStats(year, month, allRecords = {}) {
+export function calculateMonthStats(
+  year,
+  month,
+  allRecords = {},
+  taskConfig = null
+) {
   const totalDays = getDaysInMonth(year, month);
   const daysList = [];
 
   let sumPoints = 0;
+  let maxMonthPoints = 0;
   let sumPercentageActiveDays = 0;
   let activeDaysCount = 0;
   let perfectDaysCount = 0; // Ngày đạt >= 90%
@@ -134,7 +256,10 @@ export function calculateMonthStats(year, month, allRecords = {}) {
   for (let d = 1; d <= totalDays; d++) {
     const dateKey = formatDateKey(year, month, d);
     const dayRecord = allRecords[dateKey] || {};
-    const stats = calculateDayStats(dayRecord);
+    const tasksForDay = taskConfig
+      ? getTasksForDate(dateKey, taskConfig)
+      : DAILY_TASKS;
+    const stats = calculateDayStats(dayRecord, tasksForDay);
     const weekday = getWeekdayLabel(year, month, d);
 
     const dayItem = {
@@ -146,6 +271,7 @@ export function calculateMonthStats(year, month, allRecords = {}) {
 
     daysList.push(dayItem);
     sumPoints += stats.rawPoints;
+    maxMonthPoints += stats.maxPoints;
 
     if (stats.checkedCount > 0) {
       activeDaysCount += 1;
@@ -167,10 +293,11 @@ export function calculateMonthStats(year, month, allRecords = {}) {
       ? Math.round((sumPercentageActiveDays / activeDaysCount) * 10) / 10
       : 0;
 
-  // Điểm % tổng thể của cả tháng (trên tổng điểm tối đa của cả tháng)
-  const maxMonthPoints = totalDays * MAX_DAILY_POINTS;
+  // Điểm % tổng thể của cả tháng
   const overallMonthPercentage =
-    Math.round(((sumPoints / maxMonthPoints) * 100) * 10) / 10;
+    maxMonthPoints > 0
+      ? Math.round(((sumPoints / maxMonthPoints) * 100) * 10) / 10
+      : 0;
 
   // Tìm ngày điểm cao nhất trong tháng
   let bestDay = null;
@@ -200,39 +327,4 @@ export function calculateMonthStats(year, month, allRecords = {}) {
     bestDay,
     monthRank,
   };
-}
-
-/**
- * Tạo dữ liệu mẫu thông minh cho một vài ngày đầu tháng để người dùng có thể xem thử biểu đồ ngay nếu muốn
- */
-export function generateSampleDataForMonth(year, month, currentRecords = {}) {
-  const updated = { ...currentRecords };
-  const sampleDays = [1, 2, 3, 4, 5, 6, 7];
-  const patterns = [
-    ['PERFECT', 'PERFECT', 'GOOD', 'GOOD', 'PERFECT', 'GOOD', 'BAD', 'PERFECT', 'GOOD', 'PERFECT', 'GOOD', 'PERFECT'],
-    ['GOOD', 'GOOD', 'GOOD', 'PERFECT', 'GOOD', 'BAD', 'GOOD', 'GOOD', 'PERFECT', 'GOOD', 'GOOD', 'GOOD'],
-    ['PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'GOOD', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT'],
-    ['BAD', 'GOOD', 'BAD', 'GOOD', 'GOOD', 'NONE', 'BAD', 'GOOD', 'BAD', 'GOOD', 'GOOD', 'BAD'],
-    ['GOOD', 'PERFECT', 'GOOD', 'PERFECT', 'PERFECT', 'GOOD', 'GOOD', 'PERFECT', 'PERFECT', 'GOOD', 'PERFECT', 'GOOD'],
-    ['PERFECT', 'GOOD', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'GOOD', 'PERFECT', 'PERFECT', 'PERFECT', 'GOOD', 'PERFECT'],
-    ['PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT', 'PERFECT'],
-  ];
-
-  sampleDays.forEach((dayNum, idx) => {
-    const key = formatDateKey(year, month, dayNum);
-    const pattern = patterns[idx % patterns.length];
-    const tasks = {};
-    DAILY_TASKS.forEach((task, tIdx) => {
-      const level = pattern[tIdx];
-      if (level && level !== 'NONE') {
-        tasks[task.id] = level;
-      }
-    });
-    updated[key] = {
-      tasks,
-      note: `Ghi chú mẫu ngày ${dayNum}/${month}`,
-    };
-  });
-
-  return updated;
 }

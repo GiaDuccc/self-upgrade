@@ -10,18 +10,22 @@ import {
   loadAllRecords,
   saveAllRecords,
   calculateMonthStats,
-  generateSampleDataForMonth,
+  loadTaskConfig,
+  saveTaskConfig,
+  getWeekDates,
+  getDaysInMonth,
 } from './utils/storageAndStats';
 import { MonthlyLineChart, DistributionDonutChart } from './components/Charts';
 import { MonthDaysGrid } from './components/MonthDaysGrid';
 import { DayDetailPanel } from './components/DayDetailPanel';
+import { TaskModal } from './components/TaskModal';
 import {
   ChevronLeft,
   ChevronRight,
   Calendar,
   Download,
   Upload,
-  Wand2,
+  Plus,
 } from 'lucide-react';
 
 export default function App() {
@@ -31,6 +35,12 @@ export default function App() {
   const [currentMonth, setCurrentMonth] = useState(today.month);
   const [selectedDateKey, setSelectedDateKey] = useState(today.dateKey);
   const [records, setRecords] = useState(() => loadAllRecords());
+  const [taskConfig, setTaskConfig] = useState(() => loadTaskConfig());
+
+  // Trạng thái của TaskModal (Thêm mới hoặc Chỉnh sửa)
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskModalMode, setTaskModalMode] = useState('add'); // 'add' | 'edit'
+  const [editingTask, setEditingTask] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -39,15 +49,20 @@ export default function App() {
     applyThemeToRoot(THEME);
   }, []);
 
-  // Tự động lưu xuống LocalStorage mỗi khi records thay đổi
+  // Tự động lưu records xuống LocalStorage mỗi khi thay đổi
   useEffect(() => {
     saveAllRecords(records);
   }, [records]);
 
-  // Tính toán thống kê toàn tháng và từng ngày (tự động tính lại khi tích bất kỳ việc nào)
+  // Tự động lưu taskConfig xuống LocalStorage mỗi khi thay đổi
+  useEffect(() => {
+    saveTaskConfig(taskConfig);
+  }, [taskConfig]);
+
+  // Tính toán thống kê toàn tháng và từng ngày (tự động tính lại khi tích việc hoặc đổi cấu hình task)
   const monthStats = useMemo(
-    () => calculateMonthStats(currentYear, currentMonth, records),
-    [currentYear, currentMonth, records]
+    () => calculateMonthStats(currentYear, currentMonth, records, taskConfig),
+    [currentYear, currentMonth, records, taskConfig]
   );
 
   // Ngày đang được chọn
@@ -103,6 +118,137 @@ export default function App() {
     }
   };
 
+  // Mở modal thêm đầu việc mới
+  const handleOpenAddTaskModal = () => {
+    setTaskModalMode('add');
+    setEditingTask(null);
+    setIsTaskModalOpen(true);
+  };
+
+  // Mở modal chỉnh sửa đầu việc khi nhấn vào một thẻ công việc
+  const handleEditTask = (task) => {
+    setTaskModalMode('edit');
+    setEditingTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  // Lưu đầu việc (Thêm mới hoặc Cập nhật)
+  const handleSaveTask = ({ id, title, category, timeHint, scope, dateKey }) => {
+    const monthKey = dateKey.substring(0, 7);
+    const weekDates = getWeekDates(dateKey);
+
+    setTaskConfig((prev) => {
+      const newConfig = {
+        globalTasks: [...(prev.globalTasks || [])],
+        customTasks: [...(prev.customTasks || [])],
+        excludedTaskIds: { ...(prev.excludedTaskIds || {}) },
+        taskOverrides: { ...(prev.taskOverrides || {}) },
+      };
+
+      if (id) {
+        // CHẾ ĐỘ CHỈNH SỬA (EDIT)
+        if (scope === 'all') {
+          // Cập nhật ở cấp global
+          newConfig.globalTasks = newConfig.globalTasks.map((t) =>
+            t.id === id ? { ...t, title, category, timeHint } : t
+          );
+          newConfig.customTasks = newConfig.customTasks.map((t) =>
+            t.id === id ? { ...t, title, category, timeHint } : t
+          );
+        } else if (scope === 'day') {
+          // Ghi đè chỉ riêng ngày này
+          newConfig.taskOverrides[dateKey] = {
+            ...(newConfig.taskOverrides[dateKey] || {}),
+            [id]: { title, category, timeHint },
+          };
+        } else if (scope === 'week') {
+          // Ghi đè cho các ngày trong tuần này
+          weekDates.forEach((d) => {
+            newConfig.taskOverrides[d] = {
+              ...(newConfig.taskOverrides[d] || {}),
+              [id]: { title, category, timeHint },
+            };
+          });
+        } else if (scope === 'month') {
+          // Ghi đè cho tất cả các ngày trong tháng này
+          const daysCount = getDaysInMonth(currentYear, currentMonth);
+          for (let d = 1; d <= daysCount; d++) {
+            const dk = formatDateKey(currentYear, currentMonth, d);
+            newConfig.taskOverrides[dk] = {
+              ...(newConfig.taskOverrides[dk] || {}),
+              [id]: { title, category, timeHint },
+            };
+          }
+        }
+      } else {
+        // CHẾ ĐỘ THÊM MỚI (ADD)
+        const newId = `task_${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(2, 6)}`;
+        const newTaskItem = {
+          id: newId,
+          title,
+          category,
+          timeHint,
+          scope,
+          dateKey,
+          weekDates,
+          monthKey,
+        };
+
+        if (scope === 'all') {
+          newConfig.globalTasks.push(newTaskItem);
+        } else {
+          newConfig.customTasks.push(newTaskItem);
+        }
+      }
+
+      return newConfig;
+    });
+  };
+
+  // Xoá đầu việc (tuỳ theo phạm vi ngày / tuần / tháng / tất cả)
+  const handleDeleteTask = ({ id, scope, dateKey }) => {
+    const weekDates = getWeekDates(dateKey);
+
+    setTaskConfig((prev) => {
+      const newConfig = {
+        globalTasks: [...(prev.globalTasks || [])],
+        customTasks: [...(prev.customTasks || [])],
+        excludedTaskIds: { ...(prev.excludedTaskIds || {}) },
+        taskOverrides: { ...(prev.taskOverrides || {}) },
+      };
+
+      if (scope === 'all') {
+        newConfig.globalTasks = newConfig.globalTasks.filter((t) => t.id !== id);
+        newConfig.customTasks = newConfig.customTasks.filter((t) => t.id !== id);
+      } else if (scope === 'day') {
+        const curEx = newConfig.excludedTaskIds[dateKey] || [];
+        if (!curEx.includes(id)) {
+          newConfig.excludedTaskIds[dateKey] = [...curEx, id];
+        }
+      } else if (scope === 'week') {
+        weekDates.forEach((d) => {
+          const curEx = newConfig.excludedTaskIds[d] || [];
+          if (!curEx.includes(id)) {
+            newConfig.excludedTaskIds[d] = [...curEx, id];
+          }
+        });
+      } else if (scope === 'month') {
+        const daysCount = getDaysInMonth(currentYear, currentMonth);
+        for (let d = 1; d <= daysCount; d++) {
+          const dk = formatDateKey(currentYear, currentMonth, d);
+          const curEx = newConfig.excludedTaskIds[dk] || [];
+          if (!curEx.includes(id)) {
+            newConfig.excludedTaskIds[dk] = [...curEx, id];
+          }
+        }
+      }
+
+      return newConfig;
+    });
+  };
+
   // Tích mức độ (Tệ / Tốt / Hoàn Hảo) cho 1 đầu việc của ngày đang chọn
   const handleSetTaskLevel = (taskId, levelKey) => {
     const targetDateKey = selectedDayItem.dateKey;
@@ -129,11 +275,13 @@ export default function App() {
   // Tích nhanh tất cả các việc trong ngày đang chọn
   const handleMarkAllLevel = (levelKey) => {
     const targetDateKey = selectedDayItem.dateKey;
+    const tasksForDay = selectedDayItem.tasksList || DAILY_TASKS;
+
     setRecords((prev) => {
       const existingDay = prev[targetDateKey] || {};
       const newTasks = {};
       if (levelKey !== 'NONE') {
-        DAILY_TASKS.forEach((t) => {
+        tasksForDay.forEach((t) => {
           newTasks[t.id] = levelKey;
         });
       }
@@ -172,16 +320,15 @@ export default function App() {
     });
   };
 
-  // Tạo dữ liệu mẫu 7 ngày đầu tháng để xem thử biểu đồ
-  const handleLoadSampleData = () => {
-    setRecords((prev) =>
-      generateSampleDataForMonth(currentYear, currentMonth, prev)
-    );
-  };
-
-  // Xuất file backup JSON
+  // Xuất file backup JSON (bao gồm cả lịch sử tích và danh sách công việc tuỳ chỉnh)
   const handleExportJson = () => {
-    const dataStr = JSON.stringify(records, null, 2);
+    const backupData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      records,
+      taskConfig,
+    };
+    const dataStr = JSON.stringify(backupData, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -200,7 +347,16 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target.result);
         if (parsed && typeof parsed === 'object') {
-          setRecords(parsed);
+          if (parsed.records) {
+            setRecords(parsed.records);
+            if (parsed.taskConfig) {
+              setTaskConfig(parsed.taskConfig);
+            }
+          } else {
+            // Tương thích với file backup phiên bản trước
+            setRecords(parsed);
+          }
+          alert('Khôi phục dữ liệu thành công!');
         }
       } catch (err) {
         alert('File JSON không hợp lệ!');
@@ -258,14 +414,15 @@ export default function App() {
             Hôm nay
           </button>
 
+          {/* MỤC THÊM ĐẦU VIỆC (THAY THẾ DỮ LIỆU MẪU) */}
           <button
             type="button"
-            className="btn-minimal"
-            onClick={handleLoadSampleData}
-            title="Điền dữ liệu mẫu 7 ngày đầu tháng để xem hiệu ứng biểu đồ"
+            className="btn-minimal btn-add-header"
+            onClick={handleOpenAddTaskModal}
+            title="Thêm một đầu việc / thói quen mới"
           >
-            <Wand2 size={14} />
-            <span>Dữ liệu mẫu</span>
+            <Plus size={15} />
+            <span>Thêm đầu việc</span>
           </button>
 
           <button
@@ -308,7 +465,7 @@ export default function App() {
                 TỔNG QUAN THỐNG KÊ THÁNG {currentMonth}/{currentYear}
               </h2>
               <p className="section-subtext">
-                Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ)
+                Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ) — Điểm tính theo % hoàn hảo của ngày
               </p>
             </div>
             <div className="month-rank-pill">
@@ -374,7 +531,7 @@ export default function App() {
               </div>
               <span className="stat-footnote">
                 {monthStats.bestDay
-                  ? `${monthStats.bestDay.rawPoints}/120 điểm (${monthStats.bestDay.rank.title})`
+                  ? `${monthStats.bestDay.rawPoints}/${monthStats.bestDay.maxPoints} điểm (${monthStats.bestDay.rank.title})`
                   : 'Chưa có dữ liệu ghi nhận trong tháng'}
               </span>
             </div>
@@ -417,6 +574,8 @@ export default function App() {
           onClearDay={handleClearDay}
           onChangeNote={handleChangeNote}
           isToday={selectedDayItem.dateKey === today.dateKey}
+          onEditTask={handleEditTask}
+          onOpenAddTaskModal={handleOpenAddTaskModal}
         />
       </main>
 
@@ -426,6 +585,17 @@ export default function App() {
           <code>src/config/settings.js</code>
         </span>
       </footer>
+
+      {/* MODAL THÊM / CHỈNH SỬA ĐẦU VIỆC (TỪ TỪ HIỆN RA) */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        mode={taskModalMode}
+        initialTask={editingTask}
+        currentDateKey={selectedDayItem.dateKey}
+        onSaveTask={handleSaveTask}
+        onDeleteTask={handleDeleteTask}
+      />
     </div>
   );
 }

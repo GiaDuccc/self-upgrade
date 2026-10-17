@@ -80,7 +80,23 @@ export const SCORING = {
 export const LEVEL_LIST = [SCORING.BAD, SCORING.GOOD, SCORING.PERFECT];
 
 /**
- * Danh sách 12 đầu việc cố định trong ngày
+ * Các trường / danh mục công việc có thể chọn
+ */
+export const TASK_CATEGORIES = [
+  'Sức khỏe',
+  'Kỷ luật',
+  'Giải trí',
+  'Học tập',
+  'Kỹ năng',
+  'Sự nghiệp',
+  'Dinh dưỡng',
+  'Giấc ngủ',
+  'Trí tuệ',
+  'Khác',
+];
+
+/**
+ * Danh sách 12 đầu việc mặc định ban đầu
  */
 export const DAILY_TASKS = [
   { id: 'wake_5am', title: 'Thức dậy lúc 5h', category: 'Kỷ luật sáng', timeHint: '05:00' },

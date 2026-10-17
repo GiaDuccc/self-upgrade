@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Award,
   Compass,
+  Edit2,
+  Plus,
 } from 'lucide-react';
 
 function getPoolKey(percentage, checkedCount) {
@@ -35,10 +37,14 @@ export function DayDetailPanel({
   onClearDay,
   onChangeNote,
   isToday,
+  onEditTask,
+  onOpenAddTaskModal,
 }) {
   if (!selectedDayItem) return null;
 
   const tasksMap = dayRecord?.tasks || {};
+  const currentTasksList = selectedDayItem.tasksList || DAILY_TASKS;
+
   const poolKey = getPoolKey(
     selectedDayItem.percentage,
     selectedDayItem.checkedCount
@@ -81,7 +87,7 @@ export function DayDetailPanel({
     const badNotes = [];
     const perfectNotes = [];
 
-    DAILY_TASKS.forEach((task) => {
+    currentTasksList.forEach((task) => {
       const lvl = tasksMap[task.id];
       const noteEntry = TASK_SPECIFIC_NOTES[task.id];
       if (!noteEntry) return;
@@ -117,28 +123,30 @@ export function DayDetailPanel({
     );
 
     return [...pickedBad, ...pickedPerfect];
-  }, [tasksMap, taskSpotlightSeed]);
+  }, [currentTasksList, tasksMap, taskSpotlightSeed]);
 
   // Tính số điểm cần thêm để lên mức tiếp theo
   const nextMilestoneInfo = useMemo(() => {
     const pct = selectedDayItem.percentage;
     const raw = selectedDayItem.rawPoints;
+    const max = selectedDayItem.maxPoints;
+
     if (pct < 45) {
-      const targetPts = Math.ceil(0.45 * selectedDayItem.maxPoints);
+      const targetPts = Math.ceil(0.45 * max);
       return `Cần thêm ${Math.max(1, targetPts - raw)}đ để thoát mức Tệ và lên Trung Bình (45%).`;
     }
     if (pct < 70) {
-      const targetPts = Math.ceil(0.7 * selectedDayItem.maxPoints);
+      const targetPts = Math.ceil(0.7 * max);
       return `Cần thêm ${Math.max(1, targetPts - raw)}đ để đạt mốc Tốt (70%).`;
     }
     if (pct < 90) {
-      const targetPts = Math.ceil(0.9 * selectedDayItem.maxPoints);
+      const targetPts = Math.ceil(0.9 * max);
       return `Chỉ cần thêm ${Math.max(1, targetPts - raw)}đ nữa là chạm ngưỡng Hoàn Hảo (90%)!`;
     }
     if (pct < 100) {
-      return `Chỉ còn cách tuyệt đối 100% đúng ${selectedDayItem.maxPoints - raw}đ nữa thôi!`;
+      return `Chỉ còn cách tuyệt đối 100% đúng ${max - raw}đ nữa thôi!`;
     }
-    return 'Đã đạt điểm tuyệt đối 120/120đ (100%) trong ngày hôm nay!';
+    return `Đã đạt điểm tuyệt đối ${max}/${max}đ (100%) trong ngày hôm nay!`;
   }, [selectedDayItem]);
 
   return (
@@ -185,8 +193,17 @@ export function DayDetailPanel({
             <button
               type="button"
               className="btn-minimal btn-sm"
+              onClick={() => onOpenAddTaskModal && onOpenAddTaskModal()}
+              title="Thêm đầu việc mới cho ngày/tuần/tháng này"
+            >
+              <Plus size={14} />
+              <span>Thêm việc</span>
+            </button>
+            <button
+              type="button"
+              className="btn-minimal btn-sm"
               onClick={() => onMarkAllLevel('PERFECT')}
-              title="Tích nhanh tất cả 12 việc ở mức Hoàn Hảo (100%)"
+              title={`Tích nhanh tất cả ${currentTasksList.length} việc ở mức Hoàn Hảo (100%)`}
             >
               <Sparkles size={14} />
               <span>Tất cả Hoàn Hảo</span>
@@ -204,71 +221,96 @@ export function DayDetailPanel({
         </div>
       </div>
 
-      {/* BỐ CỤC 2 CỘT: BÊN TRÁI LÀ 12 ĐẦU VIỆC — BÊN PHẢI LÀ LỜI KHUYÊN / ĐỘNG VIÊN / LỜI CHÊ NGẪU NHIÊN */}
+      {/* BỐ CỤC 2 CỘT: BÊN TRÁI LÀ CÁC ĐẦU VIỆC — BÊN PHẢI LÀ LỜI KHUYÊN / ĐỘNG VIÊN / LỜI CHÊ NGẪU NHIÊN */}
       <div className="day-workspace-layout">
-        {/* CỘT TRÁI: Danh sách 12 đầu việc trong ngày */}
+        {/* CỘT TRÁI: Danh sách các đầu việc trong ngày */}
         <div className="tasks-grid">
-          {DAILY_TASKS.map((task, idx) => {
-            const currentLevelKey = tasksMap[task.id] || 'NONE';
-            const currentScoreObj = SCORING[currentLevelKey] || SCORING.NONE;
-
-            return (
-              <div
-                key={task.id}
-                className={`task-card ${
-                  currentLevelKey !== 'NONE' ? 'task-card-checked' : ''
-                }`}
+          {currentTasksList.length === 0 ? (
+            <div className="empty-tasks-placeholder">
+              <p>Chưa có đầu việc nào cho ngày này.</p>
+              <button
+                type="button"
+                className="btn-minimal"
+                onClick={() => onOpenAddTaskModal && onOpenAddTaskModal()}
               >
-                <div className="task-card-top">
-                  <div className="task-index-title">
-                    <span className="task-index">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <div>
-                      <h4 className="task-title">{task.title}</h4>
-                      <span className="task-meta">
-                        {task.category} • {task.timeHint}
+                <Plus size={15} />
+                <span>Thêm đầu việc ngay</span>
+              </button>
+            </div>
+          ) : (
+            currentTasksList.map((task, idx) => {
+              const currentLevelKey = tasksMap[task.id] || 'NONE';
+              const currentScoreObj = SCORING[currentLevelKey] || SCORING.NONE;
+
+              return (
+                <div
+                  key={task.id}
+                  className={`task-card ${
+                    currentLevelKey !== 'NONE' ? 'task-card-checked' : ''
+                  }`}
+                  onClick={() => onEditTask && onEditTask(task)}
+                  title="Nhấn vào thẻ để chỉnh sửa hoặc xoá đầu việc này"
+                >
+                  <div className="task-card-top">
+                    <div className="task-index-title">
+                      <span className="task-index">
+                        {String(idx + 1).padStart(2, '0')}
                       </span>
+                      <div>
+                        <div className="task-title-row">
+                          <h4 className="task-title">{task.title}</h4>
+                          <span className="task-edit-indicator" title="Chỉnh sửa/Xoá">
+                            <Edit2 size={12} />
+                          </span>
+                        </div>
+                        <span className="task-meta">
+                          {task.category} • {task.timeHint}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="task-current-point">
+                      {currentLevelKey !== 'NONE' ? (
+                        <span className="point-pill active">
+                          +{currentScoreObj.points}đ
+                        </span>
+                      ) : (
+                        <span className="point-pill">0đ</span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="task-current-point">
-                    {currentLevelKey !== 'NONE' ? (
-                      <span className="point-pill active">
-                        +{currentScoreObj.points}đ
-                      </span>
-                    ) : (
-                      <span className="point-pill">0đ</span>
-                    )}
+                  <div
+                    className="task-level-buttons"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {LEVEL_LIST.map((lvl) => {
+                      const isSelected = currentLevelKey === lvl.key;
+                      return (
+                        <button
+                          key={lvl.key}
+                          type="button"
+                          className={`level-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSetTaskLevel(
+                              task.id,
+                              isSelected ? 'NONE' : lvl.key
+                            );
+                          }}
+                        >
+                          <span className="level-btn-name">{lvl.label}</span>
+                          <span className="level-btn-pts">
+                            {isSelected ? <Check size={12} /> : `${lvl.points}đ`}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-
-                <div className="task-level-buttons">
-                  {LEVEL_LIST.map((lvl) => {
-                    const isSelected = currentLevelKey === lvl.key;
-                    return (
-                      <button
-                        key={lvl.key}
-                        type="button"
-                        className={`level-btn ${isSelected ? 'selected' : ''}`}
-                        onClick={() =>
-                          onSetTaskLevel(
-                            task.id,
-                            isSelected ? 'NONE' : lvl.key
-                          )
-                        }
-                      >
-                        <span className="level-btn-name">{lvl.label}</span>
-                        <span className="level-btn-pts">
-                          {isSelected ? <Check size={12} /> : `${lvl.points}đ`}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* CỘT PHẢI: Mục Lời khuyên, Lời động viên, Lời chê ngẫu nhiên dựa theo kết quả ngày đó */}
