@@ -1,0 +1,1240 @@
+:root {
+  --bg-primary: #FAF7F2;
+  --bg-surface: #FFFDF9;
+  --bg-mixed: #EBE7E0;
+  --bg-mixed-subtle: #F3F0EA;
+  --text-primary: #222220;
+  --text-secondary: #5C5A55;
+  --text-muted: #8E8B82;
+  --border-color: #222220;
+  --border-subtle: #D6D1C7;
+  --btn-bg: #FFFDF9;
+  --btn-text: #222220;
+  --btn-border: #222220;
+  --btn-hover-bg: #222220;
+  --btn-hover-text: #FAF7F2;
+  --level-perfect: #222220;
+  --level-good: #6E6B64;
+  --level-bad: #B8B3A8;
+  --level-none: #E6E2D8;
+  --chart-line: #222220;
+  --chart-area: rgba(34, 34, 32, 0.08);
+  --chart-grid: #E2DDD3;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html {
+  font-size: 18px; /* Mặc định 16px, tăng lên 18px (+2px) cho toàn bộ hệ thống rem của dự án */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* ============================================================================
+   LAYOUT CHUNG
+   ============================================================================ */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: var(--bg-primary);
+  border-bottom: 1.5px solid var(--border-color);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo-mark {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+}
+
+.brand-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.brand-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.navbar-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.month-switcher {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.month-switcher .btn-icon {
+  border: none;
+  border-radius: 0;
+  padding: 7px 10px;
+}
+
+.month-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+}
+
+/* ============================================================================
+   NÚT BẤM MINIMALIST (ĐẢO MÀU NỀN ĐEN NHẠT CHỮ TRẮNG KHI HOVER)
+   ============================================================================ */
+.btn-minimal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 13px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.1s ease;
+}
+
+.btn-minimal:hover,
+.btn-minimal.active {
+  background-color: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+}
+
+.btn-minimal:active {
+  transform: translateY(1px);
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+}
+
+/* ============================================================================
+   MAIN CONTAINER & SECTIONS
+   ============================================================================ */
+.main-container {
+  max-width: 1450px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.section-header-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.section-subtext {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.month-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+/* ============================================================================
+   4 THẺ THỐNG KÊ TỔNG QUAN THÁNG
+   ============================================================================ */
+.stats-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-card-highlight {
+  background-color: var(--bg-mixed);
+  border-width: 1.5px;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stat-big-number {
+  font-family: var(--font-mono);
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stat-unit {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.stat-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background-color: var(--bg-surface);
+}
+
+.stat-footnote {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================================
+   BIỂU ĐỒ ĐƯỜNG & BIỂU ĐỒ TRÒN
+   ============================================================================ */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 16px;
+}
+
+.chart-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chart-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.chart-subtitle {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.chart-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.chart-badge-sub {
+  color: var(--text-secondary);
+}
+
+.line-chart-wrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.line-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-axis-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  fill: var(--text-secondary);
+}
+
+.chart-axis-text-active {
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.chart-point-group {
+  cursor: pointer;
+}
+
+/* Toggle Ngày / Tháng trên biểu đồ tròn */
+.segmented-toggle {
+  display: inline-flex;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.seg-btn:hover,
+.seg-btn.active {
+  background-color: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+}
+
+.donut-chart-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 0;
+}
+
+.donut-svg-container {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-center-info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.donut-percent {
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.donut-sub {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  max-width: 105px;
+}
+
+.donut-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-mixed-subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+}
+
+.legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  display: inline-block;
+}
+
+.legend-label {
+  font-weight: 600;
+}
+
+.legend-pts {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.legend-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.legend-pct {
+  color: var(--text-secondary);
+  min-width: 34px;
+  text-align: right;
+}
+
+/* ============================================================================
+   LƯỚI CÁC NGÀY TRONG THÁNG (MONTH DAYS GRID)
+   ============================================================================ */
+.month-days-section {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+
+.grid-legend-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.legend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-mixed-subtle);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+}
+.dot-perfect {
+  background-color: var(--level-perfect);
+}
+.dot-good {
+  background-color: var(--level-good);
+}
+.dot-mid {
+  background-color: var(--level-bad);
+}
+
+.month-days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+  gap: 10px;
+}
+
+.day-cell-card {
+  text-align: left;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background-color 0.16s ease, color 0.16s ease,
+    border-color 0.16s ease, transform 0.12s ease;
+}
+
+.day-cell-card.has-data {
+  background-color: var(--bg-surface);
+  border-color: var(--border-color);
+}
+
+.day-cell-card.empty-day {
+  background-color: var(--bg-mixed-subtle);
+}
+
+/* Khi hover hoặc đang chọn ngày: Đảo nền đen nhạt chữ trắng theo đúng minimalist style */
+.day-cell-card:hover,
+.day-cell-card.selected {
+  background-color: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+  border-color: var(--btn-hover-bg);
+}
+
+.day-cell-card:hover .day-cell-weekday,
+.day-cell-card:hover .day-cell-footer,
+.day-cell-card.selected .day-cell-weekday,
+.day-cell-card.selected .day-cell-footer {
+  color: var(--btn-hover-text);
+  opacity: 0.82;
+}
+
+.day-cell-card:hover .day-cell-rank-tag,
+.day-cell-card.selected .day-cell-rank-tag {
+  background-color: transparent;
+  color: var(--btn-hover-text);
+  border-color: var(--btn-hover-text);
+}
+
+.day-cell-card:hover .day-cell-bar,
+.day-cell-card.selected .day-cell-bar {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+.day-cell-card:hover .day-cell-bar-fill,
+.day-cell-card.selected .day-cell-bar-fill {
+  background-color: var(--btn-hover-text);
+}
+
+.day-cell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.day-cell-number-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.day-cell-num {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.day-cell-weekday {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.day-cell-today-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+}
+
+.day-cell-middle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.day-cell-percent {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.day-cell-rank-tag {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.day-cell-bar {
+  width: 100%;
+  height: 5px;
+  background-color: var(--bg-mixed);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.day-cell-bar-fill {
+  height: 100%;
+  background-color: var(--text-primary);
+  transition: width 0.25s ease;
+}
+
+.day-cell-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================================
+   CHI TIẾT NGÀY & TÍCH 12 ĐẦU VIỆC (DAY DETAIL PANEL)
+   ============================================================================ */
+.day-detail-section {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.day-detail-header {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.day-detail-title-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.day-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-badge-mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.day-weekday-pill {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  background-color: var(--bg-mixed-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.today-indicator-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+}
+
+.day-rank-desc {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.day-score-summary-card {
+  min-width: 340px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-score-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.day-score-label,
+.day-rank-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  display: block;
+}
+
+.day-score-big {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.day-score-raw {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.day-rank-box {
+  text-align: right;
+  padding: 8px 12px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.day-rank-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--text-primary);
+  transition: width 0.25s ease;
+}
+
+.day-quick-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Bố cục 2 cột: Cột trái (12 việc) + Cột phải (Lời khuyên / Động viên / Chê ngẫu nhiên) */
+.day-workspace-layout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+  align-items: stretch; /* Giữ 2 cột luôn cân bằng, đáy bằng phẳng tuyệt đối */
+}
+
+/* Lưới 12 công việc (2 cột x 6 hàng cân đối tuyệt đối) */
+.tasks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 12px;
+  height: 100%;
+}
+
+.task-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  height: 100%;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.task-card-checked {
+  background-color: var(--bg-surface);
+  border-color: var(--border-color);
+}
+
+.task-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-index-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.task-index {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 7px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.task-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.task-meta {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.point-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--bg-mixed);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.point-pill.active {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
+.task-level-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* Nút chọn mức độ Tệ / Tốt / Hoàn Hảo: Đảo màu khi hover hoặc khi đã được tích */
+.level-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.level-btn:hover,
+.level-btn.selected {
+  background-color: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+}
+
+.level-btn-pts {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ============================================================================
+   CỘT PHẢI: KHUNG LỜI KHUYÊN / ĐỘNG VIÊN / LỜI CHÊ NGẪU NHIÊN THEO ĐIỂM NGÀY
+   ============================================================================ */
+.daily-feedback-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.feedback-card {
+  flex: 1;
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.feedback-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feedback-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-type-tag {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-radius: 999px;
+}
+
+.feedback-score-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+}
+
+.feedback-quote-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feedback-tone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-tone-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.feedback-main-message {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.feedback-advice-box {
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedback-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.feedback-advice-text {
+  font-size: 0.84rem;
+  color: var(--text-primary);
+}
+
+.feedback-specific-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.specific-items-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.specific-comment-item {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.81rem;
+}
+
+.specific-comment-item.is-bad {
+  background-color: var(--bg-mixed-subtle);
+  border-color: var(--border-color);
+}
+
+.specific-comment-item.is-perfect {
+  background-color: var(--bg-surface);
+  border-color: var(--border-color);
+}
+
+.specific-item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.specific-level-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-mixed);
+}
+
+.specific-item-text {
+  color: var(--text-secondary);
+  font-size: 0.79rem;
+}
+
+.specific-empty-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background-color: var(--bg-mixed-subtle);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.feedback-milestone-bar {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.milestone-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.milestone-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Ô ghi chú cuối ngày */
+.day-note-box {
+  background-color: var(--bg-mixed-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-note-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.day-note-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  font-size: 0.84rem;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.day-note-input:focus {
+  box-shadow: 0 0 0 2px rgba(34, 34, 32, 0.12);
+}
+
+/* FOOTER */
+.app-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-mixed-subtle);
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.app-footer code {
+  font-family: var(--font-mono);
+  background-color: var(--bg-mixed);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+/* RESPONSIVE */
+@media (max-width: 1080px) {
+  .day-workspace-layout {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .tasks-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-auto-rows: auto;
+    height: auto;
+  }
+  .daily-feedback-sidebar {
+    height: auto;
+  }
+}
+
+@media (max-width: 1024px) {
+  .stats-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .top-navbar {
+    padding: 12px 16px;
+  }
+  .main-container {
+    padding: 18px 14px 40px;
+  }
+  .tasks-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .donut-chart-layout {
+    flex-direction: column;
+  }
+  .day-score-summary-card {
+    min-width: 100%;
+  }
+}
