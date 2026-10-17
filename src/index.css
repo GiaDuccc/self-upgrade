@@ -1420,6 +1420,32 @@ input {
   box-shadow: 0 0 0 2px rgba(34, 34, 32, 0.15);
 }
 
+.form-input-error {
+  border-color: #D32F2F !important;
+  background-color: #FFFDFD;
+}
+
+.form-input-error:focus {
+  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2) !important;
+}
+
+.live-duplicate-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #D32F2F;
+  background-color: #FFEBEE;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #FFCDD2;
+}
+
+.field-duplicate-text {
+  font-size: 0.78rem;
+  color: #D32F2F;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
 .form-input-sub {
   margin-top: 6px;
   font-size: 0.84rem;
@@ -1636,4 +1662,131 @@ input {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================================
+   MODAL CÁ NHÂN HÓA (THỂ CHẤT, TINH THẦN, CẢM XÚC) & NHÃN TRẠNG THÁI
+   ============================================================================ */
+.modal-container-wide {
+  max-width: 720px;
+}
+
+.btn-profile-header {
+  border-width: 1.5px;
+  font-weight: 600;
+  background-color: var(--bg-mixed);
+}
+
+.profile-section-block {
+  background-color: var(--bg-mixed-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.profile-inputs-grid-4 {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.bio-preview-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+
+.day-score-big-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.score-mod-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+}
+
+.boost-inline-tag {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.feedback-top-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.personal-state-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.state-chip {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-secondary);
+}
+
+.state-chip strong {
+  color: var(--text-primary);
+}
+
+.feedback-random-subquote {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-top: 1px dashed var(--border-subtle);
+  padding-top: 8px;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+.feedback-bio-hint {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 680px) {
+  .profile-inputs-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 

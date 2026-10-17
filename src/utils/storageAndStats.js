@@ -3,10 +3,14 @@ import {
   SCORING,
   MAX_POINTS_PER_TASK,
   getDailyRank,
+  DEFAULT_USER_PROFILE,
+  PERSONALIZATION_OPTIONS,
+  isTaskBoostedByProfile,
 } from '../config/settings';
 
 const STORAGE_KEY = 'self_upgrade_records_v1';
 const STORAGE_TASK_CONFIG_KEY = 'self_upgrade_task_config_v1';
+const STORAGE_USER_PROFILE_KEY = 'self_upgrade_user_profile_v1';
 
 /**
  * Chuẩn hóa chuỗi ngày YYYY-MM-DD
@@ -93,6 +97,31 @@ export function saveAllRecords(records) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   } catch (err) {
     console.error('Lỗi lưu dữ liệu vào localStorage:', err);
+  }
+}
+
+/**
+ * Đọc Hồ sơ cá nhân & Trạng thái (Thể chất, Tinh thần, Cảm xúc) từ LocalStorage
+ */
+export function loadUserProfile() {
+  try {
+    const raw = localStorage.getItem(STORAGE_USER_PROFILE_KEY);
+    if (!raw) return { ...DEFAULT_USER_PROFILE };
+    return { ...DEFAULT_USER_PROFILE, ...JSON.parse(raw) };
+  } catch (err) {
+    console.error('Lỗi đọc thông tin cá nhân:', err);
+    return { ...DEFAULT_USER_PROFILE };
+  }
+}
+
+/**
+ * Lưu Hồ sơ cá nhân & Trạng thái vào LocalStorage
+ */
+export function saveUserProfile(profile) {
+  try {
+    localStorage.setItem(STORAGE_USER_PROFILE_KEY, JSON.stringify(profile));
+  } catch (err) {
+    console.error('Lỗi lưu thông tin cá nhân:', err);
   }
 }
 
@@ -186,11 +215,17 @@ export function getTasksForDate(dateKey, taskConfig) {
 }
 
 /**
- * Tính toán điểm và thống kê chi tiết cho 1 ngày dựa trên danh sách việc của ngày đó
+ * Tính toán điểm và thống kê chi tiết cho 1 ngày dựa trên danh sách việc + Hồ sơ cá nhân hóa
  */
-export function calculateDayStats(dayRecord = {}, tasksForDay = DAILY_TASKS) {
+export function calculateDayStats(
+  dayRecord = {},
+  tasksForDay = DAILY_TASKS,
+  userProfile = DEFAULT_USER_PROFILE
+) {
   const tasksMap = dayRecord?.tasks || {};
   let rawPoints = 0;
+  let maxPoints = 0;
+
   const counts = {
     PERFECT: 0,
     GOOD: 0,
@@ -203,21 +238,66 @@ export function calculateDayStats(dayRecord = {}, tasksForDay = DAILY_TASKS) {
   tasksList.forEach((task) => {
     const statusKey = tasksMap[task.id] || 'NONE';
     const scoreDef = SCORING[statusKey] || SCORING.NONE;
-    rawPoints += scoreDef.points;
+    const isBoosted = isTaskBoostedByProfile(task, userProfile);
+    const weight = isBoosted ? 1.25 : 1;
+
+    rawPoints += scoreDef.points * weight;
+    maxPoints += MAX_POINTS_PER_TASK * weight;
     counts[scoreDef.key] = (counts[scoreDef.key] || 0) + 1;
   });
 
+  rawPoints = Math.round(rawPoints * 10) / 10;
+  maxPoints = Math.max(10, Math.round(maxPoints * 10) / 10);
+
   const totalTasks = tasksList.length;
-  const maxPoints = Math.max(10, totalTasks * MAX_POINTS_PER_TASK);
   const checkedCount = totalTasks - counts.NONE;
-  const exactPercentage = totalTasks > 0 ? (rawPoints / maxPoints) * 100 : 0;
-  const percentage = Math.round(exactPercentage * 10) / 10;
-  const rank = getDailyRank(percentage, checkedCount);
+  const basePercentage =
+    totalTasks > 0 ? Math.round(((rawPoints / maxPoints) * 100) * 10) / 10 : 0;
+
+  // Tính hệ số điều chỉnh điểm từ Thể chất, Tinh thần, Cảm xúc & Phong cách huấn luyện
+  let stateBonusPct = 0;
+  if (checkedCount > 0 && userProfile) {
+    const phys = PERSONALIZATION_OPTIONS.physicalStates.find(
+      (x) => x.id === userProfile.physicalState
+    );
+    const ment = PERSONALIZATION_OPTIONS.mentalStates.find(
+      (x) => x.id === userProfile.mentalState
+    );
+    const emo = PERSONALIZATION_OPTIONS.emotionalStates.find(
+      (x) => x.id === userProfile.emotionalState
+    );
+
+    const rawResilienceBonus =
+      (phys?.resilienceBonus || 0) +
+      (ment?.resilienceBonus || 0) +
+      (emo?.resilienceBonus || 0);
+
+    // Chỉ cộng điểm vượt khó tỷ lệ thuận với số việc đạt Tốt/Hoàn hảo trong ngày
+    const positiveTasksCount = counts.GOOD + counts.PERFECT;
+    const positiveRatio = totalTasks > 0 ? positiveTasksCount / totalTasks : 0;
+    stateBonusPct += Math.round(rawResilienceBonus * positiveRatio * 10) / 10;
+
+    // Nếu chọn chế độ Khắc nghiệt (STRICT) và có việc làm Tệ -> trừ kỷ luật
+    if (userProfile.coachingStyle === 'STRICT' && counts.BAD > 0) {
+      stateBonusPct -= Math.min(8, counts.BAD * 2);
+    }
+  }
+
+  stateBonusPct = Math.round(stateBonusPct * 10) / 10;
+
+  const finalPercentage =
+    checkedCount > 0
+      ? Math.max(0, Math.min(100, Math.round((basePercentage + stateBonusPct) * 10) / 10))
+      : 0;
+
+  const rank = getDailyRank(finalPercentage, checkedCount);
 
   return {
     rawPoints,
     maxPoints,
-    percentage,
+    basePercentage,
+    stateBonusPct,
+    percentage: finalPercentage,
     checkedCount,
     totalTasks,
     counts,
@@ -234,7 +314,8 @@ export function calculateMonthStats(
   year,
   month,
   allRecords = {},
-  taskConfig = null
+  taskConfig = null,
+  userProfile = DEFAULT_USER_PROFILE
 ) {
   const totalDays = getDaysInMonth(year, month);
   const daysList = [];
@@ -259,7 +340,7 @@ export function calculateMonthStats(
     const tasksForDay = taskConfig
       ? getTasksForDate(dateKey, taskConfig)
       : DAILY_TASKS;
-    const stats = calculateDayStats(dayRecord, tasksForDay);
+    const stats = calculateDayStats(dayRecord, tasksForDay, userProfile);
     const weekday = getWeekdayLabel(year, month, d);
 
     const dayItem = {
@@ -286,6 +367,9 @@ export function calculateMonthStats(
     if (stats.percentage >= 90) perfectDaysCount += 1;
     if (stats.percentage >= 70) goodOrAboveDaysCount += 1;
   }
+
+  sumPoints = Math.round(sumPoints * 10) / 10;
+  maxMonthPoints = Math.round(maxMonthPoints * 10) / 10;
 
   // Điểm % trung bình của các ngày đã ghi nhận trong tháng
   const avgActivePercentage =

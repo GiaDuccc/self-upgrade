@@ -12,6 +12,8 @@ import {
   calculateMonthStats,
   loadTaskConfig,
   saveTaskConfig,
+  loadUserProfile,
+  saveUserProfile,
   getWeekDates,
   getDaysInMonth,
 } from './utils/storageAndStats';
@@ -19,6 +21,7 @@ import { MonthlyLineChart, DistributionDonutChart } from './components/Charts';
 import { MonthDaysGrid } from './components/MonthDaysGrid';
 import { DayDetailPanel } from './components/DayDetailPanel';
 import { TaskModal } from './components/TaskModal';
+import { ProfileModal } from './components/ProfileModal';
 import {
   ChevronLeft,
   ChevronRight,
@@ -26,6 +29,7 @@ import {
   Download,
   Upload,
   Plus,
+  UserCheck,
 } from 'lucide-react';
 
 export default function App() {
@@ -36,11 +40,15 @@ export default function App() {
   const [selectedDateKey, setSelectedDateKey] = useState(today.dateKey);
   const [records, setRecords] = useState(() => loadAllRecords());
   const [taskConfig, setTaskConfig] = useState(() => loadTaskConfig());
+  const [userProfile, setUserProfile] = useState(() => loadUserProfile());
 
   // Trạng thái của TaskModal (Thêm mới hoặc Chỉnh sửa)
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskModalMode, setTaskModalMode] = useState('add'); // 'add' | 'edit'
   const [editingTask, setEditingTask] = useState(null);
+
+  // Trạng thái của ProfileModal (Cá nhân hóa: Thể chất, Tinh thần, Cảm xúc)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -59,10 +67,22 @@ export default function App() {
     saveTaskConfig(taskConfig);
   }, [taskConfig]);
 
-  // Tính toán thống kê toàn tháng và từng ngày (tự động tính lại khi tích việc hoặc đổi cấu hình task)
+  // Tự động lưu userProfile xuống LocalStorage mỗi khi thay đổi
+  useEffect(() => {
+    saveUserProfile(userProfile);
+  }, [userProfile]);
+
+  // Tính toán thống kê toàn tháng và từng ngày (tự động tính lại khi tích việc, đổi task hoặc đổi trạng thái cá nhân)
   const monthStats = useMemo(
-    () => calculateMonthStats(currentYear, currentMonth, records, taskConfig),
-    [currentYear, currentMonth, records, taskConfig]
+    () =>
+      calculateMonthStats(
+        currentYear,
+        currentMonth,
+        records,
+        taskConfig,
+        userProfile
+      ),
+    [currentYear, currentMonth, records, taskConfig, userProfile]
   );
 
   // Ngày đang được chọn
@@ -74,6 +94,22 @@ export default function App() {
   }, [monthStats, selectedDateKey]);
 
   const selectedDayRecord = records[selectedDayItem?.dateKey] || {};
+
+  // Tập hợp danh sách tất cả các đầu việc hiện có để kiểm tra trùng tên
+  const allKnownTasks = useMemo(() => {
+    const list = [...(selectedDayItem?.tasksList || [])];
+    (taskConfig.globalTasks || []).forEach((gt) => {
+      if (!list.some((t) => t.id === gt.id)) {
+        list.push(gt);
+      }
+    });
+    (taskConfig.customTasks || []).forEach((ct) => {
+      if (!list.some((t) => t.id === ct.id)) {
+        list.push(ct);
+      }
+    });
+    return list;
+  }, [selectedDayItem, taskConfig]);
 
   // Chuyển tháng trước / sau
   const handlePrevMonth = () => {
@@ -134,6 +170,22 @@ export default function App() {
 
   // Lưu đầu việc (Thêm mới hoặc Cập nhật)
   const handleSaveTask = ({ id, title, category, timeHint, scope, dateKey }) => {
+    const trimmedTitle = title.trim();
+    const normalizedNewTitle = trimmedTitle.toLowerCase();
+
+    // Kiểm tra trùng tên an toàn trước khi lưu
+    const isDuplicate = allKnownTasks.some(
+      (t) =>
+        t.id !== id &&
+        t.title &&
+        t.title.trim().toLowerCase() === normalizedNewTitle
+    );
+
+    if (isDuplicate) {
+      alert(`Đầu việc "${trimmedTitle}" đã tồn tại trong danh sách! Vui lòng chọn tên khác.`);
+      return false;
+    }
+
     const monthKey = dateKey.substring(0, 7);
     const weekDates = getWeekDates(dateKey);
 
@@ -148,7 +200,6 @@ export default function App() {
       if (id) {
         // CHẾ ĐỘ CHỈNH SỬA (EDIT)
         if (scope === 'all') {
-          // Cập nhật ở cấp global
           newConfig.globalTasks = newConfig.globalTasks.map((t) =>
             t.id === id ? { ...t, title, category, timeHint } : t
           );
@@ -156,13 +207,11 @@ export default function App() {
             t.id === id ? { ...t, title, category, timeHint } : t
           );
         } else if (scope === 'day') {
-          // Ghi đè chỉ riêng ngày này
           newConfig.taskOverrides[dateKey] = {
             ...(newConfig.taskOverrides[dateKey] || {}),
             [id]: { title, category, timeHint },
           };
         } else if (scope === 'week') {
-          // Ghi đè cho các ngày trong tuần này
           weekDates.forEach((d) => {
             newConfig.taskOverrides[d] = {
               ...(newConfig.taskOverrides[d] || {}),
@@ -170,7 +219,6 @@ export default function App() {
             };
           });
         } else if (scope === 'month') {
-          // Ghi đè cho tất cả các ngày trong tháng này
           const daysCount = getDaysInMonth(currentYear, currentMonth);
           for (let d = 1; d <= daysCount; d++) {
             const dk = formatDateKey(currentYear, currentMonth, d);
@@ -320,13 +368,14 @@ export default function App() {
     });
   };
 
-  // Xuất file backup JSON (bao gồm cả lịch sử tích và danh sách công việc tuỳ chỉnh)
+  // Xuất file backup JSON (bao gồm lịch sử tích, công việc tuỳ chỉnh và hồ sơ cá nhân)
   const handleExportJson = () => {
     const backupData = {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       records,
       taskConfig,
+      userProfile,
     };
     const dataStr = JSON.stringify(backupData, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
@@ -352,8 +401,10 @@ export default function App() {
             if (parsed.taskConfig) {
               setTaskConfig(parsed.taskConfig);
             }
+            if (parsed.userProfile) {
+              setUserProfile(parsed.userProfile);
+            }
           } else {
-            // Tương thích với file backup phiên bản trước
             setRecords(parsed);
           }
           alert('Khôi phục dữ liệu thành công!');
@@ -373,9 +424,14 @@ export default function App() {
         <div className="brand-block">
           <div className="brand-logo-mark">SU</div>
           <div>
-            <h1 className="brand-title">SELF UPGRADE</h1>
+            <h1 className="brand-title">
+              SELF UPGRADE
+              {userProfile.name?.trim() ? ` — ${userProfile.name.trim().toUpperCase()}` : ''}
+            </h1>
             <p className="brand-subtitle">
-              Hệ thống theo dõi kỷ luật & điểm hiệu suất cá nhân
+              {userProfile.personalMotto?.trim()
+                ? `“${userProfile.personalMotto.trim()}”`
+                : 'Hệ thống theo dõi kỷ luật & điểm hiệu suất cá nhân'}
             </p>
           </div>
         </div>
@@ -414,7 +470,7 @@ export default function App() {
             Hôm nay
           </button>
 
-          {/* MỤC THÊM ĐẦU VIỆC (THAY THẾ DỮ LIỆU MẪU) */}
+          {/* MỤC THÊM ĐẦU VIỆC */}
           <button
             type="button"
             className="btn-minimal btn-add-header"
@@ -451,6 +507,21 @@ export default function App() {
             style={{ display: 'none' }}
             onChange={handleImportJson}
           />
+
+          {/* MỤC NHẬP THÔNG TIN CÁ NHÂN HÓA Ở GÓC BÊN PHẢI CỦA HEADER */}
+          <button
+            type="button"
+            className="btn-minimal btn-profile-header"
+            onClick={() => setIsProfileModalOpen(true)}
+            title="Nhập thông tin cá nhân, Thể chất, Tinh thần & Cảm xúc để tối ưu chấm điểm và lời khuyên"
+          >
+            <UserCheck size={15} />
+            <span>
+              {userProfile.name?.trim()
+                ? `${userProfile.name.trim()} • Cá nhân hóa`
+                : 'Thông tin cá nhân'}
+            </span>
+          </button>
         </div>
       </header>
 
@@ -465,7 +536,7 @@ export default function App() {
                 TỔNG QUAN THỐNG KÊ THÁNG {currentMonth}/{currentYear}
               </h2>
               <p className="section-subtext">
-                Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ) — Điểm tính theo % hoàn hảo của ngày
+                Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ) — Tự động điều chỉnh theo Thể chất, Tinh thần & Mục tiêu trọng tâm
               </p>
             </div>
             <div className="month-rank-pill">
@@ -569,6 +640,7 @@ export default function App() {
           selectedDateKey={selectedDayItem.dateKey}
           selectedDayItem={selectedDayItem}
           dayRecord={selectedDayRecord}
+          userProfile={userProfile}
           onSetTaskLevel={handleSetTaskLevel}
           onMarkAllLevel={handleMarkAllLevel}
           onClearDay={handleClearDay}
@@ -576,6 +648,7 @@ export default function App() {
           isToday={selectedDayItem.dateKey === today.dateKey}
           onEditTask={handleEditTask}
           onOpenAddTaskModal={handleOpenAddTaskModal}
+          onOpenProfileModal={() => setIsProfileModalOpen(true)}
         />
       </main>
 
@@ -586,15 +659,24 @@ export default function App() {
         </span>
       </footer>
 
-      {/* MODAL THÊM / CHỈNH SỬA ĐẦU VIỆC (TỪ TỪ HIỆN RA) */}
+      {/* MODAL THÊM / CHỈNH SỬA ĐẦU VIỆC */}
       <TaskModal
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
         mode={taskModalMode}
         initialTask={editingTask}
         currentDateKey={selectedDayItem.dateKey}
+        existingTasks={allKnownTasks}
         onSaveTask={handleSaveTask}
         onDeleteTask={handleDeleteTask}
+      />
+
+      {/* MODAL CÁ NHÂN HÓA: THỂ CHẤT, TINH THẦN, CẢM XÚC */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userProfile={userProfile}
+        onSaveProfile={(newProf) => setUserProfile(newProf)}
       />
     </div>
   );

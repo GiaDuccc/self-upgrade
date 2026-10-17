@@ -5,6 +5,9 @@ import {
   SCORING,
   FEEDBACK_POOLS,
   TASK_SPECIFIC_NOTES,
+  DEFAULT_USER_PROFILE,
+  isTaskBoostedByProfile,
+  buildPersonalizedCoaching,
 } from '../config/settings';
 import {
   Check,
@@ -17,6 +20,8 @@ import {
   Compass,
   Edit2,
   Plus,
+  UserCheck,
+  Activity,
 } from 'lucide-react';
 
 function getPoolKey(percentage, checkedCount) {
@@ -32,6 +37,7 @@ export function DayDetailPanel({
   selectedDateKey,
   selectedDayItem,
   dayRecord,
+  userProfile = DEFAULT_USER_PROFILE,
   onSetTaskLevel,
   onMarkAllLevel,
   onClearDay,
@@ -39,6 +45,7 @@ export function DayDetailPanel({
   isToday,
   onEditTask,
   onOpenAddTaskModal,
+  onOpenProfileModal,
 }) {
   if (!selectedDayItem) return null;
 
@@ -82,6 +89,12 @@ export function DayDetailPanel({
   const activeFeedback =
     currentPool[quoteIndex % currentPool.length] || currentPool[0];
 
+  // Phân tích cá nhân hóa dựa trên Thể chất, Tinh thần, Cảm xúc + Kết quả ngày
+  const personalizedInsight = useMemo(
+    () => buildPersonalizedCoaching(userProfile, selectedDayItem, tasksMap),
+    [userProfile, selectedDayItem, tasksMap]
+  );
+
   // Lấy ngẫu nhiên các nhận xét chi tiết dựa trên những đầu việc đang bị Tệ hoặc đạt Hoàn Hảo
   const specificTaskComments = useMemo(() => {
     const badNotes = [];
@@ -108,7 +121,6 @@ export function DayDetailPanel({
       }
     });
 
-    // Trộn ngẫu nhiên nhẹ dựa trên seed
     const shuffleArr = (arr) =>
       [...arr].sort(
         (a, b) =>
@@ -133,20 +145,20 @@ export function DayDetailPanel({
 
     if (pct < 45) {
       const targetPts = Math.ceil(0.45 * max);
-      return `Cần thêm ${Math.max(1, targetPts - raw)}đ để thoát mức Tệ và lên Trung Bình (45%).`;
+      return `Cần thêm ~${Math.max(1, Math.round(targetPts - raw))}đ để thoát mức Tệ và lên Trung Bình (45%).`;
     }
     if (pct < 70) {
       const targetPts = Math.ceil(0.7 * max);
-      return `Cần thêm ${Math.max(1, targetPts - raw)}đ để đạt mốc Tốt (70%).`;
+      return `Cần thêm ~${Math.max(1, Math.round(targetPts - raw))}đ để đạt mốc Tốt (70%).`;
     }
     if (pct < 90) {
       const targetPts = Math.ceil(0.9 * max);
-      return `Chỉ cần thêm ${Math.max(1, targetPts - raw)}đ nữa là chạm ngưỡng Hoàn Hảo (90%)!`;
+      return `Chỉ cần thêm ~${Math.max(1, Math.round(targetPts - raw))}đ nữa là chạm ngưỡng Hoàn Hảo (90%)!`;
     }
     if (pct < 100) {
-      return `Chỉ còn cách tuyệt đối 100% đúng ${max - raw}đ nữa thôi!`;
+      return `Chỉ còn cách tuyệt đối 100% khoảng ${Math.max(1, Math.round(max - raw))}đ nữa thôi!`;
     }
-    return `Đã đạt điểm tuyệt đối ${max}/${max}đ (100%) trong ngày hôm nay!`;
+    return `Đã đạt điểm tối đa 100% trong ngày hôm nay!`;
   }, [selectedDayItem]);
 
   return (
@@ -167,9 +179,18 @@ export function DayDetailPanel({
         <div className="day-score-summary-card">
           <div className="day-score-main">
             <div className="day-score-left">
-              <span className="day-score-label">ĐIỂM ĐẠT ĐƯỢC</span>
-              <div className="day-score-big">
-                {selectedDayItem.percentage}%
+              <span className="day-score-label">ĐIỂM ĐẠT ĐƯỢC (ĐÃ CÁ NHÂN HÓA)</span>
+              <div className="day-score-big-row">
+                <div className="day-score-big">
+                  {selectedDayItem.percentage}%
+                </div>
+                {selectedDayItem.stateBonusPct !== 0 && (
+                  <span className="score-mod-pill" title="Điều chỉnh điểm dựa trên Thể chất, Tinh thần, Cảm xúc & Chế độ kỷ luật">
+                    {selectedDayItem.stateBonusPct > 0
+                      ? `+${selectedDayItem.stateBonusPct}% vượt khó`
+                      : `${selectedDayItem.stateBonusPct}% kỷ luật`}
+                  </span>
+                )}
               </div>
               <span className="day-score-raw">
                 {selectedDayItem.rawPoints} / {selectedDayItem.maxPoints} điểm •{' '}
@@ -221,7 +242,7 @@ export function DayDetailPanel({
         </div>
       </div>
 
-      {/* BỐ CỤC 2 CỘT: BÊN TRÁI LÀ CÁC ĐẦU VIỆC — BÊN PHẢI LÀ LỜI KHUYÊN / ĐỘNG VIÊN / LỜI CHÊ NGẪU NHIÊN */}
+      {/* BỐ CỤC 2 CỘT: BÊN TRÁI LÀ CÁC ĐẦU VIỆC — BÊN PHẢI LÀ LỜI KHUYÊN / ĐỘNG VIÊN / LỜI CHÊ CÁ NHÂN HÓA */}
       <div className="day-workspace-layout">
         {/* CỘT TRÁI: Danh sách các đầu việc trong ngày */}
         <div className="tasks-grid">
@@ -241,6 +262,10 @@ export function DayDetailPanel({
             currentTasksList.map((task, idx) => {
               const currentLevelKey = tasksMap[task.id] || 'NONE';
               const currentScoreObj = SCORING[currentLevelKey] || SCORING.NONE;
+              const isBoosted = isTaskBoostedByProfile(task, userProfile);
+              const weight = isBoosted ? 1.25 : 1;
+              const weightedPoints =
+                Math.round(currentScoreObj.points * weight * 10) / 10;
 
               return (
                 <div
@@ -265,6 +290,9 @@ export function DayDetailPanel({
                         </div>
                         <span className="task-meta">
                           {task.category} • {task.timeHint}
+                          {isBoosted && (
+                            <strong className="boost-inline-tag"> • ★ ×1.25</strong>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -272,7 +300,7 @@ export function DayDetailPanel({
                     <div className="task-current-point">
                       {currentLevelKey !== 'NONE' ? (
                         <span className="point-pill active">
-                          +{currentScoreObj.points}đ
+                          +{weightedPoints}đ
                         </span>
                       ) : (
                         <span className="point-pill">0đ</span>
@@ -286,6 +314,7 @@ export function DayDetailPanel({
                   >
                     {LEVEL_LIST.map((lvl) => {
                       const isSelected = currentLevelKey === lvl.key;
+                      const lvlPts = Math.round(lvl.points * weight * 10) / 10;
                       return (
                         <button
                           key={lvl.key}
@@ -301,7 +330,7 @@ export function DayDetailPanel({
                         >
                           <span className="level-btn-name">{lvl.label}</span>
                           <span className="level-btn-pts">
-                            {isSelected ? <Check size={12} /> : `${lvl.points}đ`}
+                            {isSelected ? <Check size={12} /> : `${lvlPts}đ`}
                           </span>
                         </button>
                       );
@@ -313,7 +342,7 @@ export function DayDetailPanel({
           )}
         </div>
 
-        {/* CỘT PHẢI: Mục Lời khuyên, Lời động viên, Lời chê ngẫu nhiên dựa theo kết quả ngày đó */}
+        {/* CỘT PHẢI: Mục Lời khuyên, Lời động viên, Lời chê dựa theo kết quả ngày + Thể chất/Tinh thần/Cảm xúc */}
         <aside className="daily-feedback-sidebar">
           <div className="feedback-card">
             <div className="feedback-card-top">
@@ -324,23 +353,56 @@ export function DayDetailPanel({
                 </span>
               </div>
 
-              <button
-                type="button"
-                className="btn-minimal btn-sm"
-                onClick={handleShuffleQuote}
-                title="Đổi ngẫu nhiên câu nhận xét khác theo mức điểm hiện tại"
-              >
-                <Shuffle size={13} />
-                <span>Đổi câu khác</span>
-              </button>
+              <div className="feedback-top-btns">
+                {onOpenProfileModal && (
+                  <button
+                    type="button"
+                    className="btn-minimal btn-sm"
+                    onClick={onOpenProfileModal}
+                    title="Cập nhật Thể chất, Tinh thần & Cảm xúc"
+                  >
+                    <UserCheck size={13} />
+                    <span>Trạng thái</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-minimal btn-sm"
+                  onClick={handleShuffleQuote}
+                  title="Đổi ngẫu nhiên câu nhận xét khác theo mức điểm hiện tại"
+                >
+                  <Shuffle size={13} />
+                  <span>Đổi câu</span>
+                </button>
+              </div>
             </div>
 
+            {/* Thanh tóm tắt Thể chất - Tinh thần - Cảm xúc hiện tại */}
+            <div className="personal-state-strip">
+              <span className="state-chip">
+                Thể chất: <strong>{personalizedInsight.physObj.label.split('/')[0].trim()}</strong>
+              </span>
+              <span className="state-chip">
+                Tinh thần: <strong>{personalizedInsight.mentObj.label.split('/')[0].trim()}</strong>
+              </span>
+              <span className="state-chip">
+                Cảm xúc: <strong>{personalizedInsight.emoObj.label.split('/')[0].trim()}</strong>
+              </span>
+            </div>
+
+            {/* Nhận xét cá nhân hóa trực diện dựa trên trạng thái & điểm */}
             <div className="feedback-quote-box">
               <div className="feedback-tone-row">
-                <MessageSquareQuote size={18} />
-                <h3 className="feedback-tone-title">{activeFeedback.tone}</h3>
+                <Activity size={17} />
+                <h3 className="feedback-tone-title">
+                  {personalizedInsight.stateHeadline}
+                </h3>
               </div>
               <p className="feedback-main-message">
+                {personalizedInsight.stateCritiqueOrPraise}
+              </p>
+              <p className="feedback-random-subquote">
+                <MessageSquareQuote size={14} style={{ display: 'inline', marginRight: '5px' }} />
                 “{activeFeedback.message}”
               </p>
             </div>
@@ -348,9 +410,16 @@ export function DayDetailPanel({
             <div className="feedback-advice-box">
               <div className="feedback-sub-header">
                 <Compass size={15} />
-                <span>HƯỚNG HÀNH ĐỘNG & LỜI KHUYÊN</span>
+                <span>LỜI KHUYÊN HÀNH ĐỘNG (THEO TRẠNG THÁI CỦA {personalizedInsight.callName.toUpperCase()})</span>
               </div>
-              <p className="feedback-advice-text">{activeFeedback.advice}</p>
+              <p className="feedback-advice-text">
+                {personalizedInsight.stateActionableAdvice}
+              </p>
+              {personalizedInsight.bioMetricsHint && (
+                <p className="feedback-bio-hint">
+                  • {personalizedInsight.bioMetricsHint}
+                </p>
+              )}
             </div>
 
             {/* Nhận xét chi tiết theo các việc cụ thể vừa tích (Tệ / Hoàn Hảo) */}

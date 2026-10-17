@@ -17,6 +17,7 @@ export function TaskModal({
   mode = 'add', // 'add' | 'edit'
   initialTask = null,
   currentDateKey,
+  existingTasks = [],
   onSaveTask,
   onDeleteTask,
 }) {
@@ -55,10 +56,28 @@ export function TaskModal({
 
   if (!isOpen) return null;
 
+  // Kiểm tra trùng tên tức thì khi người dùng đang nhập
+  const trimmedCurrentTitle = title.trim();
+  const isDuplicateName =
+    trimmedCurrentTitle.length > 0 &&
+    existingTasks.some(
+      (t) =>
+        t.id !== initialTask?.id &&
+        t.title &&
+        t.title.trim().toLowerCase() === trimmedCurrentTitle.toLowerCase()
+    );
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title.trim()) {
+    if (!trimmedCurrentTitle) {
       setErrorMsg('Vui lòng nhập tên đầu việc!');
+      return;
+    }
+
+    if (isDuplicateName) {
+      setErrorMsg(
+        `Đầu việc "${trimmedCurrentTitle}" đã tồn tại trong danh sách! Vui lòng đặt tên khác.`
+      );
       return;
     }
 
@@ -67,16 +86,18 @@ export function TaskModal({
         ? customCategory.trim()
         : category;
 
-    onSaveTask({
+    const saved = onSaveTask({
       id: mode === 'edit' && initialTask?.id ? initialTask.id : undefined,
-      title: title.trim(),
+      title: trimmedCurrentTitle,
       category: finalCategory,
       timeHint: timeHint.trim() || 'Mỗi ngày',
       scope,
       dateKey: currentDateKey,
     });
 
-    onClose();
+    if (saved !== false) {
+      onClose();
+    }
   };
 
   const handleDelete = () => {
@@ -167,13 +188,18 @@ export function TaskModal({
 
           {/* 1. Tên đầu việc */}
           <div className="form-group">
-            <label htmlFor="task-title-input" className="form-label">
-              TÊN ĐẦU VIỆC <span className="required-star">*</span>
-            </label>
+            <div className="form-label-with-hint">
+              <label htmlFor="task-title-input" className="form-label">
+                TÊN ĐẦU VIỆC <span className="required-star">*</span>
+              </label>
+              {isDuplicateName && (
+                <span className="live-duplicate-badge">⚠️ Trùng tên</span>
+              )}
+            </div>
             <input
               id="task-title-input"
               type="text"
-              className="form-input"
+              className={`form-input ${isDuplicateName ? 'form-input-error' : ''}`}
               placeholder="VD: Chạy bộ 5km, Học từ vựng tiếng Anh, Nghe podcast..."
               value={title}
               onChange={(e) => {
