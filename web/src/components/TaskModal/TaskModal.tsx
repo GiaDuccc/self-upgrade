@@ -1,0 +1,378 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Plus,
+  Trash2,
+  Check,
+  Sparkles,
+  Info,
+} from 'lucide-react';
+import { TaskItem, TaskScope } from '~/interface/discipline.interface';
+import { TASK_CATEGORIES } from '~/utils/constants';
+
+interface TaskModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  mode: 'add' | 'edit';
+  initialTask: TaskItem | null;
+  currentDateKey: string;
+  existingTasks: TaskItem[];
+  onSaveTask: (payload: {
+    id?: string;
+    title: string;
+    category: string;
+    timeHint: string;
+    scope: TaskScope;
+    dateKey: string;
+  }) => Promise<boolean | void> | boolean | void;
+  onDeleteTask?: (payload: {
+    id: string;
+    scope: TaskScope;
+    dateKey: string;
+  }) => Promise<void> | void;
+}
+
+export const TaskModal: React.FC<TaskModalProps> = ({
+  isOpen,
+  onClose,
+  mode = 'add',
+  initialTask = null,
+  currentDateKey,
+  existingTasks = [],
+  onSaveTask,
+  onDeleteTask,
+}) => {
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState(TASK_CATEGORIES[0]);
+  const [customCategory, setCustomCategory] = useState('');
+  const [timeHint, setTimeHint] = useState('');
+  const [scope, setScope] = useState<TaskScope>('all');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && initialTask) {
+        setTitle(initialTask.title || '');
+        const isStandardCat = TASK_CATEGORIES.includes(initialTask.category);
+        if (isStandardCat) {
+          setCategory(initialTask.category);
+          setCustomCategory('');
+        } else {
+          setCategory('Khác');
+          setCustomCategory(initialTask.category || '');
+        }
+        setTimeHint(initialTask.timeHint || initialTask.target || '');
+        setScope(initialTask.scope || 'all');
+      } else {
+        setTitle('');
+        setCategory(TASK_CATEGORIES[0]);
+        setCustomCategory('');
+        setTimeHint('');
+        setScope('all');
+      }
+      setErrorMsg('');
+    }
+  }, [isOpen, mode, initialTask]);
+
+  if (!isOpen) return null;
+
+  const trimmedCurrentTitle = title.trim();
+  const isDuplicateName =
+    trimmedCurrentTitle.length > 0 &&
+    existingTasks.some(
+      (t) =>
+        t.id !== initialTask?.id &&
+        t.title &&
+        t.title.trim().toLowerCase() === trimmedCurrentTitle.toLowerCase()
+    );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trimmedCurrentTitle) {
+      setErrorMsg('Vui lòng nhập tên đầu việc!');
+      return;
+    }
+
+    if (isDuplicateName) {
+      setErrorMsg(
+        `Đầu việc "${trimmedCurrentTitle}" đã tồn tại trong danh sách! Vui lòng đặt tên khác.`
+      );
+      return;
+    }
+
+    const finalCategory =
+      category === 'Khác' && customCategory.trim()
+        ? customCategory.trim()
+        : category;
+
+    const saved = await onSaveTask({
+      id: mode === 'edit' && initialTask?.id ? initialTask.id : undefined,
+      title: trimmedCurrentTitle,
+      category: finalCategory,
+      timeHint: timeHint.trim() || 'Mỗi ngày',
+      scope,
+      dateKey: currentDateKey,
+    });
+
+    if (saved !== false) {
+      onClose();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (mode === 'edit' && initialTask && onDeleteTask) {
+      const confirmDelete = window.confirm(
+        `Bạn có chắc muốn xoá đầu việc "${initialTask.title}" (${
+          scope === 'all'
+            ? 'Xoá vĩnh viễn trên tất cả các ngày'
+            : scope === 'month'
+            ? 'Xoá trong cả tháng này'
+            : scope === 'week'
+            ? 'Xoá trong tuần này'
+            : 'Xoá chỉ ngày ' + currentDateKey
+        })?`
+      );
+      if (confirmDelete) {
+        await onDeleteTask({
+          id: initialTask.id,
+          scope,
+          dateKey: currentDateKey,
+        });
+        onClose();
+      }
+    }
+  };
+
+  const scopeOptions: Array<{ id: TaskScope; title: string; desc: string }> = [
+    {
+      id: 'day',
+      title: 'Áp dụng ngày',
+      desc: `Chỉ riêng ngày ${currentDateKey}`,
+    },
+    {
+      id: 'week',
+      title: 'Áp dụng tuần',
+      desc: 'Áp dụng cho 7 ngày của tuần này (T2 – CN)',
+    },
+    {
+      id: 'month',
+      title: 'Áp dụng tháng',
+      desc: `Toàn bộ các ngày trong tháng ${currentDateKey.substring(0, 7)}`,
+    },
+    {
+      id: 'all',
+      title: 'Áp dụng tất cả',
+      desc: 'Áp dụng vĩnh viễn cho tất cả các ngày (Toàn hệ thống)',
+    },
+  ];
+
+  return (
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="modal-container"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-title-wrap">
+            <div className="modal-icon-badge">
+              {mode === 'add' ? <Plus size={18} /> : <Sparkles size={18} />}
+            </div>
+            <div>
+              <h3 className="modal-title">
+                {mode === 'add' ? 'Thêm đầu việc mới' : 'Chỉnh sửa đầu việc'}
+              </h3>
+              <p className="modal-subtitle">
+                Đang thao tác tại ngày: <code>{currentDateKey}</code>
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn-modal-close"
+            onClick={onClose}
+            aria-label="Đóng modal"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-body">
+          {errorMsg && <div className="modal-error-alert">{errorMsg}</div>}
+
+          <div className="form-group">
+            <div className="form-label-with-hint">
+              <label htmlFor="task-title-input" className="form-label">
+                TÊN ĐẦU VIỆC <span className="required-star">*</span>
+              </label>
+              {isDuplicateName && (
+                <span className="live-duplicate-badge">⚠️ Trùng tên</span>
+              )}
+            </div>
+            <input
+              id="task-title-input"
+              type="text"
+              className={`form-input ${isDuplicateName ? 'form-input-error' : ''}`}
+              placeholder="VD: Chạy bộ 5km, Học từ vựng tiếng Anh, Nghe podcast..."
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (errorMsg) setErrorMsg('');
+              }}
+              autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              TRƯỜNG / DANH MỤC (TÍCH CHỌN)
+            </label>
+            <div className="category-pills-wrap">
+              {TASK_CATEGORIES.map((cat) => {
+                const isSelected = category === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`category-pill ${isSelected ? 'active' : ''}`}
+                    onClick={() => setCategory(cat)}
+                  >
+                    <span className="pill-check-box">
+                      {isSelected ? <Check size={12} /> : null}
+                    </span>
+                    <span>{cat}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {category === 'Khác' && (
+              <input
+                type="text"
+                className="form-input form-input-sub"
+                placeholder="Nhập tên trường khác..."
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+              />
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="task-detail-input" className="form-label">
+              MỤC CHI TIẾT (THỜI GIAN / ĐỊNH LƯỢNG)
+            </label>
+            <input
+              id="task-detail-input"
+              type="text"
+              className="form-input"
+              placeholder="VD: 30 phút, Trước 06:00, 10 trang sách, Chuyên sâu..."
+              value={timeHint}
+              onChange={(e) => setTimeHint(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <div className="form-label-with-hint">
+              <label className="form-label">PHẠM VI ÁP DỤNG</label>
+              <span className="form-hint">
+                <Info size={13} />
+                Chọn phạm vi mà thay đổi này sẽ có hiệu lực
+              </span>
+            </div>
+
+            <div className="scope-cards-grid">
+              {scopeOptions.map((opt) => {
+                const isChecked = scope === opt.id;
+                return (
+                  <label
+                    key={opt.id}
+                    className={`scope-option-card ${
+                      isChecked ? 'scope-option-selected' : ''
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="task-scope"
+                      value={opt.id}
+                      checked={isChecked}
+                      onChange={() => setScope(opt.id)}
+                      className="scope-radio"
+                    />
+                    <div className="scope-card-content">
+                      <div className="scope-card-header">
+                        <span className="scope-radio-indicator">
+                          {isChecked && <span className="scope-radio-dot" />}
+                        </span>
+                        <strong className="scope-title">{opt.title}</strong>
+                      </div>
+                      <p className="scope-desc">{opt.desc}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            {mode === 'edit' ? (
+              <button
+                type="button"
+                className="btn-delete-task"
+                onClick={handleDelete}
+                title="Xoá đầu việc này"
+              >
+                <Trash2 size={15} />
+                <span>Xoá đầu việc</span>
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <div className="modal-footer-right">
+              <button
+                type="button"
+                className="btn-minimal"
+                onClick={onClose}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="btn-minimal btn-save-task"
+              >
+                {mode === 'add' ? (
+                  <>
+                    <Plus size={15} />
+                    <span>Thêm đầu việc</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={15} />
+                    <span>Lưu thay đổi</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+

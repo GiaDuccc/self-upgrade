@@ -1,0 +1,93 @@
+import { axiosClient } from '~/apis/axiosClient';
+import {
+  DayDataResponse,
+  MonthDataResponse,
+  TaskLevelKey,
+  TaskScope,
+} from '~/interface/discipline.interface';
+
+export const getMonthDataAPI = async (
+  year: number,
+  month: number
+): Promise<MonthDataResponse> => {
+  const res = await axiosClient.get('/disciplines/month', {
+    params: { year, month },
+  });
+  return res.data;
+};
+
+export const getDayDataAPI = async (
+  dateKey: string
+): Promise<DayDataResponse> => {
+  const res = await axiosClient.get(`/disciplines/day/${dateKey}`);
+  return res.data;
+};
+
+export const setTaskLevelAPI = async (payload: {
+  dateKey: string;
+  taskId: string;
+  levelKey: TaskLevelKey;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.put('/disciplines/task-level', payload);
+  return res.data;
+};
+
+export const markAllLevelAPI = async (payload: {
+  dateKey: string;
+  levelKey: TaskLevelKey;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.put('/disciplines/mark-all', payload);
+  return res.data;
+};
+
+export const clearDayAPI = async (payload: {
+  dateKey: string;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.delete('/disciplines/clear-day', {
+    data: payload,
+  });
+  return res.data;
+};
+
+export const updateNoteAPI = async (payload: {
+  dateKey: string;
+  note: string;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.put('/disciplines/note', payload);
+  return res.data;
+};
+
+export const saveTaskAPI = async (payload: {
+  mode: 'add' | 'edit';
+  taskId?: string;
+  title: string;
+  category: string;
+  timeHint: string;
+  scope: TaskScope;
+  dateKey: string;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.post('/disciplines/task', payload);
+  return res.data;
+};
+
+export const deleteTaskAPI = async (payload: {
+  taskId: string;
+  scope: TaskScope;
+  dateKey: string;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.post('/disciplines/task/delete', payload);
+  return res.data;
+};
+
+export const exportDisciplineDataAPI = async (): Promise<Record<string, unknown>> => {
+  const res = await axiosClient.get('/disciplines/export');
+  return res.data;
+};
+
+export const importDisciplineDataAPI = async (
+  payload: Record<string, unknown>
+): Promise<{ message: string }> => {
+  const res = await axiosClient.post('/disciplines/import', payload);
+  return res.data;
+};
+
