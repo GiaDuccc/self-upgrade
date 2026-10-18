@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   DAILY_TASKS,
   LEVEL_LIST,
@@ -11,12 +11,10 @@ import {
   Check,
   RotateCcw,
   Sparkles,
-  RefreshCw,
   Edit2,
   Plus,
   UserCheck,
 } from 'lucide-react';
-import { getAiCoachingMessage } from '../services/geminiService';
 
 export function DayDetailPanel({
   selectedDateKey,
@@ -37,58 +35,11 @@ export function DayDetailPanel({
   const tasksMap = dayRecord?.tasks || {};
   const currentTasksList = selectedDayItem.tasksList || DAILY_TASKS;
 
-  const [aiMessage, setAiMessage] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [refreshCount, setRefreshCount] = useState(0);
-
   // Phân tích cá nhân hóa dựa trên Thể chất, Tinh thần, Cảm xúc (dùng cho các chip trạng thái trên ô điểm)
   const personalizedInsight = useMemo(
     () => buildPersonalizedCoaching(userProfile, selectedDayItem, tasksMap),
     [userProfile, selectedDayItem, tasksMap]
   );
-
-  // Tự động kích hoạt Gemini AI mỗi khi có thay đổi:
-  // - Tích việc / đổi mức độ việc (tasksMap)
-  // - Viết xong ghi chú (dayRecord?.note)
-  // - Đổi ngày (selectedDateKey)
-  // - Cập nhật profile / trạng thái (userProfile)
-  // - Bấm nút làm mới
-  useEffect(() => {
-    let isCancelled = false;
-    setIsAiLoading(true);
-
-    const timer = setTimeout(async () => {
-      try {
-        const msg = await getAiCoachingMessage({
-          userProfile,
-          selectedDayItem,
-          dayRecord,
-          tasksList: currentTasksList,
-        });
-        if (!isCancelled) {
-          setAiMessage(msg);
-          setIsAiLoading(false);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setIsAiLoading(false);
-        }
-      }
-    }, 600);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-    };
-  }, [
-    selectedDateKey,
-    JSON.stringify(tasksMap),
-    dayRecord?.note,
-    selectedDayItem?.percentage,
-    userProfile,
-    currentTasksList,
-    refreshCount,
-  ]);
 
   return (
     <section className="day-detail-section" id="day-detail-panel">
@@ -329,75 +280,25 @@ export function DayDetailPanel({
           )}
         </div>
 
-        {/* CỘT PHẢI: AI COACH BÓNG THOẠI & GHI CHÚ */}
-        <aside className="daily-feedback-sidebar">
-          <div className="ai-coach-card">
-            {/* KHUNG BÓNG THOẠI AI CHAT */}
-            <div className="ai-chat-bubble-wrap">
-              <div className="ai-speech-bubble">
-                <div className="ai-speech-bubble-header">
-                  <div className="ai-speech-badge">
-                    <Sparkles size={13} />
-                    <span>AI COACH</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-ai-reload"
-                    onClick={() => setRefreshCount((c) => c + 1)}
-                    disabled={isAiLoading}
-                    title="Nhận một câu nhận xét khác từ AI"
-                  >
-                    <RefreshCw size={11} className={isAiLoading ? 'spin-anim' : ''} />
-                    <span>Đổi câu</span>
-                  </button>
-                </div>
-
-                <div className="ai-speech-bubble-body">
-                  {isAiLoading && !aiMessage ? (
-                    <div className="ai-typing-indicator">
-                      <span className="typing-dot" />
-                      <span className="typing-dot" />
-                      <span className="typing-dot" />
-                      <span className="typing-text">AI đang phân tích ngày của bạn...</span>
-                    </div>
-                  ) : (
-                    <p className={`ai-bubble-message ${isAiLoading ? 'is-loading-pulse' : ''}`}>
-                      {aiMessage || 'Hãy tích các đầu việc hoặc viết ghi chú để AI bắt đầu đồng hành cùng bạn.'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* BOX TRÒN CHỨA LOGO (AVATAR AI) Ở GÓC DƯỚI ĐUÔI BÓNG THOẠI */}
-              <div className="ai-avatar-footer-row">
-                <div className="ai-avatar-text-block">
-                  <span className="ai-avatar-name">Self Upgrade AI</span>
-                  <span className="ai-avatar-sub">
-                    {isAiLoading ? 'Đang suy nghĩ...' : 'Huấn luyện viên tự động'}
-                  </span>
-                </div>
-                <div className="ai-avatar-circle-box" title="AI Huấn Luyện Viên Kỷ Luật">
-                  <img src="/logo.png" alt="Self Upgrade Logo" className="ai-avatar-logo" />
-                </div>
-              </div>
-            </div>
-
-            {/* GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY */}
-            <div className="day-note-box">
-              <label htmlFor="daily-note-input" className="day-note-label">
-                GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {selectedDayItem.day}
-              </label>
-              <textarea
-                id="daily-note-input"
-                rows={3}
-                className="day-note-input day-note-textarea"
-                placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (AI sẽ tự động đọc và nhận xét)..."
-                value={dayRecord?.note || ''}
-                onChange={(e) => onChangeNote(e.target.value)}
-              />
-            </div>
+        {/* PHẦN GHI CHÚ NẰM Ở DƯỚI CÙNG CỦA TO DO LIST THEO YÊU CẦU */}
+        <div className="day-note-box">
+          <div className="day-note-header">
+            <label htmlFor="daily-note-input" className="day-note-label">
+              GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {selectedDayItem.day}
+            </label>
+            <span className="day-note-hint">
+              AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa
+            </span>
           </div>
-        </aside>
+          <textarea
+            id="daily-note-input"
+            rows={3}
+            className="day-note-input day-note-textarea"
+            placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (AI sẽ tự động nhận xét sau khi bạn viết xong)..."
+            value={dayRecord?.note || ''}
+            onChange={(e) => onChangeNote(e.target.value)}
+          />
+        </div>
       </div>
     </section>
   );

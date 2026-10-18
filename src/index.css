@@ -886,21 +886,20 @@ input {
   gap: 8px;
 }
 
-/* Bố cục 2 cột: Cột trái (12 việc) + Cột phải (Lời khuyên / Động viên / Chê ngẫu nhiên) */
+/* Bố cục: Danh sách việc trong ngày & Ô ghi chú ở dưới cùng của to do list */
 .day-workspace-layout {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 20px;
-  align-items: stretch; /* Giữ 2 cột luôn cân bằng, đáy bằng phẳng tuyệt đối */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
 
-/* Lưới 12 công việc (2 cột x 6 hàng cân đối tuyệt đối) */
+/* Lưới các công việc (2 cột rộng rãi, thoáng đãng) */
 .tasks-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-auto-rows: 1fr;
   gap: 12px;
-  height: 100%;
+  width: 100%;
 }
 
 .task-card {
@@ -1008,68 +1007,137 @@ input {
 }
 
 /* ============================================================================
-   CỘT PHẢI: AI COACH BÓNG THOẠI & AVATAR TRÒN
+   Ô GHI CHÚ / TỰ KIỂM ĐIỂM (DƯỚI CÙNG CỦA TO DO LIST)
    ============================================================================ */
-.daily-feedback-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-}
-
-.ai-coach-card {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  height: 100%;
-  justify-content: space-between;
-}
-
-.ai-chat-bubble-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-
-/* Khung bóng thoại theo hình ảnh người dùng tải lên (bo góc lớn, đuôi nhọn ở góc dưới phải) */
-.ai-speech-bubble {
-  position: relative;
-  background-color: var(--bg-mixed);
-  border: 1.5px solid var(--border-color);
-  border-radius: 20px;
-  padding: 18px 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+.day-note-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 110px;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
-/* Đuôi bóng thoại ở góc dưới bên phải (chóp nhọn hướng xuống về phía avatar) */
-.ai-speech-bubble::before {
+.day-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.day-note-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.day-note-hint {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  font-style: italic;
+}
+
+.day-note-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-mixed-subtle);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.day-note-input:focus {
+  background-color: var(--bg-surface);
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px rgba(34, 34, 32, 0.12);
+}
+
+/* ============================================================================
+   AI COACH FLOATING WIDGET (LAYER TRÊN CÙNG, GÓC DƯỚI BÊN PHẢI)
+   ============================================================================ */
+.ai-floating-coach {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+/* Bong bóng chat nổi (phóng ra khi có tin nhắn, tự thu về sau 5s) */
+.ai-floating-bubble {
+  width: 360px;
+  max-width: calc(100vw - 48px);
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14);
+  position: relative;
+  pointer-events: auto;
+  transform-origin: bottom right;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-floating-bubble.is-closed {
+  opacity: 0;
+  transform: translateY(14px) scale(0.92);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.ai-floating-bubble.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* Đuôi bóng thoại ở góc dưới bên phải trỏ thẳng xuống Avatar tròn */
+.ai-floating-bubble::before {
   content: '';
   position: absolute;
-  bottom: -13px;
-  right: 36px;
+  bottom: -12px;
+  right: 22px;
   width: 0;
   height: 0;
-  border-left: 15px solid transparent;
+  border-left: 12px solid transparent;
   border-right: 0px solid transparent;
-  border-top: 13px solid var(--border-color);
+  border-top: 12px solid var(--border-color);
   z-index: 1;
 }
 
-.ai-speech-bubble::after {
+.ai-floating-bubble::after {
   content: '';
   position: absolute;
-  bottom: -10.5px;
-  right: 37px;
+  bottom: -9.5px;
+  right: 23px;
   width: 0;
   height: 0;
-  border-left: 13px solid transparent;
+  border-left: 10px solid transparent;
   border-right: 0px solid transparent;
-  border-top: 11px solid var(--bg-mixed);
+  border-top: 10px solid var(--bg-surface);
   z-index: 2;
 }
 
@@ -1087,10 +1155,16 @@ input {
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
-  background-color: var(--bg-surface);
+  background-color: var(--bg-mixed-subtle);
   border: 1px solid var(--border-subtle);
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
+}
+
+.ai-bubble-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btn-ai-reload {
@@ -1109,7 +1183,7 @@ input {
 }
 
 .btn-ai-reload:hover:not(:disabled) {
-  background-color: var(--bg-surface);
+  background-color: var(--bg-mixed-subtle);
   color: var(--text-primary);
 }
 
@@ -1118,15 +1192,34 @@ input {
   cursor: not-allowed;
 }
 
+.btn-ai-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-ai-close:hover {
+  background-color: var(--bg-mixed);
+  color: var(--text-primary);
+}
+
 .ai-speech-bubble-body {
-  flex: 1;
+  min-height: 44px;
   display: flex;
   align-items: center;
 }
 
 .ai-bubble-message {
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.94rem;
+  line-height: 1.55;
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
@@ -1183,55 +1276,40 @@ input {
   font-style: italic;
 }
 
-/* Hàng avatar tròn chứa logo ở phía dưới đuôi bóng thoại */
-.ai-avatar-footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-right: 8px;
-}
-
-.ai-avatar-text-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.ai-avatar-name {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.ai-avatar-sub {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-}
-
-/* Box tròn chứa logo theo đúng yêu cầu */
-.ai-avatar-circle-box {
-  width: 52px;
-  height: 52px;
+/* Nút tròn chứa Logo (Avatar) ở góc dưới bên phải */
+.ai-floating-avatar-btn {
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  border: 1.5px solid var(--border-color);
+  border: 2px solid var(--border-color);
   background-color: var(--bg-surface);
+  padding: 0;
+  cursor: pointer;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+  pointer-events: auto;
+  position: relative;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s ease;
 }
 
-.ai-avatar-circle-box:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+.ai-floating-avatar-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
 }
 
-.ai-avatar-logo {
+.ai-floating-avatar-btn:active {
+  transform: scale(0.95);
+}
+
+.ai-floating-avatar-btn.is-active {
+  border-color: var(--text-primary);
+}
+
+.ai-floating-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1239,7 +1317,28 @@ input {
   display: block;
 }
 
-/* Xoay icon khi đang tải */
+/* Vòng sáng nhẹ quanh avatar khi AI đang phân tích */
+.ai-avatar-glow-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
+  animation: avatarPulse 1.8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes avatarPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 0.85;
+  }
+}
+
+/* Xoay icon làm mới */
 .spin-anim {
   animation: spinSlow 1s linear infinite;
 }
@@ -1251,42 +1350,6 @@ input {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* Ô ghi chú cuối ngày */
-.day-note-box {
-  background-color: var(--bg-mixed-subtle);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 0.5;
-}
-
-.day-note-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-
-.day-note-input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg-surface);
-  font-size: 0.84rem;
-  font-family: inherit;
-  outline: none;
-  resize: vertical;
-  height: 100%;
-}
-
-.day-note-input:focus {
-  box-shadow: 0 0 0 2px rgba(34, 34, 32, 0.12);
 }
 
 /* FOOTER */
@@ -1310,17 +1373,8 @@ input {
 
 /* RESPONSIVE */
 @media (max-width: 1080px) {
-  .day-workspace-layout {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
   .tasks-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    grid-auto-rows: auto;
-    height: auto;
-  }
-  .daily-feedback-sidebar {
-    height: auto;
   }
 }
 

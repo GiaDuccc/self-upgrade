@@ -20,6 +20,7 @@ import {
 import { MonthlyLineChart, DistributionDonutChart } from './components/Charts';
 import { MonthDaysGrid } from './components/MonthDaysGrid';
 import { DayDetailPanel } from './components/DayDetailPanel';
+import { AiCoachWidget } from './components/AiCoachWidget';
 import { TaskModal } from './components/TaskModal';
 import { ProfileModal } from './components/ProfileModal';
 import {
@@ -677,6 +678,14 @@ export default function App() {
         onClose={() => setIsProfileModalOpen(false)}
         userProfile={userProfile}
         onSaveProfile={(newProf) => setUserProfile(newProf)}
+      />
+
+      {/* AI COACH FLOATING WIDGET (LAYER TRÊN CÙNG, GÓC DƯỚI BÊN PHẢI) */}
+      <AiCoachWidget
+        userProfile={userProfile}
+        selectedDayItem={selectedDayItem}
+        dayRecord={selectedDayRecord}
+        tasksList={selectedDayItem?.tasksList || DAILY_TASKS}
       />
     </div>
   );
