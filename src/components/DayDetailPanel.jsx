@@ -3,8 +3,6 @@ import {
   DAILY_TASKS,
   LEVEL_LIST,
   SCORING,
-  FEEDBACK_POOLS,
-  TASK_SPECIFIC_NOTES,
   DEFAULT_USER_PROFILE,
   isTaskBoostedByProfile,
   buildPersonalizedCoaching,
@@ -13,25 +11,12 @@ import {
   Check,
   RotateCcw,
   Sparkles,
-  Shuffle,
-  MessageSquareQuote,
-  AlertTriangle,
-  Award,
-  Compass,
+  RefreshCw,
   Edit2,
   Plus,
   UserCheck,
-  Activity,
 } from 'lucide-react';
-
-function getPoolKey(percentage, checkedCount) {
-  if (checkedCount === 0 && percentage === 0) return 'UNRATED';
-  if (percentage < 25) return 'VERY_LOW';
-  if (percentage < 45) return 'LOW';
-  if (percentage < 70) return 'MEDIUM';
-  if (percentage < 90) return 'GOOD';
-  return 'PERFECT';
-}
+import { getAiCoachingMessage } from '../services/geminiService';
 
 export function DayDetailPanel({
   selectedDateKey,
@@ -52,114 +37,58 @@ export function DayDetailPanel({
   const tasksMap = dayRecord?.tasks || {};
   const currentTasksList = selectedDayItem.tasksList || DAILY_TASKS;
 
-  const poolKey = getPoolKey(
-    selectedDayItem.percentage,
-    selectedDayItem.checkedCount
-  );
-  const currentPool = FEEDBACK_POOLS[poolKey] || FEEDBACK_POOLS.UNRATED;
+  const [aiMessage, setAiMessage] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
 
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [taskSpotlightSeed, setTaskSpotlightSeed] = useState(0);
-
-  // Mỗi khi điểm số ngày đó thay đổi hoặc đổi ngày, chọn ngẫu nhiên 1 thông điệp mới theo đúng mức điểm
-  useEffect(() => {
-    const randomIdx = Math.floor(Math.random() * currentPool.length);
-    setQuoteIndex(randomIdx);
-    setTaskSpotlightSeed(Math.random());
-  }, [
-    selectedDateKey,
-    selectedDayItem.rawPoints,
-    selectedDayItem.checkedCount,
-    poolKey,
-    currentPool.length,
-  ]);
-
-  const handleShuffleQuote = () => {
-    if (currentPool.length <= 1) return;
-    setQuoteIndex((prev) => {
-      let next = Math.floor(Math.random() * currentPool.length);
-      if (next === prev) {
-        next = (prev + 1) % currentPool.length;
-      }
-      return next;
-    });
-    setTaskSpotlightSeed(Math.random());
-  };
-
-  const activeFeedback =
-    currentPool[quoteIndex % currentPool.length] || currentPool[0];
-
-  // Phân tích cá nhân hóa dựa trên Thể chất, Tinh thần, Cảm xúc + Kết quả ngày
+  // Phân tích cá nhân hóa dựa trên Thể chất, Tinh thần, Cảm xúc (dùng cho các chip trạng thái trên ô điểm)
   const personalizedInsight = useMemo(
     () => buildPersonalizedCoaching(userProfile, selectedDayItem, tasksMap),
     [userProfile, selectedDayItem, tasksMap]
   );
 
-  // Lấy ngẫu nhiên các nhận xét chi tiết dựa trên những đầu việc đang bị Tệ hoặc đạt Hoàn Hảo
-  const specificTaskComments = useMemo(() => {
-    const badNotes = [];
-    const perfectNotes = [];
+  // Tự động kích hoạt Gemini AI mỗi khi có thay đổi:
+  // - Tích việc / đổi mức độ việc (tasksMap)
+  // - Viết xong ghi chú (dayRecord?.note)
+  // - Đổi ngày (selectedDateKey)
+  // - Cập nhật profile / trạng thái (userProfile)
+  // - Bấm nút làm mới
+  useEffect(() => {
+    let isCancelled = false;
+    setIsAiLoading(true);
 
-    currentTasksList.forEach((task) => {
-      const lvl = tasksMap[task.id];
-      const noteEntry = TASK_SPECIFIC_NOTES[task.id];
-      if (!noteEntry) return;
-      if (lvl === 'BAD' && noteEntry.BAD) {
-        badNotes.push({
-          id: task.id,
-          title: task.title,
-          type: 'BAD',
-          text: noteEntry.BAD,
+    const timer = setTimeout(async () => {
+      try {
+        const msg = await getAiCoachingMessage({
+          userProfile,
+          selectedDayItem,
+          dayRecord,
+          tasksList: currentTasksList,
         });
-      } else if (lvl === 'PERFECT' && noteEntry.PERFECT) {
-        perfectNotes.push({
-          id: task.id,
-          title: task.title,
-          type: 'PERFECT',
-          text: noteEntry.PERFECT,
-        });
+        if (!isCancelled) {
+          setAiMessage(msg);
+          setIsAiLoading(false);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setIsAiLoading(false);
+        }
       }
-    });
+    }, 600);
 
-    const shuffleArr = (arr) =>
-      [...arr].sort(
-        (a, b) =>
-          Math.sin(a.id.length + taskSpotlightSeed * 100) -
-          Math.cos(b.id.length + taskSpotlightSeed * 100)
-      );
-
-    const pickedBad = shuffleArr(badNotes).slice(0, 2);
-    const pickedPerfect = shuffleArr(perfectNotes).slice(
-      0,
-      pickedBad.length > 0 ? 1 : 2
-    );
-
-    return [...pickedBad, ...pickedPerfect];
-  }, [currentTasksList, tasksMap, taskSpotlightSeed]);
-
-  // Tính số điểm cần thêm để lên mức tiếp theo
-  const nextMilestoneInfo = useMemo(() => {
-    const pct = selectedDayItem.percentage;
-    const raw = selectedDayItem.rawPoints;
-    const max = selectedDayItem.maxPoints;
-
-    if (pct < 45) {
-      const targetPts = Math.ceil(0.45 * max);
-      return `Cần thêm ~${Math.max(1, Math.round(targetPts - raw))}đ để thoát mức Tệ và lên Trung Bình (45%).`;
-    }
-    if (pct < 70) {
-      const targetPts = Math.ceil(0.7 * max);
-      return `Cần thêm ~${Math.max(1, Math.round(targetPts - raw))}đ để đạt mốc Tốt (70%).`;
-    }
-    if (pct < 90) {
-      const targetPts = Math.ceil(0.9 * max);
-      return `Chỉ cần thêm ~${Math.max(1, Math.round(targetPts - raw))}đ nữa là chạm ngưỡng Hoàn Hảo (90%)!`;
-    }
-    if (pct < 100) {
-      return `Chỉ còn cách tuyệt đối 100% khoảng ${Math.max(1, Math.round(max - raw))}đ nữa thôi!`;
-    }
-    return `Đã đạt điểm tối đa 100% trong ngày hôm nay!`;
-  }, [selectedDayItem]);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    selectedDateKey,
+    JSON.stringify(tasksMap),
+    dayRecord?.note,
+    selectedDayItem?.percentage,
+    userProfile,
+    currentTasksList,
+    refreshCount,
+  ]);
 
   return (
     <section className="day-detail-section" id="day-detail-panel">
@@ -254,10 +183,17 @@ export function DayDetailPanel({
             )}
           </div>
 
-          <div className="progress-bar-track">
+          <div
+            className="progress-bar-track"
+            title={`Tiến độ ngày: ${selectedDayItem.percentage}%`}
+          >
             <div
               className="progress-bar-fill"
-              style={{ width: `${selectedDayItem.percentage}%` }}
+              style={{
+                opacity: selectedDayItem.percentage > 0 ? 1 : 0,
+                clipPath: `inset(0 ${Math.max(0, 100 - selectedDayItem.percentage)}% 0 0 round 999px)`,
+                WebkitClipPath: `inset(0 ${Math.max(0, 100 - selectedDayItem.percentage)}% 0 0 round 999px)`,
+              }}
             />
           </div>
 
@@ -393,117 +329,73 @@ export function DayDetailPanel({
           )}
         </div>
 
-        {/* CỘT PHẢI: Mục Lời khuyên, Lời động viên, Lời chê dựa theo kết quả ngày + Thể chất/Tinh thần/Cảm xúc */}
+        {/* CỘT PHẢI: AI COACH BÓNG THOẠI & GHI CHÚ */}
         <aside className="daily-feedback-sidebar">
-          <div className="feedback-card">
-            <div className="feedback-card-top">
-              <div className="feedback-badge-group">
-                <span className="feedback-type-tag">{activeFeedback.tag}</span>
-                <span className="feedback-score-pill">
-                  Mức {selectedDayItem.percentage}%
-                </span>
-              </div>
-
-              <button
-                type="button"
-                className="btn-minimal btn-sm"
-                onClick={handleShuffleQuote}
-                title="Đổi ngẫu nhiên câu nhận xét khác theo mức điểm hiện tại"
-              >
-                <Shuffle size={13} />
-                <span>Đổi câu</span>
-              </button>
-            </div>
-
-            {/* Nhận xét cá nhân hóa trực diện dựa trên trạng thái & điểm */}
-            <div className="feedback-quote-box">
-              <div className="feedback-tone-row">
-                <Activity size={17} />
-                <h3 className="feedback-tone-title">
-                  {personalizedInsight.stateHeadline}
-                </h3>
-              </div>
-              <p className="feedback-main-message">
-                {personalizedInsight.stateCritiqueOrPraise}
-              </p>
-              <p className="feedback-random-subquote">
-                <MessageSquareQuote size={14} style={{ display: 'inline', marginRight: '5px' }} />
-                “{activeFeedback.message}”
-              </p>
-            </div>
-
-            <div className="feedback-advice-box">
-              <div className="feedback-sub-header">
-                <Compass size={15} />
-                <span>LỜI KHUYÊN HÀNH ĐỘNG (THEO TRẠNG THÁI CỦA {personalizedInsight.callName.toUpperCase()})</span>
-              </div>
-              <p className="feedback-advice-text">
-                {personalizedInsight.stateActionableAdvice}
-              </p>
-              {personalizedInsight.bioMetricsHint && (
-                <p className="feedback-bio-hint">
-                  • {personalizedInsight.bioMetricsHint}
-                </p>
-              )}
-            </div>
-
-            {/* Nhận xét chi tiết theo các việc cụ thể vừa tích (Tệ / Hoàn Hảo) */}
-            <div className="feedback-specific-list">
-              <div className="feedback-sub-header">
-                <span>ĐIỂM NHẤN TRONG NGÀY</span>
-              </div>
-
-              {specificTaskComments.length > 0 ? (
-                <div className="specific-items-wrap">
-                  {specificTaskComments.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`specific-comment-item ${
-                        item.type === 'BAD' ? 'is-bad' : 'is-perfect'
-                      }`}
-                    >
-                      <div className="specific-item-title">
-                        {item.type === 'BAD' ? (
-                          <AlertTriangle size={14} />
-                        ) : (
-                          <Award size={14} />
-                        )}
-                        <strong>{item.title}:</strong>
-                        <span className="specific-level-badge">
-                          {item.type === 'BAD' ? 'Đang Tệ' : 'Hoàn Hảo'}
-                        </span>
-                      </div>
-                      <p className="specific-item-text">{item.text}</p>
-                    </div>
-                  ))}
+          <div className="ai-coach-card">
+            {/* KHUNG BÓNG THOẠI AI CHAT */}
+            <div className="ai-chat-bubble-wrap">
+              <div className="ai-speech-bubble">
+                <div className="ai-speech-bubble-header">
+                  <div className="ai-speech-badge">
+                    <Sparkles size={13} />
+                    <span>AI COACH</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-ai-reload"
+                    onClick={() => setRefreshCount((c) => c + 1)}
+                    disabled={isAiLoading}
+                    title="Nhận một câu nhận xét khác từ AI"
+                  >
+                    <RefreshCw size={11} className={isAiLoading ? 'spin-anim' : ''} />
+                    <span>Đổi câu</span>
+                  </button>
                 </div>
-              ) : (
-                <p className="specific-empty-hint">
-                  Hãy tích các đầu việc bên trái (Tệ / Tốt / Hoàn Hảo) để nhận phân tích thẳng thắn cho từng thói quen.
-                </p>
-              )}
+
+                <div className="ai-speech-bubble-body">
+                  {isAiLoading && !aiMessage ? (
+                    <div className="ai-typing-indicator">
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                      <span className="typing-text">AI đang phân tích ngày của bạn...</span>
+                    </div>
+                  ) : (
+                    <p className={`ai-bubble-message ${isAiLoading ? 'is-loading-pulse' : ''}`}>
+                      {aiMessage || 'Hãy tích các đầu việc hoặc viết ghi chú để AI bắt đầu đồng hành cùng bạn.'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* BOX TRÒN CHỨA LOGO (AVATAR AI) Ở GÓC DƯỚI ĐUÔI BÓNG THOẠI */}
+              <div className="ai-avatar-footer-row">
+                <div className="ai-avatar-text-block">
+                  <span className="ai-avatar-name">Self Upgrade AI</span>
+                  <span className="ai-avatar-sub">
+                    {isAiLoading ? 'Đang suy nghĩ...' : 'Huấn luyện viên tự động'}
+                  </span>
+                </div>
+                <div className="ai-avatar-circle-box" title="AI Huấn Luyện Viên Kỷ Luật">
+                  <img src="/logo.png" alt="Self Upgrade Logo" className="ai-avatar-logo" />
+                </div>
+              </div>
             </div>
 
-            {/* Mục tiêu bậc tiếp theo */}
-            <div className="feedback-milestone-bar">
-              <span className="milestone-label">MỤC TIÊU TIẾP THEO</span>
-              <p className="milestone-text">{nextMilestoneInfo}</p>
+            {/* GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY */}
+            <div className="day-note-box">
+              <label htmlFor="daily-note-input" className="day-note-label">
+                GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {selectedDayItem.day}
+              </label>
+              <textarea
+                id="daily-note-input"
+                rows={3}
+                className="day-note-input day-note-textarea"
+                placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (AI sẽ tự động đọc và nhận xét)..."
+                value={dayRecord?.note || ''}
+                onChange={(e) => onChangeNote(e.target.value)}
+              />
             </div>
-          </div>
-
-          {/* Ghi chú / Nhật ký cá nhân nằm gọn ngay dưới khung phản hồi bên phải */}
-          <div className="day-note-box">
-            <label htmlFor="daily-note-input" className="day-note-label">
-              GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {selectedDayItem.day}
-            </label>
-            <textarea
-              id="daily-note-input"
-              rows={3}
-              className="day-note-input day-note-textarea"
-              placeholder="Ghi lại lý do hôm nay làm tốt hoặc lời tự hứa chấn chỉnh vào ngày mai..."
-              value={dayRecord?.note || ''}
-              onChange={(e) => onChangeNote(e.target.value)}
-            />
           </div>
         </aside>
       </div>

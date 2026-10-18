@@ -795,22 +795,7 @@ input {
 .state-text-val {
   font-weight: 700;
   transition: color 0.15s ease;
-}
-
-.state-text-bad {
-  color: var(--state-bad, #DC2626) !important;
-}
-
-.state-text-medium {
-  color: var(--state-medium, #EA580C) !important;
-}
-
-.state-text-good {
-  color: var(--state-good, #D97706) !important;
-}
-
-.state-text-perfect {
-  color: var(--state-perfect, #16A34A) !important;
+  color: var(--text-primary);
 }
 
 .btn-state-quick {
@@ -864,17 +849,34 @@ input {
 
 .progress-bar-track {
   width: 100%;
-  height: 8px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
+  height: 10px;
+  background-color: var(--bg-primary); /* Trùng màu background dự án (#FAF7F2) */
+  border: none;                        /* Không có viền */
+  border-radius: 999px;               /* Bo cong 2 đầu */
+  position: relative;
   overflow: hidden;
 }
 
 .progress-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  background-color: var(--text-primary);
-  transition: width 0.25s ease;
+  border-radius: 999px;               /* Bo cong ở phần đầu như phần đuôi */
+  background: linear-gradient(
+    90deg,
+    var(--state-bad, #DC2626) 0%,
+    var(--state-bad, #DC2626) 18%,
+    var(--state-medium, #EA580C) 36%,
+    var(--state-good, #D97706) 64%,
+    var(--state-perfect, #16A34A) 82%,
+    var(--state-perfect, #16A34A) 100%
+  );
+  transition: clip-path 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    -webkit-clip-path 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
+  pointer-events: none;
 }
 
 .day-quick-actions {
@@ -1006,199 +1008,249 @@ input {
 }
 
 /* ============================================================================
-   CỘT PHẢI: KHUNG LỜI KHUYÊN / ĐỘNG VIÊN / LỜI CHÊ NGẪU NHIÊN THEO ĐIỂM NGÀY
+   CỘT PHẢI: AI COACH BÓNG THOẠI & AVATAR TRÒN
    ============================================================================ */
 .daily-feedback-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  height: 100%;
+}
+
+.ai-coach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   height: 100%;
   justify-content: space-between;
 }
 
-.feedback-card {
-  flex: 1;
-  background-color: var(--bg-primary);
+.ai-chat-bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Khung bóng thoại theo hình ảnh người dùng tải lên (bo góc lớn, đuôi nhọn ở góc dưới phải) */
+.ai-speech-bubble {
+  position: relative;
+  background-color: var(--bg-mixed);
   border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 18px;
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
+  min-height: 110px;
 }
 
-.feedback-card-top {
+/* Đuôi bóng thoại ở góc dưới bên phải (chóp nhọn hướng xuống về phía avatar) */
+.ai-speech-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -13px;
+  right: 36px;
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 0px solid transparent;
+  border-top: 13px solid var(--border-color);
+  z-index: 1;
+}
+
+.ai-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10.5px;
+  right: 37px;
+  width: 0;
+  height: 0;
+  border-left: 13px solid transparent;
+  border-right: 0px solid transparent;
+  border-top: 11px solid var(--bg-mixed);
+  z-index: 2;
+}
+
+.ai-speech-bubble-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
-.feedback-badge-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.feedback-type-tag {
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 3px 10px;
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  border-radius: 999px;
-}
-
-.feedback-score-pill {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  background-color: var(--bg-mixed);
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-}
-
-.feedback-quote-box {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.feedback-tone-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.feedback-tone-title {
-  font-size: 0.92rem;
-  font-weight: 700;
-}
-
-.feedback-main-message {
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.feedback-advice-box {
-  background-color: var(--bg-mixed);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.feedback-sub-header {
-  display: flex;
+.ai-speech-badge {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 8px;
+  border-radius: 999px;
 }
 
-.feedback-advice-text {
-  font-size: 0.84rem;
+.btn-ai-reload {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.btn-ai-reload:hover:not(:disabled) {
+  background-color: var(--bg-surface);
   color: var(--text-primary);
 }
 
-.feedback-specific-list {
+.btn-ai-reload:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-speech-bubble-body {
+  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
 }
 
-.specific-items-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.ai-bubble-message {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+  transition: opacity 0.2s ease;
 }
 
-.specific-comment-item {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.81rem;
+.ai-bubble-message.is-loading-pulse {
+  opacity: 0.6;
 }
 
-.specific-comment-item.is-bad {
-  background-color: var(--bg-mixed-subtle);
-  border-color: var(--border-color);
-}
-
-.specific-comment-item.is-perfect {
-  background-color: var(--bg-surface);
-  border-color: var(--border-color);
-}
-
-.specific-item-title {
+/* Hiệu ứng 3 chấm đang suy nghĩ */
+.ai-typing-indicator {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 8px 0;
+}
+
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-primary);
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.typing-text {
   font-size: 0.8rem;
-}
-
-.specific-level-badge {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-mixed);
-}
-
-.specific-item-text {
   color: var(--text-secondary);
-  font-size: 0.79rem;
+  margin-left: 6px;
+  font-style: italic;
 }
 
-.specific-empty-hint {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  background-color: var(--bg-mixed-subtle);
-  border: 1px dashed var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+/* Hàng avatar tròn chứa logo ở phía dưới đuôi bóng thoại */
+.ai-avatar-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-right: 8px;
 }
 
-.feedback-milestone-bar {
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 10px;
+.ai-avatar-text-block {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: flex-end;
+  gap: 2px;
 }
 
-.milestone-label {
-  font-size: 0.68rem;
+.ai-avatar-name {
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+.ai-avatar-sub {
+  font-size: 0.7rem;
   color: var(--text-secondary);
 }
 
-.milestone-text {
-  font-size: 0.8rem;
-  font-weight: 600;
+/* Box tròn chứa logo theo đúng yêu cầu */
+.ai-avatar-circle-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-surface);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-avatar-circle-box:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.ai-avatar-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Xoay icon khi đang tải */
+.spin-anim {
+  animation: spinSlow 1s linear infinite;
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Ô ghi chú cuối ngày */
