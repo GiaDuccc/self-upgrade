@@ -33,9 +33,35 @@ export interface TaskConfig {
   taskOverrides: Record<string, Record<string, TaskOverride>>;
 }
 
+export type MealSession = 'morning' | 'afternoon' | 'evening';
+
+export interface FoodItem {
+  id: string;
+  name: string;
+  weight: string;
+  mealSession: MealSession;
+  time: string;
+}
+
+export interface CaloriesSummary {
+  totalCalories: number;
+  protein: number;
+  carb: number;
+  fat: number;
+  fiber: number;
+  aiFeedback: string;
+  updatedAt?: string;
+}
+
+export interface CaloriesData {
+  meals: FoodItem[];
+  summary?: CaloriesSummary;
+}
+
 export interface DayRecord {
   tasks?: Record<string, TaskLevelKey>;
   note?: string;
+  caloriesData?: CaloriesData;
   updatedAt?: string;
 }
 

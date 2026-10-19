@@ -57,6 +57,14 @@ export const updateNoteAPI = async (payload: {
   return res.data;
 };
 
+export const saveDayCaloriesAPI = async (payload: {
+  dateKey: string;
+  meals: import('~/interface/discipline.interface').FoodItem[];
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.put('/disciplines/day/calories', payload);
+  return res.data;
+};
+
 export const saveTaskAPI = async (payload: {
   mode: 'add' | 'edit';
   taskId?: string;

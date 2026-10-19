@@ -25,6 +25,8 @@ Router.route('/note').put(
   disciplineController.updateNote
 );
 
+Router.route('/day/calories').put(disciplineController.saveDayCalories);
+
 Router.route('/task').post(disciplineController.saveTask);
 
 Router.route('/task/delete').post(disciplineController.deleteTask);

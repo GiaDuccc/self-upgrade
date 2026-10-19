@@ -92,6 +92,20 @@ const updateNote = async (
   }
 };
 
+const saveDayCalories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.jwtDecoded!._id;
+    const result = await disciplineService.saveDayCalories(userId, req.body);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const saveTask = async (
   req: Request,
   res: Response,
@@ -155,6 +169,7 @@ export const disciplineController = {
   markAllLevel,
   clearDay,
   updateNote,
+  saveDayCalories,
   saveTask,
   deleteTask,
   exportData,

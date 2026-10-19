@@ -10,7 +10,8 @@ import {
 } from '~/config/settings';
 import { disciplineModel } from '~/models/disciplineModel';
 import { userModel } from '~/models/userModel';
-import { CustomTaskItem, DayRecord, TaskConfig, TaskLevelKey } from '~/types';
+import { CustomTaskItem, DayRecord, FoodItem, TaskConfig, TaskLevelKey } from '~/types';
+import { aiCoachService } from '~/services/aiCoachService';
 import ApiError from '~/utils/ApiError';
 import {
   calculateDayStats,
@@ -171,6 +172,38 @@ const updateNote = async (
     ...currentDay,
     tasks: currentDay.tasks || {},
     note,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await disciplineModel.updateByUserId(userId, { records });
+  return await getDayData(userId, dateKey);
+};
+
+const saveDayCalories = async (
+  userId: string,
+  payload: { dateKey: string; meals: FoodItem[] }
+) => {
+  const { dateKey, meals } = payload;
+  const user = await userModel.findOneById(userId);
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
+  const records = { ...(disciplineDoc.records || {}) };
+  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+
+  const profile = user?.profile || DEFAULT_USER_PROFILE;
+  const previousSummary = currentDay.caloriesData?.summary;
+  const summary = await aiCoachService.analyzeNutrition(
+    profile,
+    dateKey,
+    meals,
+    previousSummary
+  );
+
+  records[dateKey] = {
+    ...currentDay,
+    caloriesData: {
+      meals,
+      summary,
+    },
     updatedAt: new Date().toISOString(),
   };
 
@@ -358,6 +391,7 @@ export const disciplineService = {
   markAllLevel,
   clearDay,
   updateNote,
+  saveDayCalories,
   saveTask,
   deleteTask,
   exportData,

@@ -9,11 +9,13 @@ import {
   getTodayInfo,
 } from '~/utils/statsCalculator';
 
+import { CaloriesSummary, FoodItem, UserProfile } from '~/types';
+
 const CANDIDATE_MODELS = [
-  'gemini-3.5-flash',
-  'gemini-3.7-flash',
-  'gemini-3.5-flash-lite',
   'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-latest',
   'gemini-3.8-flash',
 ];
 
@@ -199,9 +201,89 @@ function generateDiverseFallback({
   return `Tiến độ ${pct}% rất đáng ghi nhận, tiếp tục giữ vững nhịp độ này để kết thúc ngày trọn vẹn nhé ${callName}!`;
 }
 
+const LEVEL_LABELS: Record<string, string> = {
+  PERFECT: 'Hoàn Hảo',
+  GOOD: 'Tốt',
+  BAD: 'Tệ',
+  NONE: 'Bỏ tích (chưa làm)',
+};
+
+/**
+ * Chuyển tín hiệu thay đổi từ FE thành mô tả "thay đổi gần nhất" cho AI.
+ * Định dạng tín hiệu:
+ *  - `${dateKey}|${taskId}|${levelKey}|${ts}`  : tích / đổi mức một việc
+ *  - `${dateKey}|ALL|${levelKey}|${ts}`        : tích nhanh tất cả
+ *  - `${dateKey}|CLEAR|${ts}`                  : đặt lại ngày
+ *  - `${dateKey}|NOTE|${noteText}|${ts}`       : lưu ghi chú
+ *  - `PROFILE|${ts}`                            : cập nhật trạng thái cá nhân
+ */
+function describeRecentChange(
+  signal: string | undefined,
+  tasksList: Array<{ id: string; title: string }>,
+  stateLabels: { phys: string; ment: string; emo: string }
+): { detail: string; short: string } | null {
+  if (!signal) return null;
+  const parts = signal.split('|');
+
+  if (parts[0] === 'PROFILE') {
+    return {
+      detail: `Người dùng vừa cập nhật trạng thái cá nhân: Thể chất "${stateLabels.phys}", Tinh thần "${stateLabels.ment}", Cảm xúc "${stateLabels.emo}".`,
+      short: `Vừa cập nhật trạng thái (thể chất ${stateLabels.phys.toLowerCase()}),`,
+    };
+  }
+
+  if (parts.length < 3) return null;
+  const kind = parts[1];
+
+  if (kind === 'ALL') {
+    const lvl = LEVEL_LABELS[parts[2]] || parts[2];
+    return {
+      detail: `Người dùng vừa bấm tích nhanh TẤT CẢ ${tasksList.length} việc ở mức "${lvl}" cùng lúc.`,
+      short: `Tích nhanh tất cả ở mức ${lvl} luôn à,`,
+    };
+  }
+
+  if (kind === 'CLEAR') {
+    return {
+      detail: 'Người dùng vừa bấm "Đặt lại ngày" — xóa toàn bộ tích chọn của ngày này.',
+      short: 'Vừa xóa sạch bảng việc để làm lại từ đầu,',
+    };
+  }
+
+  if (kind === 'NOTE') {
+    const noteText = parts.slice(2, -1).join('|').trim();
+    return {
+      detail: noteText
+        ? `Người dùng vừa lưu ghi chú tự kiểm điểm: "${noteText.slice(0, 400)}".`
+        : 'Người dùng vừa xóa trống ghi chú của ngày.',
+      short: 'Đọc ghi chú vừa viết rồi nhé,',
+    };
+  }
+
+  // Tích / đổi mức một việc cụ thể
+  const task = tasksList.find((t) => t.id === kind);
+  const levelKey = parts[2];
+  const lvl = LEVEL_LABELS[levelKey] || levelKey;
+  const title = task?.title || 'một đầu việc';
+  if (levelKey === 'NONE') {
+    return {
+      detail: `Người dùng vừa BỎ TÍCH việc "${title}" (chuyển về trạng thái chưa làm).`,
+      short: `Vừa bỏ tích "${title}" à,`,
+    };
+  }
+  return {
+    detail: `Người dùng vừa tích việc "${title}" ở mức "${lvl}".`,
+    short: `Vừa tích "${title}" mức ${lvl},`,
+  };
+}
+
 const getCoachingMessage = async (
   userId: string,
-  payload: { dateKey?: string; mode?: 'greeting' | 'feedback' }
+  payload: {
+    dateKey?: string;
+    mode?: 'greeting' | 'feedback';
+    changeSignal?: string;
+  }
 ) => {
   const mode = payload.mode || 'feedback';
   const targetDateKey = payload.dateKey || getTodayInfo().dateKey;
@@ -265,6 +347,15 @@ const getCoachingMessage = async (
 
   const callName = userProfile.name?.trim() ? userProfile.name.trim() : 'bạn';
 
+  const recentChange =
+    mode === 'feedback'
+      ? describeRecentChange(payload.changeSignal, tasksList, {
+          phys: physObj.label,
+          ment: mentObj.label,
+          emo: emoObj.label,
+        })
+      : null;
+
   const randomVibe =
     RANDOM_VIBES[Math.floor(Math.random() * RANDOM_VIBES.length)];
   const randomOpener =
@@ -306,10 +397,15 @@ QUY TẮC BẮT BUỘC:
 3. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG thêm dấu ngoặc kép bọc ngoài.
 `.trim();
   } else {
+    const recentChangeBlock = recentChange
+      ? `THAY ĐỔI GẦN NHẤT (ƯU TIÊN SỐ 1 — PHẢI NHẬN XÉT ĐIỀU NÀY TRƯỚC):\n- ${recentChange.detail}`
+      : 'THAY ĐỔI GẦN NHẤT: Không xác định (người dùng bấm xem lại nhận xét) — hãy nhận xét việc vừa hoàn thành gần nhất trong danh sách ĐÃ LÀM.';
+
     promptContext = `
 Bạn là AI Coach cá nhân hóa của ứng dụng rèn luyện kỷ luật "Self Upgrade".
-Người dùng vừa có thay đổi (tích việc, đổi mức độ, hoặc viết nhật ký ghi chú).
-Hãy quan sát toàn bộ dữ liệu hiện tại và đưa ra DUY NHẤT 1 CÂU nhận xét ngẫu nhiên, trực diện, sắc sảo, khen nếu tốt hoặc chê nhẹ kèm việc cần dứt điểm tiếp theo.
+Người dùng vừa có một thay đổi trên bảng việc. Nhiệm vụ: phản hồi NGAY vào thay đổi gần nhất trước, sau đó mới nhận xét tổng quan tiến độ cả ngày.
+
+${recentChangeBlock}
 
 THÔNG TIN NGƯỜI DÙNG:
 - Tên/Biệt danh: ${callName}
@@ -319,23 +415,23 @@ ${userProfile.weightKg ? `- Thể trạng: Nặng ${userProfile.weightKg}kg, Cao
 - Mục tiêu trọng tâm: ${goalObj.label}
 - Phong cách huấn luyện: ${coachingStyle.label}
 
-DỮ LIỆU BẢNG VIỆC NGÀY ${targetDateKey}:
+TỔNG QUAN BẢNG VIỆC NGÀY ${targetDateKey} (SAU THAY ĐỔI):
 - Tiến độ: ${dayStats.percentage || 0}% (${dayStats.rawPoints || 0}/${dayStats.maxPoints || 120} điểm)
 - Việc ĐÃ LÀM (${completedTasks.length} việc): ${completedTasks.length > 0 ? completedTasks.join(', ') : 'Chưa tích việc nào'}
 - Việc CHƯA LÀM (${pendingTasks.length} việc): ${pendingTasks.length > 0 ? pendingTasks.slice(0, 5).join(', ') : 'Đã hoàn thành toàn bộ mục tiêu'}
-${noteText ? `- Ghi chú vừa viết: "${noteText}"` : ''}
+${noteText ? `- Ghi chú trong ngày: "${noteText}"` : ''}
 
 PHONG CÁCH DIỄN ĐẠT LẦN NÀY: "${randomVibe}"
-GỢI Ý MỞ CÂU: "${randomOpener}"
 RANDOM SEED: ${randomSeed}
 
 ${historyPromptBlock}
 
 QUY TẮC BẮT BUỘC:
-1. ĐÚNG 1 CÂU DUY NHẤT (khoảng 18–35 từ), sinh động, bất ngờ, có chất riêng, KHÔNG DÙNG VĂN MẪU.
-2. TUYỆT ĐỐI KHÔNG mở đầu một màu rập khuôn. Hãy thay đổi linh hoạt cách mở câu (dùng thán từ, đặt tên ${callName} ở giữa hoặc cuối câu, hoặc vào thẳng phân tích).
-3. Nhắc trực tiếp vào việc đã làm / chưa làm hoặc nội dung ghi chú. Nếu điểm còn thấp (<45%) hoặc có việc "Tệ", hãy thẳng thắn chê nhẹ và thúc giục việc cần làm ngay.
-4. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.
+1. Viết ĐÚNG 2 CÂU ngắn liền nhau (tổng khoảng 25–45 từ), sinh động, có chất riêng, KHÔNG DÙNG VĂN MẪU.
+2. CÂU 1: Phản hồi TRỰC TIẾP vào THAY ĐỔI GẦN NHẤT — gọi đúng tên việc vừa tích/bỏ tích và mức độ (hoặc nội dung ghi chú / hành động vừa làm). Khen nếu là mức Hoàn Hảo/Tốt, chê thẳng nếu mức Tệ hoặc vừa bỏ tích, phản hồi đúng nội dung nếu là ghi chú.
+3. CÂU 2: Nối sang TỔNG QUAN cả ngày — nhắc tiến độ % hiện tại và chỉ ra 1 việc CHƯA LÀM cần dứt điểm tiếp theo (nếu đã xong hết thì khen tổng kết).
+4. Đa dạng cách mở câu (thán từ, đặt tên ${callName} ở giữa/cuối câu...), không rập khuôn.
+5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.
 `.trim();
   }
 
@@ -352,6 +448,10 @@ QUY TẮC BẮT BUỘC:
       mentLabel: mentObj.label,
       recentHistory,
     });
+    // Fallback: vẫn ưu tiên nhắc tới thay đổi gần nhất trước
+    if (mode === 'feedback' && recentChange) {
+      message = `${recentChange.short} ${message.charAt(0).toLowerCase()}${message.slice(1)}`;
+    }
   }
 
   const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
@@ -360,6 +460,180 @@ QUY TẮC BẮT BUỘC:
   return { message };
 };
 
+async function callGeminiJson<T>(prompt: string): Promise<T | null> {
+  if (!env.GEMINI_API_KEY) {
+    console.warn('[Gemini AI Calories] Không có GEMINI_API_KEY');
+    return null;
+  }
+
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      console.log(`[Gemini AI Calories] Đang phân tích bằng model ${model}...`);
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(12000),
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.4,
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.warn(`[Gemini AI Calories] Model ${model} trả về mã lỗi: ${response.status}`);
+        continue;
+      }
+
+      const data = (await response.json()) as {
+        candidates?: Array<{
+          content?: {
+            parts?: Array<{ text?: string; thought?: boolean }>;
+          };
+        }>;
+      };
+
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.find((p) => p.text && !p.thought) || parts[0];
+      const rawText = textPart?.text?.trim() || '';
+
+      if (rawText) {
+        try {
+          const parsed = JSON.parse(rawText) as T;
+          console.log(`[Gemini AI Calories] Thành công với model ${model}`);
+          return parsed;
+        } catch {
+          const match = rawText.match(/\{[\s\S]*\}/);
+          if (match) {
+            const parsed = JSON.parse(match[0]) as T;
+            console.log(`[Gemini AI Calories] Thành công (regex parse) với model ${model}`);
+            return parsed;
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[Gemini AI Calories] Lỗi khi gọi model ${model}:`, err?.message || err);
+      continue;
+    }
+  }
+
+  return null;
+}
+
+const analyzeNutrition = async (
+  profile: UserProfile,
+  dateKey: string,
+  meals: FoodItem[],
+  previousSummary?: CaloriesSummary
+): Promise<CaloriesSummary> => {
+  if (!meals || meals.length === 0) {
+    return {
+      totalCalories: 0,
+      protein: 0,
+      carb: 0,
+      fat: 0,
+      fiber: 0,
+      aiFeedback:
+        'Chưa có món ăn nào được ghi lại cho ngày này. Hãy thêm các món bạn ăn từ 6h sáng đến 9h tối nhé!',
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  const mealListText = meals
+    .map((m, idx) => {
+      const sessionLabel =
+        m.mealSession === 'morning'
+          ? 'Buổi Sáng'
+          : m.mealSession === 'afternoon'
+          ? 'Buổi Chiều'
+          : 'Buổi Tối';
+      return `${idx + 1}. [${sessionLabel}] (${m.time || '08:00'}): ${m.name} — Định lượng: ${m.weight || '1 phần'}`;
+    })
+    .join('\n');
+
+  const prevText = previousSummary
+    ? `Dữ liệu phân tích trước đó: Tổng ${previousSummary.totalCalories} kcal (Protein: ${previousSummary.protein}g, Carb: ${previousSummary.carb}g, Fat: ${previousSummary.fat}g, Chất xơ: ${previousSummary.fiber}g). Hãy so sánh và nêu rõ sự thay đổi ở lần lưu này.`
+    : 'Đây là lần lưu bảng calories đầu tiên trong ngày.';
+
+  const prompt = `
+Bạn là AI Dinh dưỡng thông minh (Nutritionist AI) của ứng dụng kỷ luật Self Upgrade.
+Thông tin thể trạng người dùng:
+- Tên/Tuổi: ${profile.name || 'Người dùng'} (${profile.age || 'Chưa rõ'} tuổi)
+- Cân nặng: ${profile.weightKg || 'Chưa rõ'} kg, Chiều cao: ${profile.heightCm || 'Chưa rõ'} cm
+- Mục tiêu chính: ${profile.focusGoal || 'Sức khỏe & Kỷ luật'}
+- Thể trạng hiện tại: ${profile.physicalState || 'Bình thường'}
+
+Ngày ghi nhận: ${dateKey}
+Danh sách các món ăn đã nạp trong ngày (khung giờ từ 6h sáng đến 9h tối):
+${mealListText}
+
+${prevText}
+
+YÊU CẦU BẮT BUỘC:
+1. Dựa trên thành phần và khối lượng từng món, hãy ước tính chính xác 5 chỉ số sau:
+   - totalCalories: Tổng calories nạp vào (kcal, số nguyên)
+   - protein: Tổng chất đạm (protein) tính bằng gram (g)
+   - carb: Tổng tinh bột (carbohydrates) tính bằng gram (g)
+   - fat: Tổng chất béo (fat) tính bằng gram (g)
+   - fiber: Tổng chất xơ (fiber) tính bằng gram (g)
+2. aiFeedback: Viết một đoạn nhận xét sắc bén, sâu sát dựa theo thay đổi bảng calories mới nhất (khoảng 2-3 câu, tối đa 75 từ) bằng tiếng Việt. Nhận xét phải:
+   - Đánh giá sự cân đối giữa 3 chất dinh dưỡng chính (Protein/Carb/Fat) và Chất xơ theo mục tiêu ${profile.focusGoal || 'sức khỏe'}.
+   - Nhận xét món ăn nào nạp năng lượng tốt, hoặc món nào đang dư thừa calo/dầu mỡ hay thiếu chất xơ.
+   - Lời khuyên ngắn gọn, thiết thực, có tính thúc đẩy kỷ luật cao.
+
+ĐỊNH DẠNG BẮT BUỘC TRẢ VỀ JSON:
+{
+  "totalCalories": number,
+  "protein": number,
+  "carb": number,
+  "fat": number,
+  "fiber": number,
+  "aiFeedback": "chuỗi nhận xét"
+}
+`.trim();
+
+  const result = await callGeminiJson<CaloriesSummary>(prompt);
+
+  if (result && typeof result.totalCalories === 'number') {
+    return {
+      totalCalories: Math.round(result.totalCalories) || 0,
+      protein: Math.round(Number(result.protein) * 10) / 10 || 0,
+      carb: Math.round(Number(result.carb) * 10) / 10 || 0,
+      fat: Math.round(Number(result.fat) * 10) / 10 || 0,
+      fiber: Math.round(Number(result.fiber) * 10) / 10 || 0,
+      aiFeedback:
+        result.aiFeedback ||
+        'Đã tổng hợp dinh dưỡng các bữa ăn trong ngày thành công.',
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Fallback calculation nếu Gemini offline hoặc lỗi mạng
+  const estCalories = meals.length * 220;
+  const estProtein = Math.round(meals.length * 12);
+  const estCarb = Math.round(meals.length * 28);
+  const estFat = Math.round(meals.length * 7);
+  const estFiber = Math.round(meals.length * 4);
+
+  return {
+    totalCalories: estCalories,
+    protein: estProtein,
+    carb: estCarb,
+    fat: estFat,
+    fiber: estFiber,
+    aiFeedback: `Đã lưu thực đơn gồm ${meals.length} món ăn. Tỷ lệ dinh dưỡng ước tính cơ bản đã sẵn sàng, hãy đảm bảo uống đủ nước và ăn thêm rau củ cho các bữa tiếp theo!`,
+    updatedAt: new Date().toISOString(),
+  };
+};
+
 export const aiCoachService = {
   getCoachingMessage,
+  analyzeNutrition,
 };

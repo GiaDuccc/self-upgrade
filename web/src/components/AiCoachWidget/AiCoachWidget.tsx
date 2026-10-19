@@ -88,6 +88,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         const msg = await getAiCoachingMessageAPI({
           dateKey,
           mode: 'feedback',
+          changeSignal: triggerSignal,
         });
         if (msg) {
           setAiMessage(msg);
@@ -124,6 +125,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       const msg = await getAiCoachingMessageAPI({
         dateKey,
         mode: 'feedback',
+        changeSignal: lastSignalRef.current,
       });
       if (msg) {
         setAiMessage(msg);

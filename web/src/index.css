@@ -2306,4 +2306,545 @@ input {
   background: var(--text-primary) !important;
 }
 
+/* ============================================================================
+   DAY MODE TABS (TO-DO LIST vs CALORIES & DINH DƯỠNG)
+   ============================================================================ */
+.day-mode-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  border-bottom: 1.5px solid var(--border-subtle);
+  padding-bottom: 10px;
+}
+
+.day-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.day-mode-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  background-color: var(--bg-mixed-subtle);
+}
+
+.day-mode-btn.active {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================================
+   CALORIES TRACKER STYLING
+   ============================================================================ */
+.calories-tracker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.calories-header-bar {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.calories-header-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.calories-heading {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+}
+
+.calories-subtext {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 680px;
+}
+
+.calories-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.unsaved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #B45309;
+  background-color: #FEF3C7;
+  border: 1px solid #FCD34D;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-calories-reset {
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+.btn-calories-reset:hover {
+  color: #DC2626;
+  border-color: #DC2626;
+}
+
+.btn-save-calories {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+.btn-save-calories:hover:not(:disabled) {
+  background-color: #000000;
+  transform: translateY(-1px);
+}
+
+/* 3 KHOẢNG THỜI GIAN / MEAL SESSIONS */
+.meal-sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.meal-session-card {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 240px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease;
+}
+
+.meal-session-card:hover {
+  border-color: var(--border-color);
+}
+
+.meal-session-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.session-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.session-title {
+  font-size: 0.96rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.session-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-mixed-subtle);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  margin-top: 2px;
+}
+
+.btn-add-food {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+}
+
+/* DANH SÁCH MÓN ĂN */
+.food-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.food-empty-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 12px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  flex: 1;
+}
+
+.food-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.food-item-row:hover {
+  border-color: var(--border-color);
+  background-color: var(--bg-surface);
+}
+
+.food-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.food-time-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  background-color: var(--bg-mixed);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.food-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.food-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.food-weight {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.btn-food-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.btn-food-delete:hover {
+  color: #DC2626;
+  background-color: rgba(220, 38, 38, 0.08);
+}
+
+/* FORM THÊM MÓN NHANH */
+.food-add-inline-form {
+  background-color: var(--bg-mixed-subtle);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.inline-form-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inline-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.inline-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.inline-input {
+  padding: 6px 10px;
+  font-size: 0.84rem;
+  background-color: var(--bg-surface);
+}
+
+.inline-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-confirm-add {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ============================================================================
+   AI DINH DƯỠNG NHỎ (MINI NUTRITIONIST AI COACH)
+   ============================================================================ */
+.nutrition-ai-widget {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
+}
+
+.nutrition-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.nutrition-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--text-primary);
+  background-color: var(--bg-mixed);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.nutrition-ai-updated {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* 5 THẺ MACROS DINH DƯỠNG */
+.nutrition-macros-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.macro-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.macro-card:hover {
+  border-color: var(--border-color);
+  background-color: var(--bg-surface);
+}
+
+.macro-calories {
+  border-color: var(--border-color);
+  background-color: var(--bg-mixed-subtle);
+}
+
+.macro-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.macro-card-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.macro-card-value strong {
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.macro-unit {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.macro-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* HỘP NHẬN XÉT CỦA AI DINH DƯỠNG */
+.nutrition-ai-feedback-box {
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+}
+
+.feedback-content-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.feedback-ai-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.feedback-ai-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.feedback-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+.feedback-paragraph {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.feedback-placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* RESPONSIVE FOR CALORIES TRACKER */
+@media (max-width: 1080px) {
+  .meal-sessions-grid {
+    grid-template-columns: 1fr;
+  }
+  .nutrition-macros-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .calories-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .calories-actions-row {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .nutrition-macros-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .macro-card-value strong {
+    font-size: 1.25rem;
+  }
+}
+
+
 

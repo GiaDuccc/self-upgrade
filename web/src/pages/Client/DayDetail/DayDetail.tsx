@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  CheckSquare,
+  Flame,
 } from 'lucide-react';
 import {
   clearDayAPI,
@@ -18,8 +20,10 @@ import {
   markAllLevelAPI,
   setTaskLevelAPI,
   updateNoteAPI,
+  saveDayCaloriesAPI,
 } from '~/apis/clientAPI/disciplineApi';
-import { DayDataResponse, TaskLevelKey } from '~/interface/discipline.interface';
+import { DayDataResponse, FoodItem, TaskLevelKey } from '~/interface/discipline.interface';
+import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import {
   formatDateKey,
@@ -50,7 +54,33 @@ export const DayDetail: React.FC = () => {
   const [dayData, setDayData] = useState<DayDataResponse | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories'>('todolist');
+  const [isSavingCalories, setIsSavingCalories] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hooks phải được gọi trước mọi câu lệnh return sớm (Rules of Hooks)
+  const rawCaloriesMeals = dayData?.dayRecord?.caloriesData?.meals;
+  const caloriesMeals = useMemo(() => rawCaloriesMeals || [], [rawCaloriesMeals]);
+  const caloriesSummary = dayData?.dayRecord?.caloriesData?.summary;
+
+  const handleSaveCalories = async (meals: FoodItem[]) => {
+    setIsSavingCalories(true);
+    try {
+      const updated = await saveDayCaloriesAPI({
+        dateKey: activeDateKey,
+        meals,
+      });
+      setDayData(updated);
+      toast.success('Đã lưu thực đơn và cập nhật phân tích AI thành công!');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ||
+        'Không thể lưu thực đơn dinh dưỡng! Vui lòng thử lại.';
+      toast.error(msg);
+    } finally {
+      setIsSavingCalories(false);
+    }
+  };
 
   useEffect(() => {
     setSelectedDateKey(activeDateKey);
@@ -386,8 +416,32 @@ export const DayDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="day-workspace-layout">
-        <div className="tasks-grid">
+      {/* 2 NÚT TAB TRÊN CÙNG: TO-DO LIST & CALORIES */}
+      <div className="day-mode-tab-bar">
+        <button
+          type="button"
+          className={`btn-minimal day-mode-btn ${activeDayTab === 'todolist' ? 'active' : ''}`}
+          onClick={() => setActiveDayTab('todolist')}
+        >
+          <CheckSquare size={15} />
+          <span>To-do List ({currentTasksList.length})</span>
+        </button>
+        <button
+          type="button"
+          className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
+          onClick={() => setActiveDayTab('calories')}
+        >
+          <Flame size={15} />
+          <span>
+            Calories & Dinh dưỡng
+            {dayRecord?.caloriesData?.meals?.length ? ` (${dayRecord.caloriesData.meals.length} món)` : ''}
+          </span>
+        </button>
+      </div>
+
+      {activeDayTab === 'todolist' ? (
+        <div className="day-workspace-layout">
+          <div className="tasks-grid">
           {currentTasksList.length === 0 ? (
             <div className="empty-tasks-placeholder">
               <p>Chưa có đầu việc nào cho ngày này.</p>
@@ -534,6 +588,15 @@ export const DayDetail: React.FC = () => {
           </div>
         </div>
       </div>
+      ) : (
+        <CaloriesTracker
+          dateKey={activeDateKey}
+          initialMeals={caloriesMeals}
+          initialSummary={caloriesSummary}
+          onSaveCalories={handleSaveCalories}
+          isSaving={isSavingCalories}
+        />
+      )}
     </section>
   );
 };
