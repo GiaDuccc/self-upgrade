@@ -546,6 +546,14 @@ const analyzeNutrition = async (
     };
   }
 
+  const COOKING_METHOD_NAMES: Record<string, string> = {
+    hap: 'Hấp (thanh đạm, giữ nguyên dưỡng chất)',
+    luoc: 'Luộc (không dầu mỡ)',
+    xao: 'Xào (có thêm dầu/mỡ và gia vị)',
+    chien: 'Chiên / Rán (nhiều dầu mỡ, tăng calo và chất béo)',
+    nuong: 'Nướng (ít mỡ hoặc róc mỡ thừa)',
+  };
+
   const mealListText = meals
     .map((m, idx) => {
       const sessionLabel =
@@ -554,16 +562,30 @@ const analyzeNutrition = async (
           : m.mealSession === 'afternoon'
           ? 'Buổi Chiều'
           : 'Buổi Tối';
-      return `${idx + 1}. [${sessionLabel}] (${m.time || '08:00'}): ${m.name} — Định lượng: ${m.weight || '1 phần'}`;
+
+      let stateText = '';
+      if (m.foodState === 'raw') {
+        stateText = 'Tình trạng: CÂN LÚC CÒN SỐNG (Raw, chưa qua nấu chín)';
+      } else if (m.foodState === 'cooked') {
+        const method = m.cookingMethod
+          ? COOKING_METHOD_NAMES[m.cookingMethod] || m.cookingMethod
+          : 'Đã nấu chín';
+        stateText = `Tình trạng: CÂN LÚC ĐÃ NẤU CHÍN (Cooked) — Cách chế biến: ${method}`;
+      } else {
+        stateText = 'Đã chế biến';
+      }
+
+      return `${idx + 1}. [${sessionLabel}]: ${m.name} — Định lượng: ${m.weight || '1 phần'} — ${stateText}`;
     })
     .join('\n');
 
   const prevText = previousSummary
-    ? `Dữ liệu phân tích trước đó: Tổng ${previousSummary.totalCalories} kcal (Protein: ${previousSummary.protein}g, Carb: ${previousSummary.carb}g, Fat: ${previousSummary.fat}g, Chất xơ: ${previousSummary.fiber}g). Hãy so sánh và nêu rõ sự thay đổi ở lần lưu này.`
-    : 'Đây là lần lưu bảng calories đầu tiên trong ngày.';
+    ? `DỮ LIỆU LẦN LƯU TRƯỚC (CHỈ DÙNG ĐỂ SO SÁNH TRONG NHẬN XÉT aiFeedback, TUYỆT ĐỐI KHÔNG COPY HAY GIỮ LẠI CON SỐ NÀY NẾU MÓN ĂN ĐÃ THAY ĐỔI):
+- Lần trước: Tổng ${previousSummary.totalCalories} kcal, Protein: ${previousSummary.protein}g, Carb: ${previousSummary.carb}g, Fat: ${previousSummary.fat}g, Chất xơ: ${previousSummary.fiber}g.`
+    : 'Đây là lần lưu thực đơn đầu tiên trong ngày.';
 
   const prompt = `
-Bạn là AI Dinh dưỡng thông minh (Nutritionist AI) của ứng dụng kỷ luật Self Upgrade.
+Bạn là AI Chuyên gia Dinh dưỡng (Nutritionist AI) của ứng dụng rèn luyện kỷ luật Self Upgrade.
 Thông tin thể trạng người dùng:
 - Tên/Tuổi: ${profile.name || 'Người dùng'} (${profile.age || 'Chưa rõ'} tuổi)
 - Cân nặng: ${profile.weightKg || 'Chưa rõ'} kg, Chiều cao: ${profile.heightCm || 'Chưa rõ'} cm
@@ -571,22 +593,30 @@ Thông tin thể trạng người dùng:
 - Thể trạng hiện tại: ${profile.physicalState || 'Bình thường'}
 
 Ngày ghi nhận: ${dateKey}
-Danh sách các món ăn đã nạp trong ngày (khung giờ từ 6h sáng đến 9h tối):
+DANH SÁCH MÓN ĂN HIỆN TẠI (CHỈ TÍNH TOÁN 5 CHỈ SỐ DỰA TRÊN ${meals.length} MÓN ĐANG CÓ NÀY):
 ${mealListText}
 
 ${prevText}
 
 YÊU CẦU BẮT BUỘC:
-1. Dựa trên thành phần và khối lượng từng món, hãy ước tính chính xác 5 chỉ số sau:
-   - totalCalories: Tổng calories nạp vào (kcal, số nguyên)
-   - protein: Tổng chất đạm (protein) tính bằng gram (g)
-   - carb: Tổng tinh bột (carbohydrates) tính bằng gram (g)
-   - fat: Tổng chất béo (fat) tính bằng gram (g)
-   - fiber: Tổng chất xơ (fiber) tính bằng gram (g)
-2. aiFeedback: Viết một đoạn nhận xét sắc bén, sâu sát dựa theo thay đổi bảng calories mới nhất (khoảng 2-3 câu, tối đa 75 từ) bằng tiếng Việt. Nhận xét phải:
-   - Đánh giá sự cân đối giữa 3 chất dinh dưỡng chính (Protein/Carb/Fat) và Chất xơ theo mục tiêu ${profile.focusGoal || 'sức khỏe'}.
-   - Nhận xét món ăn nào nạp năng lượng tốt, hoặc món nào đang dư thừa calo/dầu mỡ hay thiếu chất xơ.
-   - Lời khuyên ngắn gọn, thiết thực, có tính thúc đẩy kỷ luật cao.
+1. QUY TẮC TÍNH TOÁN 5 CHỈ SỐ (BẮT BUỘC TÍNH ĐỘC LẬP TỪ DANH SÁCH MÓN HIỆN TẠI):
+   - ĐẶC BIỆT CHÚ Ý TÌNH TRẠNG SỐNG / CHÍN VÀ CÁCH CHẾ BIẾN:
+     * CÂN LÚC CÒN SỐNG: Tính theo bảng thực phẩm sống (nhiều nước, mật độ calo/đạm trên 100g thấp hơn so với đồ chín).
+     * CÂN LÚC ĐÃ NẤU CHÍN: Tính theo bảng thực phẩm chín (nước đã thoát bớt, mật độ calo/đạm trên 100g cao hơn, ví dụ: 100g ức gà chín ~165 kcal, ~31g protein; trong khi 100g ức gà sống ~120 kcal, ~23g protein).
+     * CHIÊN / XÀO: Bắt buộc cộng thêm calo và chất béo (fat) tương ứng lượng dầu mỡ dùng để chiên/xào.
+     * LUỘC / HẤP / NƯỚNG: Giữ calo nguyên bản sạch, ít béo.
+   - NẾU NGƯỜI DÙNG VỪA XÓA BỚT MÓN ĂN: Tổng calo và toàn bộ 4 chỉ số macro (protein, carb, fat, fiber) BẮT BUỘC PHẢI GIẢM TƯƠNG ỨNG với phần dinh dưỡng của món đã bị xóa đi. TUYỆT ĐỐI KHÔNG ĐƯỢC giữ nguyên con số của lần trước.
+   - NẾU NGƯỜI DÙNG THÊM MÓN ĂN: Các chỉ số macro BẮT BUỘC PHẢI TĂNG LÊN tương ứng.
+   - totalCalories: Tổng calories nạp vào (kcal, số nguyên) của các món hiện tại.
+   - protein: Tổng chất đạm (g) của các món hiện tại.
+   - carb: Tổng tinh bột (g) của các món hiện tại.
+   - fat: Tổng chất béo (g) của các món hiện tại.
+   - fiber: Tổng chất xơ (g) của các món hiện tại.
+2. aiFeedback: Viết một đoạn nhận xét sắc bén (2-3 câu, tối đa 80 từ) bằng tiếng Việt chuẩn:
+   - Viết chuẩn chính tả tiếng Việt tuyệt đối, cách từ rõ ràng, không dính chữ, không nuốt chữ.
+   - So sánh sự thay đổi so với lần trước (nêu rõ vừa xóa món hay thêm món làm calo và macro tăng/giảm từ bao nhiêu xuống/lên bao nhiêu, nhắc đến cách chế biến luộc/hấp/xào/chiên/nướng nếu có).
+   - Đánh giá sự cân đối đạm/carb/béo/chất xơ cho thể trạng và mục tiêu ${profile.focusGoal || 'sức khỏe'}.
+   - Lời khuyên ngắn gọn, thiết thực, giàu tính kỷ luật.
 
 ĐỊNH DẠNG BẮT BUỘC TRẢ VỀ JSON:
 {
@@ -601,6 +631,15 @@ YÊU CẦU BẮT BUỘC:
 
   const result = await callGeminiJson<CaloriesSummary>(prompt);
 
+  const cleanFeedbackText = (text: string | undefined): string => {
+    if (!text) return 'Đã tổng hợp dinh dưỡng các bữa ăn trong ngày thành công.';
+    return text
+      .replace(/\bcũngụt\b/gi, 'cũng sụt')
+      .replace(/\bcũngtụt\b/gi, 'cũng tụt')
+      .replace(/\bụt giảm\b/gi, 'sụt giảm')
+      .trim();
+  };
+
   if (result && typeof result.totalCalories === 'number') {
     return {
       totalCalories: Math.round(result.totalCalories) || 0,
@@ -608,9 +647,7 @@ YÊU CẦU BẮT BUỘC:
       carb: Math.round(Number(result.carb) * 10) / 10 || 0,
       fat: Math.round(Number(result.fat) * 10) / 10 || 0,
       fiber: Math.round(Number(result.fiber) * 10) / 10 || 0,
-      aiFeedback:
-        result.aiFeedback ||
-        'Đã tổng hợp dinh dưỡng các bữa ăn trong ngày thành công.',
+      aiFeedback: cleanFeedbackText(result.aiFeedback),
       updatedAt: new Date().toISOString(),
     };
   }

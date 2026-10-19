@@ -63,7 +63,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
   }, []);
 
   // 2. KHI CÓ THAY ĐỔI (tích việc, lưu ghi chú, đổi trạng thái cá nhân):
-  // Trong lúc đợi gọi API thì giữ ngầm, CHỈ KHI DỮ LIỆU TỪ API TRẢ VỀ THÌ MỚI HIỆN ĐOẠN CHAT (5s rồi tự thu về)
+  // Mở ngay ô chat ra ngoài với hiệu ứng 3 chấm đang chat (chưa có nội dung), khi API trả về thì hiện nội dung
   useEffect(() => {
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
@@ -76,14 +76,18 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     }
     lastSignalRef.current = triggerSignal;
 
+    // Ngay khi có thay đổi: Mở ô chat ra ngay lập tức và bật hiệu ứng 3 chấm đang gõ
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+    }
+    setIsOpen(true);
+    setIsAiLoading(true);
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
     debounceTimerRef.current = setTimeout(async () => {
-      setIsAiLoading(true);
-      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
-
       try {
         const msg = await getAiCoachingMessageAPI({
           dateKey,
@@ -93,13 +97,17 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         if (msg) {
           setAiMessage(msg);
           setIsAiLoading(false);
-          // Chỉ khi dữ liệu từ API trả về thành công thì mới hiện đoạn chat
-          openWithAutoClose(5);
+          // Sau khi nội dung về thì hiện ra và đếm lùi 6 giây tự thu về
+          openWithAutoClose(6);
+        } else {
+          setIsAiLoading(false);
+          openWithAutoClose(4);
         }
       } catch {
         setIsAiLoading(false);
+        openWithAutoClose(4);
       }
-    }, 400);
+    }, 350);
 
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -119,6 +127,8 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     e.stopPropagation();
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    // Mở ngay ô chat và hiện 3 chấm đang gõ
+    setIsOpen(true);
     setIsAiLoading(true);
 
     try {
@@ -131,9 +141,13 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         setAiMessage(msg);
         setIsAiLoading(false);
         openWithAutoClose(6);
+      } else {
+        setIsAiLoading(false);
+        openWithAutoClose(3);
       }
     } catch {
       setIsAiLoading(false);
+      openWithAutoClose(3);
     }
   };
 
@@ -179,15 +193,15 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         </div>
 
         <div className="ai-speech-bubble-body">
-          {isAiLoading && !aiMessage ? (
-            <div className="ai-typing-indicator">
+          {isAiLoading ? (
+            <div className="ai-typing-indicator" aria-label="AI đang phân tích">
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
-              <span className="typing-text">AI đang phân tích...</span>
+              <span className="typing-text">AI đang suy nghĩ...</span>
             </div>
           ) : (
-            <p className={`ai-bubble-message ${isAiLoading ? 'is-loading-pulse' : ''}`}>
+            <p className="ai-bubble-message">
               {aiMessage || 'Hãy tích các việc trong ngày để AI đồng hành cùng bạn.'}
             </p>
           )}

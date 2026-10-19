@@ -2440,6 +2440,16 @@ input {
   transform: translateY(-1px);
 }
 
+.btn-save-calories:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none !important;
+  background-color: var(--bg-mixed-subtle);
+  color: var(--text-tertiary);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+
 /* 3 KHOẢNG THỜI GIAN / MEAL SESSIONS */
 .meal-sessions-grid {
   display: grid;
@@ -2573,6 +2583,65 @@ input {
   flex-shrink: 0;
 }
 
+/* BADGE TRẠNG THÁI MÓN ĂN & CHẾ BIẾN */
+.food-prep-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-mixed);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.food-prep-badge.badge-raw {
+  background-color: #FEF2F2;
+  border-color: #FECACA;
+  color: #B91C1C;
+}
+
+.food-prep-badge.badge-method-luoc,
+.food-prep-badge.badge-method-hap {
+  background-color: #F0FDF4;
+  border-color: #BBF7D0;
+  color: #15803D;
+}
+
+.food-prep-badge.badge-method-nuong {
+  background-color: #FFF7ED;
+  border-color: #FED7AA;
+  color: #C2410C;
+}
+
+.food-prep-badge.badge-method-xao {
+  background-color: #FEFCE8;
+  border-color: #FEF08A;
+  color: #A16207;
+}
+
+.food-prep-badge.badge-method-chien {
+  background-color: #FFFBEB;
+  border-color: #FDE68A;
+  color: #B45309;
+}
+
+.food-prep-badge.badge-cooked {
+  background-color: var(--bg-mixed);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.food-prep-badge.badge-time {
+  font-family: var(--font-mono);
+  background-color: var(--bg-mixed);
+  border-color: var(--border-subtle);
+}
+
 .food-info {
   display: flex;
   flex-direction: column;
@@ -2629,10 +2698,77 @@ input {
   gap: 8px;
 }
 
+.inline-form-row {
+  display: flex;
+  gap: 8px;
+}
+
 .inline-input-group {
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+
+.inline-input-group.flex-2 {
+  flex: 2;
+}
+
+.inline-input-group.flex-1 {
+  flex: 1;
+}
+
+.inline-prep-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.inline-prep-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.state-toggle-group,
+.method-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-state-pill,
+.btn-method-pill {
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.btn-state-pill:hover,
+.btn-method-pill:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.btn-state-pill.active,
+.btn-method-pill.active {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  font-weight: 600;
 }
 
 .inline-label {

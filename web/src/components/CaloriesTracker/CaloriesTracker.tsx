@@ -17,6 +17,8 @@ import {
   CaloriesSummary,
   FoodItem,
   MealSession,
+  FoodState,
+  CookingMethod,
 } from '~/interface/discipline.interface';
 
 interface CaloriesTrackerProps {
@@ -31,6 +33,14 @@ const DEFAULT_TIMES: Record<MealSession, string> = {
   morning: '07:30',
   afternoon: '12:30',
   evening: '19:00',
+};
+
+const COOKING_METHOD_LABELS: Record<CookingMethod, string> = {
+  hap: 'Hấp',
+  luoc: 'Luộc',
+  xao: 'Xào',
+  chien: 'Chiên',
+  nuong: 'Nướng',
 };
 
 const SESSION_METADATA: Record<
@@ -70,7 +80,8 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
   );
   const [foodNameInput, setFoodNameInput] = useState('');
   const [foodWeightInput, setFoodWeightInput] = useState('');
-  const [foodTimeInput, setFoodTimeInput] = useState('07:30');
+  const [foodStateInput, setFoodStateInput] = useState<FoodState>('cooked');
+  const [cookingMethodInput, setCookingMethodInput] = useState<CookingMethod>('luoc');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const lastDateKeyRef = useRef(dateKey);
@@ -97,13 +108,16 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
     setActiveSessionAdd(session);
     setFoodNameInput('');
     setFoodWeightInput('');
-    setFoodTimeInput(DEFAULT_TIMES[session]);
+    setFoodStateInput('cooked');
+    setCookingMethodInput('luoc');
   };
 
   const handleCloseAddForm = () => {
     setActiveSessionAdd(null);
     setFoodNameInput('');
     setFoodWeightInput('');
+    setFoodStateInput('cooked');
+    setCookingMethodInput('luoc');
   };
 
   const handleAddFoodItem = (session: MealSession) => {
@@ -112,21 +126,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
 
     if (!trimmedName) return;
 
-    let time = foodTimeInput.trim();
-    if (!time) {
-      time = DEFAULT_TIMES[session];
-    }
-
-    // Giới hạn thời gian từ 06:00 đến 21:00
-    if (time < '06:00') time = '06:00';
-    if (time > '21:00') time = '21:00';
-
     const newItem: FoodItem = {
       id: `food_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       name: trimmedName,
       weight: trimmedWeight || '1 phần',
       mealSession: session,
-      time,
+      foodState: foodStateInput,
+      cookingMethod: foodStateInput === 'cooked' ? cookingMethodInput : undefined,
+      time: DEFAULT_TIMES[session],
     };
 
     setMeals((prev) => [...prev, newItem]);
@@ -152,16 +159,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
 
     // Tự động gom món ăn người dùng đang nhập dở trong form nếu chưa kịp nhấn "Thêm vào buổi"
     if (activeSessionAdd && foodNameInput.trim()) {
-      let time = foodTimeInput.trim() || DEFAULT_TIMES[activeSessionAdd];
-      if (time < '06:00') time = '06:00';
-      if (time > '21:00') time = '21:00';
-
       const pendingItem: FoodItem = {
         id: `food_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         name: foodNameInput.trim(),
         weight: foodWeightInput.trim() || '1 phần',
         mealSession: activeSessionAdd,
-        time,
+        foodState: foodStateInput,
+        cookingMethod: foodStateInput === 'cooked' ? cookingMethodInput : undefined,
+        time: DEFAULT_TIMES[activeSessionAdd],
       };
 
       itemsToSave = [...itemsToSave, pendingItem];
@@ -188,10 +193,33 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
   };
 
   const getMealsBySession = (session: MealSession) => {
-    return meals
-      .filter((m) => m.mealSession === session)
-      .sort((a, b) => a.time.localeCompare(b.time));
+    return meals.filter((m) => m.mealSession === session);
   };
+
+  const renderFoodBadge = (item: FoodItem) => {
+    if (item.foodState === 'raw') {
+      return <span className="food-prep-badge badge-raw">Sống</span>;
+    }
+    if (item.foodState === 'cooked') {
+      const method = item.cookingMethod;
+      const label = method ? COOKING_METHOD_LABELS[method] || 'Chín' : 'Chín';
+      return <span className={`food-prep-badge badge-method-${method || 'cooked'}`}>{label}</span>;
+    }
+    if (item.time) {
+      return <span className="food-prep-badge badge-time">{item.time}</span>;
+    }
+    return <span className="food-prep-badge badge-cooked">Chín</span>;
+  };
+
+  // Chỉ cho phép lưu và phân tích AI khi có thay đổi thực đơn (hoặc đang nhập dở, hoặc chưa từng phân tích)
+  const hasPendingInput = Boolean(activeSessionAdd && foodNameInput.trim());
+  const areMealsModified =
+    hasUnsavedChanges ||
+    JSON.stringify(meals) !== JSON.stringify(initialMeals || []);
+  const needsInitialAnalysis = meals.length > 0 && !initialSummary;
+
+  const hasMenuChanged = areMealsModified || hasPendingInput || needsInitialAnalysis;
+  const canSaveAndAnalyze = !isSaving && hasMenuChanged;
 
   return (
     <div className="calories-tracker-container">
@@ -206,12 +234,12 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             Theo dõi Calories & Dinh dưỡng — {dateKey}
           </h3>
           <p className="calories-subtext">
-            Khung giờ ghi nhận từ <strong>06:00 sáng đến 21:00 tối</strong>. Nhập các món ăn cùng định lượng (gram / khẩu phần), sau đó nhấn Lưu để AI tự động tổng hợp 5 chỉ số và đưa ra nhận xét chuyên sâu.
+            Khung giờ ghi nhận từ <strong>06:00 sáng đến 21:00 tối</strong>. Nhập các món ăn cùng định lượng (gram / khẩu phần), chọn trạng thái Sống hoặc Chín kèm cách chế biến, sau đó nhấn Lưu để AI tự động tính toán 5 chỉ số và nhận xét chuyên sâu.
           </p>
         </div>
 
         <div className="calories-actions-row">
-          {hasUnsavedChanges && (
+          {hasMenuChanged && !isSaving && (
             <span className="unsaved-badge" title="Bạn có món ăn mới chưa được lưu và phân tích">
               <AlertCircle size={13} />
               <span>Chưa lưu thay đổi</span>
@@ -235,8 +263,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             type="button"
             className="btn-minimal btn-save-calories"
             onClick={handleSave}
-            disabled={isSaving}
-            title="Lưu thực đơn và chạy AI Dinh dưỡng để tổng hợp 5 chỉ số"
+            disabled={!canSaveAndAnalyze}
+            title={
+              isSaving
+                ? 'AI đang phân tích thực đơn...'
+                : canSaveAndAnalyze
+                ? 'Lưu thực đơn và chạy AI Dinh dưỡng để tổng hợp 5 chỉ số'
+                : 'Thực đơn chưa có thay đổi mới để phân tích'
+            }
           >
             <Sparkles size={15} className={isSaving ? 'spin-anim' : ''} />
             <span>{isSaving ? 'AI đang phân tích...' : 'Lưu & Phân tích AI'}</span>
@@ -287,7 +321,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                 {sessionMeals.map((item) => (
                   <div key={item.id} className="food-item-row">
                     <div className="food-item-left">
-                      <span className="food-time-tag">{item.time}</span>
+                      {renderFoodBadge(item)}
                       <div className="food-info">
                         <strong className="food-name">{item.name}</strong>
                         <span className="food-weight">{item.weight}</span>
@@ -309,47 +343,87 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                 {isAdding && (
                   <div className="food-add-inline-form">
                     <div className="inline-form-inputs">
-                      <div className="inline-input-group flex-2">
-                        <label className="inline-label">Tên món ăn:</label>
-                        <input
-                          type="text"
-                          className="form-input inline-input"
-                          placeholder="VD: Cơm trắng, Ức gà, Phở bò..."
-                          value={foodNameInput}
-                          onChange={(e) => setFoodNameInput(e.target.value)}
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleAddFoodItem(session);
-                            if (e.key === 'Escape') handleCloseAddForm();
-                          }}
-                        />
+                      <div className="inline-form-row">
+                        <div className="inline-input-group flex-2">
+                          <label className="inline-label">Tên món ăn:</label>
+                          <input
+                            type="text"
+                            className="form-input inline-input"
+                            placeholder="VD: Cơm trắng, Ức gà, Trứng..."
+                            value={foodNameInput}
+                            onChange={(e) => setFoodNameInput(e.target.value)}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleAddFoodItem(session);
+                              if (e.key === 'Escape') handleCloseAddForm();
+                            }}
+                          />
+                        </div>
+
+                        <div className="inline-input-group flex-1">
+                          <label className="inline-label">Định lượng:</label>
+                          <input
+                            type="text"
+                            className="form-input inline-input"
+                            placeholder="VD: 150g, 1 bát, 2 quả..."
+                            value={foodWeightInput}
+                            onChange={(e) => setFoodWeightInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleAddFoodItem(session);
+                              if (e.key === 'Escape') handleCloseAddForm();
+                            }}
+                          />
+                        </div>
                       </div>
 
-                      <div className="inline-input-group flex-1">
-                        <label className="inline-label">Khối lượng / Khẩu phần:</label>
-                        <input
-                          type="text"
-                          className="form-input inline-input"
-                          placeholder="VD: 150g, 1 bát, 2 quả..."
-                          value={foodWeightInput}
-                          onChange={(e) => setFoodWeightInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleAddFoodItem(session);
-                            if (e.key === 'Escape') handleCloseAddForm();
-                          }}
-                        />
-                      </div>
+                      {/* Trạng thái: Sống vs Chín */}
+                      <div className="inline-prep-group">
+                        <div className="inline-prep-field">
+                          <label className="inline-label">Trạng thái:</label>
+                          <div className="state-toggle-group">
+                            <button
+                              type="button"
+                              className={`btn-state-pill ${foodStateInput === 'cooked' ? 'active' : ''}`}
+                              onClick={() => setFoodStateInput('cooked')}
+                            >
+                              🍳 Chín
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn-state-pill ${foodStateInput === 'raw' ? 'active' : ''}`}
+                              onClick={() => setFoodStateInput('raw')}
+                            >
+                              🥩 Sống
+                            </button>
+                          </div>
+                        </div>
 
-                      <div className="inline-input-group flex-time">
-                        <label className="inline-label">Giờ ăn (06:00 – 21:00):</label>
-                        <input
-                          type="time"
-                          min="06:00"
-                          max="21:00"
-                          className="form-input inline-input"
-                          value={foodTimeInput}
-                          onChange={(e) => setFoodTimeInput(e.target.value)}
-                        />
+                        {/* Nếu chọn Chín: Hiện thêm 5 phương pháp chế biến */}
+                        {foodStateInput === 'cooked' && (
+                          <div className="inline-prep-field">
+                            <label className="inline-label">Cách chế biến:</label>
+                            <div className="method-toggle-group">
+                              {(
+                                [
+                                  { key: 'luoc', label: 'Luộc' },
+                                  { key: 'hap', label: 'Hấp' },
+                                  { key: 'xao', label: 'Xào' },
+                                  { key: 'chien', label: 'Chiên' },
+                                  { key: 'nuong', label: 'Nướng' },
+                                ] as const
+                              ).map((m) => (
+                                <button
+                                  key={m.key}
+                                  type="button"
+                                  className={`btn-method-pill ${cookingMethodInput === m.key ? 'active' : ''}`}
+                                  onClick={() => setCookingMethodInput(m.key)}
+                                >
+                                  {m.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 

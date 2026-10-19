@@ -25,12 +25,17 @@ export interface TaskItem {
 
 export type MealSession = 'morning' | 'afternoon' | 'evening';
 
+export type FoodState = 'raw' | 'cooked';
+export type CookingMethod = 'hap' | 'luoc' | 'xao' | 'chien' | 'nuong';
+
 export interface FoodItem {
   id: string;
   name: string;
   weight: string;
   mealSession: MealSession;
-  time: string;
+  time?: string;
+  foodState?: FoodState;
+  cookingMethod?: CookingMethod;
 }
 
 export interface CaloriesSummary {
