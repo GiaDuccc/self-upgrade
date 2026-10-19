@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
 import { StatusCodes } from 'http-status-codes';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { env } from '~/config/environment';
 import { DEFAULT_USER_PROFILE } from '~/config/settings';
 import { disciplineModel } from '~/models/disciplineModel';
@@ -29,42 +29,59 @@ const sendVerificationEmail = async (
   console.log(`[VERIFY LINK]: ${verifyUrl}`);
   console.log('====================================================');
 
-  if (!env.RESEND_API_KEY) {
+  const smtpUser = env.SMTP_USER.trim();
+  const smtpPass = env.SMTP_PASS.replace(/\s+/g, '').trim();
+
+  if (!smtpUser || !smtpPass) {
+    console.warn(
+      '[Nodemailer] Chưa cấu hình SMTP_PASS (Mật khẩu ứng dụng Gmail 16 ký tự) trong file api/.env. Vui lòng điền SMTP_PASS để gửi email thật tới người dùng!'
+    );
     return false;
   }
 
+  const emailHtml = `
+    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #FAF7F2; color: #222220; padding: 32px; border-radius: 14px; border: 2px solid #222220;">
+      <h2 style="margin: 0 0 12px; color: #222220; font-size: 22px;">Chào mừng đến với Self Upgrade!</h2>
+      <p style="color: #5C5A55; font-size: 15px; line-height: 1.6;">
+        Cảm ơn bạn đã đăng ký tài khoản rèn luyện kỷ luật cá nhân (<strong>${email}</strong>). Vui lòng sử dụng mã OTP 6 chữ số dưới đây để kích hoạt tài khoản:
+      </p>
+      <div style="margin: 24px 0; padding: 18px; background: #FFFDF9; border-radius: 10px; text-align: center; letter-spacing: 8px; font-size: 28px; font-weight: 800; color: #222220; border: 2px dashed #222220;">
+        ${verifyCode}
+      </div>
+      <p style="color: #5C5A55; font-size: 14px; line-height: 1.6;">
+        Hoặc nhấn trực tiếp vào nút bên dưới để xác nhận ngay:
+      </p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${verifyUrl}" style="display: inline-block; padding: 12px 28px; background: #222220; color: #FAF7F2; text-decoration: none; font-weight: 700; border-radius: 8px; font-size: 15px;">
+          Xác nhận Email ngay
+        </a>
+      </div>
+      <p style="color: #8E8B82; font-size: 12px; margin-top: 24px; border-top: 1px solid #D6D1C7; padding-top: 16px;">
+        Mã xác nhận có hiệu lực trong vòng 15 phút. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.
+      </p>
+    </div>
+  `;
+
   try {
-    const resend = new Resend(env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: env.ADMIN_SENDER_EMAIL,
-      to: email,
-      subject: '[Self Upgrade] Mã xác nhận đăng ký tài khoản của bạn',
-      html: `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #FAF7F2; color: #222220; padding: 32px; border-radius: 14px; border: 2px solid #222220;">
-          <h2 style="margin: 0 0 12px; color: #222220; font-size: 22px;">Chào mừng đến với Self Upgrade!</h2>
-          <p style="color: #5C5A55; font-size: 15px; line-height: 1.6;">
-            Cảm ơn bạn đã đăng ký tài khoản rèn luyện kỷ luật cá nhân. Vui lòng sử dụng mã OTP 6 chữ số dưới đây để kích hoạt tài khoản:
-          </p>
-          <div style="margin: 24px 0; padding: 18px; background: #FFFDF9; border-radius: 10px; text-align: center; letter-spacing: 8px; font-size: 28px; font-weight: 800; color: #222220; border: 2px dashed #222220;">
-            ${verifyCode}
-          </div>
-          <p style="color: #5C5A55; font-size: 14px; line-height: 1.6;">
-            Hoặc nhấn trực tiếp vào nút bên dưới để xác nhận ngay:
-          </p>
-          <div style="text-align: center; margin: 24px 0;">
-            <a href="${verifyUrl}" style="display: inline-block; padding: 12px 28px; background: #222220; color: #FAF7F2; text-decoration: none; font-weight: 700; border-radius: 8px; font-size: 15px;">
-              Xác nhận Email ngay
-            </a>
-          </div>
-          <p style="color: #8E8B82; font-size: 12px; margin-top: 24px; border-top: 1px solid #D6D1C7; padding-top: 16px;">
-            Mã xác nhận có hiệu lực trong vòng 15 phút. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.
-          </p>
-        </div>
-      `,
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
     });
+
+    await transporter.sendMail({
+      from: `"Self Upgrade" <${smtpUser}>`,
+      to: email,
+      subject: `[Self Upgrade] Mã xác nhận (${verifyCode}) kích hoạt tài khoản của bạn`,
+      html: emailHtml,
+    });
+
+    console.log(`[Nodemailer] Đã gửi email xác nhận thành công tới: ${email}`);
     return true;
   } catch (error) {
-    console.warn('Không thể gửi email qua Resend:', error);
+    console.error('[Nodemailer Error] Không thể gửi email qua Gmail SMTP:', error);
     return false;
   }
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { signOutClientAPI } from '~/apis/clientAPI/authApi';
 import {
@@ -42,6 +42,7 @@ export interface ClientOutletContext {
 export const ClientPage: React.FC = () => {
   const today = useMemo(() => getTodayInfo(), []);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [currentYear, setCurrentYear] = useState<number>(today.year);
   const [currentMonth, setCurrentMonth] = useState<number>(today.month);
@@ -72,7 +73,12 @@ export const ClientPage: React.FC = () => {
     try {
       const data = await getMonthDataAPI(currentYear, currentMonth);
       setMonthStats(data.monthStats);
-      setUserProfile(data.profile || DEFAULT_USER_PROFILE);
+      setUserProfile((prev) => {
+        if (data.profile && JSON.stringify(prev) === JSON.stringify(data.profile)) {
+          return prev;
+        }
+        return data.profile || DEFAULT_USER_PROFILE;
+      });
       setIsProfileSetup(data.isProfileSetup);
 
       // Nếu đăng nhập lần đầu chưa thiết lập thông tin cá nhân -> tự động mở modal thiết lập
@@ -98,9 +104,14 @@ export const ClientPage: React.FC = () => {
       nextM = 12;
       nextY -= 1;
     }
+    const newDateKey = formatDateKey(nextY, nextM, 1);
     setCurrentYear(nextY);
     setCurrentMonth(nextM);
-    setSelectedDateKey(formatDateKey(nextY, nextM, 1));
+    setSelectedDateKey(newDateKey);
+
+    if (location.pathname.startsWith('/day')) {
+      navigate(`/day/${newDateKey}`);
+    }
   };
 
   const handleNextMonth = () => {
@@ -110,9 +121,14 @@ export const ClientPage: React.FC = () => {
       nextM = 1;
       nextY += 1;
     }
+    const newDateKey = formatDateKey(nextY, nextM, 1);
     setCurrentYear(nextY);
     setCurrentMonth(nextM);
-    setSelectedDateKey(formatDateKey(nextY, nextM, 1));
+    setSelectedDateKey(newDateKey);
+
+    if (location.pathname.startsWith('/day')) {
+      navigate(`/day/${newDateKey}`);
+    }
   };
 
   const handleJumpToday = () => {
@@ -120,6 +136,7 @@ export const ClientPage: React.FC = () => {
     setCurrentYear(t.year);
     setCurrentMonth(t.month);
     setSelectedDateKey(t.dateKey);
+    navigate(`/day/${t.dateKey}`);
   };
 
   const handleOpenAddTaskModal = () => {

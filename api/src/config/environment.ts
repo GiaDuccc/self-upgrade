@@ -20,9 +20,11 @@ export const env = {
     process.env.WEBSITE_DOMAIN_PRODUCTION || 'https://self-upgrade.vercel.app',
 
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  SMTP_USER: process.env.SMTP_USER || 'giaduc19042004@gmail.com',
+  SMTP_PASS: process.env.SMTP_PASS || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   ADMIN_SENDER_EMAIL:
-    process.env.ADMIN_SENDER_EMAIL || 'Self Upgrade <NiceStore@giaduccc.works>',
+    process.env.ADMIN_SENDER_EMAIL || 'Self Upgrade <onboarding@resend.dev>',
 
   JWT_ACCESS_SECRET_CLIENT:
     process.env.JWT_ACCESS_SECRET_CLIENT || 'default_access_secret_client',

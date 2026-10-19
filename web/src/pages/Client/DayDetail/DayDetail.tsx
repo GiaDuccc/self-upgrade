@@ -55,7 +55,11 @@ export const DayDetail: React.FC = () => {
   useEffect(() => {
     setSelectedDateKey(activeDateKey);
     let isMounted = true;
-    setIsLoading(true);
+
+    // Chỉ bật loading toàn màn hình nếu chưa có dữ liệu của ngày này
+    if (!dayData || dayData.dateKey !== activeDateKey) {
+      setIsLoading(true);
+    }
 
     getDayDataAPI(activeDateKey)
       .then((res) => {
@@ -75,20 +79,41 @@ export const DayDetail: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [activeDateKey, dayRefreshTrigger, userProfile]);
+  }, [activeDateKey, dayRefreshTrigger]);
 
   const handleSetTaskLevel = async (taskId: string, levelKey: TaskLevelKey) => {
+    // 1. Cập nhật lạc quan (Optimistic update) ngay lập tức trên UI
+    if (dayData) {
+      const currentLevel = dayData.dayRecord?.tasks?.[taskId] || 'NONE';
+      const nextLevel = currentLevel === levelKey ? 'NONE' : levelKey;
+      setDayData((prev) => {
+        if (!prev) return prev;
+        const currentTasks = prev.dayRecord?.tasks || {};
+        return {
+          ...prev,
+          dayRecord: {
+            ...(prev.dayRecord || {}),
+            tasks: { ...currentTasks, [taskId]: nextLevel },
+          },
+        };
+      });
+    }
+
     try {
+      // 2. Gọi API nền lưu vào CSDL
       const updated = await setTaskLevelAPI({
         dateKey: activeDateKey,
         taskId,
         levelKey,
       });
+      // 3. Cập nhật state với số điểm & xếp hạng chính xác từ backend trả về
       setDayData(updated);
       refreshMonthStats();
       notifyAiCoach(`${activeDateKey}|${taskId}|${levelKey}|${Date.now()}`);
     } catch {
       toast.error('Lỗi cập nhật điểm công việc!');
+      // Tải lại để rollback nếu lỗi
+      getDayDataAPI(activeDateKey).then(setDayData);
     }
   };
 
@@ -118,22 +143,34 @@ export const DayDetail: React.FC = () => {
     }
   };
 
-  const handleNoteChange = (val: string) => {
-    setNoteInput(val);
-    if (noteDebounceRef.current) clearTimeout(noteDebounceRef.current);
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
-    noteDebounceRef.current = setTimeout(async () => {
-      try {
-        const updated = await updateNoteAPI({
-          dateKey: activeDateKey,
-          note: val,
-        });
-        setDayData(updated);
-        notifyAiCoach(`${activeDateKey}|NOTE|${val.trim()}|${Date.now()}`);
-      } catch {
-        // silent
-      }
-    }, 650);
+  const handleNoteInputChange = (val: string) => {
+    setNoteInput(val);
+  };
+
+  const handleSaveNote = async () => {
+    setIsSavingNote(true);
+    try {
+      const updated = await updateNoteAPI({
+        dateKey: activeDateKey,
+        note: noteInput,
+      });
+      setDayData(updated);
+      toast.success('Đã lưu ghi chú thành công!');
+      // Chỉ khi nhấn nút Lưu mới kích hoạt API lưu ghi chú và gọi API Gemini AI Coach
+      notifyAiCoach(`${activeDateKey}|NOTE|${noteInput.trim()}|${Date.now()}`);
+    } catch {
+      toast.error('Lỗi lưu ghi chú!');
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleCancelNote = () => {
+    // Khôi phục lại nội dung ban đầu từ server
+    setNoteInput(dayData?.dayRecord?.note || '');
+    toast.info('Đã hủy thay đổi ghi chú');
   };
 
   const handleStepDay = (offset: number) => {
@@ -468,10 +505,33 @@ export const DayDetail: React.FC = () => {
             id="daily-note-input"
             rows={3}
             className="day-note-input day-note-textarea"
-            placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (AI sẽ tự động nhận xét sau khi bạn viết xong)..."
+            placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)..."
             value={noteInput}
-            onChange={(e) => handleNoteChange(e.target.value)}
+            onChange={(e) => handleNoteInputChange(e.target.value)}
           />
+
+          <div className="day-note-actions">
+            <button
+              type="button"
+              className="btn-minimal btn-sm btn-note-cancel"
+              onClick={handleCancelNote}
+              disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
+              title="Hủy các thay đổi và khôi phục nội dung cũ"
+            >
+              <RotateCcw size={13} />
+              <span>Hủy thay đổi</span>
+            </button>
+            <button
+              type="button"
+              className="btn-minimal btn-sm btn-save-task btn-note-save"
+              onClick={handleSaveNote}
+              disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
+              title="Lưu ghi chú và kích hoạt AI Coach nhận xét"
+            >
+              <Check size={14} />
+              <span>{isSavingNote ? 'Đang lưu...' : 'Lưu ghi chú'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>

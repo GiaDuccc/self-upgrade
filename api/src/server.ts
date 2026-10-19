@@ -29,14 +29,27 @@ const START_SERVER = () => {
   const port = Number(env.LOCAL_DEV_APP_PORT) || 2004;
   const host = env.LOCAL_DEV_APP_HOST || 'localhost';
 
-  app.listen(port, host, () => {
+  const server = app.listen(port, host, () => {
     console.log(
       `3. [Self Upgrade API] Hi ${env.AUTHOR}, Back-end Server is running successfully at http://${host}:${port}/v1`
     );
   });
 
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`Cổng ${port} đang bận, đang thử kết nối lại sau 500ms...`);
+      setTimeout(() => {
+        server.close();
+        server.listen(port, host);
+      }, 500);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+
   exitHook(() => {
     console.log('4. Server is shutting down...');
+    server.close();
     CLOSE_DB();
   });
 };

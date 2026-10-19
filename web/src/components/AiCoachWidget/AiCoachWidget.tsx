@@ -33,10 +33,9 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     }, seconds * 1000);
   };
 
-  // 1. KHI VÀO DỰ ÁN: Gọi BE lấy câu lời chào + lời nhắc, hiển thị 5s rồi thu về
+  // 1. KHI VÀO DỰ ÁN: Gọi BE lấy câu lời chào + lời nhắc, khi CÓ DỮ LIỆU TRẢ VỀ thì MỚI mở đoạn chat
   useEffect(() => {
     let isCancelled = false;
-    setIsOpen(true);
     setIsAiLoading(true);
 
     getAiCoachingMessageAPI({
@@ -44,16 +43,16 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       mode: 'greeting',
     })
       .then((msg) => {
-        if (!isCancelled) {
+        if (!isCancelled && msg) {
           setAiMessage(msg);
           setIsAiLoading(false);
+          // Chỉ khi dữ liệu API trả về thì mới hiện đoạn chat
           openWithAutoClose(5);
         }
       })
       .catch(() => {
         if (!isCancelled) {
           setIsAiLoading(false);
-          openWithAutoClose(4);
         }
       });
 
@@ -63,7 +62,8 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     };
   }, []);
 
-  // 2. KHI CÓ THAY ĐỔI (tích việc, ghi chú, đổi trạng thái cá nhân): Phóng ra trả lời, sau 5s thu về
+  // 2. KHI CÓ THAY ĐỔI (tích việc, lưu ghi chú, đổi trạng thái cá nhân):
+  // Trong lúc đợi gọi API thì giữ ngầm, CHỈ KHI DỮ LIỆU TỪ API TRẢ VỀ THÌ MỚI HIỆN ĐOẠN CHAT (5s rồi tự thu về)
   useEffect(() => {
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
@@ -81,7 +81,6 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     }
 
     debounceTimerRef.current = setTimeout(async () => {
-      setIsOpen(true);
       setIsAiLoading(true);
       if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
 
@@ -90,14 +89,16 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
           dateKey,
           mode: 'feedback',
         });
-        setAiMessage(msg);
-        setIsAiLoading(false);
-        openWithAutoClose(5);
+        if (msg) {
+          setAiMessage(msg);
+          setIsAiLoading(false);
+          // Chỉ khi dữ liệu từ API trả về thành công thì mới hiện đoạn chat
+          openWithAutoClose(5);
+        }
       } catch {
         setIsAiLoading(false);
-        openWithAutoClose(4);
       }
-    }, 600);
+    }, 400);
 
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -117,7 +118,6 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     e.stopPropagation();
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
-    setIsOpen(true);
     setIsAiLoading(true);
 
     try {
@@ -125,12 +125,13 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         dateKey,
         mode: 'feedback',
       });
-      setAiMessage(msg);
-      setIsAiLoading(false);
-      openWithAutoClose(6);
+      if (msg) {
+        setAiMessage(msg);
+        setIsAiLoading(false);
+        openWithAutoClose(6);
+      }
     } catch {
       setIsAiLoading(false);
-      openWithAutoClose(4);
     }
   };
 
