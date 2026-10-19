@@ -31,7 +31,7 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   currentYear,
   currentMonth,
   selectedDateKey,
@@ -52,48 +52,54 @@ export const Header: React.FC<HeaderProps> = ({
 
   const isDashboardPage = location.pathname === '/';
   const isDayDetailPage = location.pathname.startsWith('/day');
-  const targetDayKey = selectedDateKey || getTodayInfo().dateKey;
+  const routeDateMatch = location.pathname.match(/^\/day\/(\d{4}-\d{2}-\d{2})/);
+  const targetDayKey = routeDateMatch ? routeDateMatch[1] : (selectedDateKey || getTodayInfo().dateKey);
 
   return (
     <header className="top-navbar">
-      <div className="brand-block" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-        <div className="brand-logo-mark">SU</div>
-        <div>
-          <h1 className="brand-title">
-            SELF UPGRADE
-            {userProfile.name?.trim()
-              ? ` — ${userProfile.name.trim().toUpperCase()}`
-              : ''}
-          </h1>
-          <p className="brand-subtitle">
-            {userProfile.personalMotto?.trim()
-              ? `“${userProfile.personalMotto.trim()}”`
-              : userEmail || 'Hệ thống theo dõi kỷ luật & điểm hiệu suất cá nhân'}
-          </p>
+      {/* HÀNG TRÊN: BRAND BÊN TRÁI & NAV TABS CỐ ĐỊNH Ở GÓC PHẢI */}
+      <div className="top-navbar-row-top">
+        <div className="brand-block" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+          <div className="brand-logo-mark">SU</div>
+          <div>
+            <h1 className="brand-title">
+              SELF UPGRADE
+              {userProfile.name?.trim()
+                ? ` — ${userProfile.name.trim().toUpperCase()}`
+                : ''}
+            </h1>
+            <p className="brand-subtitle">
+              {userProfile.personalMotto?.trim()
+                ? `“${userProfile.personalMotto.trim()}”`
+                : userEmail || 'Hệ thống theo dõi kỷ luật & điểm hiệu suất cá nhân'}
+            </p>
+          </div>
         </div>
+
+        {/* ĐIỀU HƯỚNG TÁCH RIÊNG 2 PAGE: DASHBOARD & CHI TIẾT NGÀY (CỐ ĐỊNH Ở GÓC PHẢI) */}
+        <nav className="page-nav-tabs" aria-label="Điều hướng trang">
+          <button
+            type="button"
+            className={`btn-minimal nav-tab-btn ${isDashboardPage ? 'active' : ''}`}
+            onClick={() => navigate('/')}
+          >
+            <LayoutDashboard size={15} />
+            <span>Tổng quan tháng</span>
+          </button>
+          <button
+            type="button"
+            className={`btn-minimal nav-tab-btn ${isDayDetailPage ? 'active' : ''}`}
+            onClick={() => navigate(`/day/${targetDayKey}`)}
+          >
+            <CheckSquare size={15} />
+            <span>Chi tiết ngày ({targetDayKey.slice(8, 10)}/{targetDayKey.slice(5, 7)})</span>
+          </button>
+        </nav>
       </div>
 
-      {/* ĐIỀU HƯỚNG TÁCH RIÊNG 2 PAGE: DASHBOARD & CHI TIẾT NGÀY */}
-      <nav className="page-nav-tabs" aria-label="Điều hướng trang">
-        <button
-          type="button"
-          className={`btn-minimal nav-tab-btn ${isDashboardPage ? 'active' : ''}`}
-          onClick={() => navigate('/')}
-        >
-          <LayoutDashboard size={15} />
-          <span>Tổng quan tháng</span>
-        </button>
-        <button
-          type="button"
-          className={`btn-minimal nav-tab-btn ${isDayDetailPage ? 'active' : ''}`}
-          onClick={() => navigate(`/day/${targetDayKey}`)}
-        >
-          <CheckSquare size={15} />
-          <span>Chi tiết ngày ({targetDayKey.slice(8, 10)}/{targetDayKey.slice(5, 7)})</span>
-        </button>
-      </nav>
-
-      <div className="navbar-controls">
+      {/* HÀNG DƯỚI: PHÍA BÊN TRÁI LÀ NAVBAR CONTROLS */}
+      <div className="top-navbar-row-bottom">
+        <div className="navbar-controls">
         <div className="month-switcher">
           <button
             type="button"
@@ -188,7 +194,8 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Đăng xuất</span>
         </button>
       </div>
-    </header>
-  );
-};
+    </div>
+  </header>
+);
+});
 

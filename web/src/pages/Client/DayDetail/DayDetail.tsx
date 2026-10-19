@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -42,6 +42,7 @@ export const DayDetail: React.FC = () => {
 
   const {
     userProfile,
+    monthStats,
     setSelectedDateKey,
     refreshMonthStats,
     onOpenAddTaskModal,
@@ -51,9 +52,54 @@ export const DayDetail: React.FC = () => {
     dayRefreshTrigger,
   } = useOutletContext<ClientOutletContext>();
 
-  const [dayData, setDayData] = useState<DayDataResponse | null>(null);
-  const [noteInput, setNoteInput] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const buildInitialDayData = useCallback(
+    (key: string): DayDataResponse | null => {
+      if (!monthStats) return null;
+      const found = monthStats.daysList.find((d) => d.dateKey === key);
+      if (!found) return null;
+
+      return {
+        dateKey: key,
+        year: monthStats.year,
+        month: monthStats.month,
+        day: found.day,
+        weekday: found.weekday,
+        dayStats: {
+          rawPoints: found.rawPoints,
+          maxPoints: found.maxPoints,
+          basePercentage: found.basePercentage,
+          stateBonusPct: found.stateBonusPct,
+          percentage: found.percentage,
+          checkedCount: found.checkedCount,
+          totalTasks: found.totalTasks,
+          counts: found.counts,
+          rank: found.rank,
+          note: found.note || '',
+          tasksList: found.tasksList || [],
+          tasksMap: found.tasksMap || {},
+        },
+        dayRecord: {
+          tasks: found.tasksMap || {},
+          note: found.note || '',
+        },
+        profile: userProfile,
+        isProfileSetup: true,
+        settings: {} as any,
+      };
+    },
+    [monthStats, userProfile]
+  );
+
+  const [dayData, setDayData] = useState<DayDataResponse | null>(() =>
+    buildInitialDayData(activeDateKey)
+  );
+  const [noteInput, setNoteInput] = useState(() => {
+    const init = buildInitialDayData(activeDateKey);
+    return init?.dayRecord?.note || '';
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    return !buildInitialDayData(activeDateKey);
+  });
   const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories'>('todolist');
   const [isSavingCalories, setIsSavingCalories] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,9 +132,16 @@ export const DayDetail: React.FC = () => {
     setSelectedDateKey(activeDateKey);
     let isMounted = true;
 
-    // Chỉ bật loading toàn màn hình nếu chưa có dữ liệu của ngày này
+    // Nếu activeDateKey khác với dữ liệu hiện tại, lập tức dựng dữ liệu tức thì từ monthStats (nếu có)
     if (!dayData || dayData.dateKey !== activeDateKey) {
-      setIsLoading(true);
+      const init = buildInitialDayData(activeDateKey);
+      if (init) {
+        setDayData(init);
+        setNoteInput(init.dayRecord?.note || '');
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
     }
 
     getDayDataAPI(activeDateKey)
@@ -109,7 +162,7 @@ export const DayDetail: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [activeDateKey, dayRefreshTrigger]);
+  }, [activeDateKey, dayRefreshTrigger, buildInitialDayData]);
 
   const handleSetTaskLevel = async (taskId: string, levelKey: TaskLevelKey) => {
     // 1. Cập nhật lạc quan (Optimistic update) ngay lập tức trên UI

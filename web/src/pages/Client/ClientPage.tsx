@@ -273,6 +273,10 @@ export const ClientPage: React.FC = () => {
     return found?.tasksList || [];
   }, [monthStats, selectedDateKey]);
 
+  const handleOpenProfileModal = useCallback(() => {
+    setIsProfileModalOpen(true);
+  }, []);
+
   const outletContext: ClientOutletContext = {
     currentYear,
     currentMonth,
@@ -284,7 +288,7 @@ export const ClientPage: React.FC = () => {
     refreshMonthStats: fetchMonthData,
     onOpenAddTaskModal: handleOpenAddTaskModal,
     onEditTask: handleEditTask,
-    onOpenProfileModal: () => setIsProfileModalOpen(true),
+    onOpenProfileModal: handleOpenProfileModal,
     notifyAiCoach: (sig: string) => setAiTriggerSignal(sig),
     dayRefreshTrigger,
   };
@@ -301,7 +305,7 @@ export const ClientPage: React.FC = () => {
         onNextMonth={handleNextMonth}
         onJumpToday={handleJumpToday}
         onOpenAddTaskModal={handleOpenAddTaskModal}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenProfileModal={handleOpenProfileModal}
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onLogout={handleLogout}
