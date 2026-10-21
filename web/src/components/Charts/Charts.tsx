@@ -66,16 +66,16 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
           <p className="chart-subtitle">
             Nhấn vào điểm bất kỳ trên biểu đồ để mở trang chi tiết & tích việc ngày đó
           </p>
+          {activePoint && (
+            <div className="chart-active-badge">
+              <span>Ngày {activePoint.day}:</span>
+              <strong>{activePoint.percentage}%</strong>
+              <span className="chart-badge-sub">
+                ({activePoint.rawPoints}/{activePoint.maxPoints}đ • {activePoint.rank.title})
+              </span>
+            </div>
+          )}
         </div>
-        {activePoint && (
-          <div className="chart-active-badge">
-            <span>Ngày {activePoint.day}:</span>
-            <strong>{activePoint.percentage}%</strong>
-            <span className="chart-badge-sub">
-              ({activePoint.rawPoints}/{activePoint.maxPoints}đ • {activePoint.rank.title})
-            </span>
-          </div>
-        )}
       </div>
 
       <div className="line-chart-wrapper">

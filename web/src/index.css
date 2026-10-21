@@ -419,6 +419,9 @@ input {
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 0.76rem;
+  margin-top: 8px;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .chart-badge-sub {
