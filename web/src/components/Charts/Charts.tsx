@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { MonthDayItem, MonthStats } from '~/interface/discipline.interface';
-import { SCORING } from '~/utils/constants';
 
 interface MonthlyLineChartProps {
   daysList: MonthDayItem[];
@@ -228,87 +227,54 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
   const [scope, setScope] = useState<'DAY' | 'MONTH'>('MONTH');
 
   const isDayScope = scope === 'DAY';
-  const counts = isDayScope
-    ? selectedDayStats.counts
-    : monthStats.monthCounts;
 
-  const totalItems =
-    counts.PERFECT + counts.GOOD + counts.BAD + counts.NONE;
-
-  const centerPercent = isDayScope
-    ? selectedDayStats.percentage
-    : monthStats.avgActivePercentage;
+  const centerPercent = Math.min(
+    100,
+    Math.max(
+      0,
+      isDayScope
+        ? selectedDayStats.percentage
+        : monthStats.avgActivePercentage
+    )
+  );
 
   const centerSubLabel = isDayScope
-    ? `${selectedDayStats.rawPoints}/${selectedDayStats.maxPoints} điểm`
+    ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 10} việc hoàn thành`
     : `${monthStats.activeDaysCount}/${monthStats.totalDays} ngày đã tích`;
-
-  const segments = [
-    {
-      key: 'PERFECT',
-      label: SCORING.PERFECT.label,
-      count: counts.PERFECT,
-      color: 'var(--level-perfect)',
-      pointsInfo: '10đ/việc',
-    },
-    {
-      key: 'GOOD',
-      label: SCORING.GOOD.label,
-      count: counts.GOOD,
-      color: 'var(--level-good)',
-      pointsInfo: '5đ/việc',
-    },
-    {
-      key: 'BAD',
-      label: SCORING.BAD.label,
-      count: counts.BAD,
-      color: 'var(--level-bad)',
-      pointsInfo: '1đ/việc',
-    },
-    {
-      key: 'NONE',
-      label: SCORING.NONE.label,
-      count: counts.NONE,
-      color: 'var(--level-none)',
-      pointsInfo: '0đ',
-    },
-  ];
 
   const size = 180;
   const strokeWidth = 22;
   const center = size / 2;
   const radius = center - strokeWidth;
   const circumference = 2 * Math.PI * radius;
-
-  let accumulatedAngle = 0;
+  const dashLength = (centerPercent / 100) * circumference;
 
   return (
     <div className="chart-box">
       <div className="chart-header">
         <div>
-          <h3 className="chart-title">BIỂU ĐỒ TRÒN — TỶ LỆ MỨC ĐỘ</h3>
+          <h3 className="chart-title">BIỂU ĐỒ TRÒN — TIẾN ĐỘ HOÀN THÀNH (%)</h3>
           <p className="chart-subtitle">
             {isDayScope
-              ? `Phân bổ các đầu việc của ${selectedDayLabel}`
-              : `Phân bổ các ngày đã tích trong tháng ${monthStats.month}/${monthStats.year}`}
+              ? `Tỷ lệ hoàn thành công việc của ${selectedDayLabel}`
+              : `Hiệu suất hoàn thành trung bình trong tháng ${monthStats.month}/${monthStats.year}`}
           </p>
-        </div>
-
-        <div className="segmented-toggle" role="tablist">
-          <button
-            type="button"
-            className={`seg-btn ${isDayScope ? 'active' : ''}`}
-            onClick={() => setScope('DAY')}
-          >
-            Ngày đang chọn
-          </button>
-          <button
-            type="button"
-            className={`seg-btn ${!isDayScope ? 'active' : ''}`}
-            onClick={() => setScope('MONTH')}
-          >
-            Cả tháng
-          </button>
+          <div className="segmented-toggle" role="tablist">
+            <button
+              type="button"
+              className={`seg-btn ${isDayScope ? 'active' : ''}`}
+              onClick={() => setScope('DAY')}
+            >
+              Ngày đang chọn
+            </button>
+            <button
+              type="button"
+              className={`seg-btn ${!isDayScope ? 'active' : ''}`}
+              onClick={() => setScope('MONTH')}
+            >
+              Cả tháng
+            </button>
+          </div>
         </div>
       </div>
 
@@ -319,7 +285,10 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
             height={size}
             viewBox={`0 0 ${size} ${size}`}
             className="donut-svg"
+            role="img"
+            aria-label="Biểu đồ tròn tiến độ hoàn thành"
           >
+            {/* Vòng nền 100% */}
             <circle
               cx={center}
               cy={center}
@@ -329,34 +298,26 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
               strokeWidth={strokeWidth}
             />
 
-            {totalItems > 0 &&
-              segments.map((seg) => {
-                if (seg.count <= 0) return null;
-                const ratio = seg.count / totalItems;
-                const dashLength = ratio * circumference;
-                const dashOffset = -accumulatedAngle * circumference;
-                accumulatedAngle += ratio;
+            {/* Vòng tiến độ phần trăm đã hoàn thành */}
+            {centerPercent > 0 && (
+              <circle
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke="var(--text-primary)"
+                strokeWidth={strokeWidth}
+                strokeDasharray={`${dashLength} ${circumference}`}
+                strokeDashoffset={0}
+                transform={`rotate(-90 ${center} ${center})`}
+                style={{
+                  transition:
+                    'stroke-dasharray 0.35s ease, stroke-dashoffset 0.35s ease',
+                }}
+              />
+            )}
 
-                return (
-                  <circle
-                    key={seg.key}
-                    cx={center}
-                    cy={center}
-                    r={radius}
-                    fill="none"
-                    stroke={seg.color}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray={`${dashLength} ${circumference}`}
-                    strokeDashoffset={dashOffset}
-                    transform={`rotate(-90 ${center} ${center})`}
-                    style={{
-                      transition:
-                        'stroke-dasharray 0.35s ease, stroke-dashoffset 0.35s ease',
-                    }}
-                  />
-                );
-              })}
-
+            {/* Viền trang trí ngoài & trong */}
             <circle
               cx={center}
               cy={center}
@@ -382,28 +343,61 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
         </div>
 
         <div className="donut-legend">
-          {segments.map((seg) => {
-            const pct =
-              totalItems > 0
-                ? Math.round((seg.count / totalItems) * 100)
-                : 0;
-            return (
-              <div key={seg.key} className="legend-row">
-                <div className="legend-left">
-                  <span
-                    className="legend-swatch"
-                    style={{ backgroundColor: seg.color }}
-                  />
-                  <span className="legend-label">{seg.label}</span>
-                  <span className="legend-pts">({seg.pointsInfo})</span>
-                </div>
-                <div className="legend-right">
-                  <strong>{seg.count}</strong>
-                  <span className="legend-pct">{pct}%</span>
-                </div>
-              </div>
-            );
-          })}
+          <div className="legend-row">
+            <div className="legend-left">
+              <span
+                className="legend-swatch"
+                style={{ backgroundColor: 'var(--text-primary)' }}
+              />
+              <span className="legend-label">Đã hoàn thành</span>
+              <span className="legend-pts">
+                ({isDayScope
+                  ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 10} việc`
+                  : `${monthStats.activeDaysCount}/${monthStats.totalDays} ngày`})
+              </span>
+            </div>
+            <div className="legend-right">
+              <strong>{centerPercent}%</strong>
+            </div>
+          </div>
+
+          <div className="legend-row">
+            <div className="legend-left">
+              <span
+                className="legend-swatch"
+                style={{ backgroundColor: 'var(--level-none)' }}
+              />
+              <span className="legend-label">Chưa hoàn thành</span>
+              <span className="legend-pts">
+                ({isDayScope
+                  ? `${Math.max(0, (selectedDayStats.totalTasks || 10) - selectedDayStats.checkedCount)} việc còn lại`
+                  : `${Math.max(0, monthStats.totalDays - monthStats.activeDaysCount)} ngày chưa ghi`})
+              </span>
+            </div>
+            <div className="legend-right">
+              <strong>{Math.max(0, 100 - centerPercent)}%</strong>
+            </div>
+          </div>
+
+          <div className="legend-row">
+            <div className="legend-left">
+              <span
+                className="legend-swatch"
+                style={{ backgroundColor: 'var(--border-subtle)' }}
+              />
+              <span className="legend-label">Đánh giá</span>
+              <span className="legend-pts">
+                ({isDayScope ? selectedDayStats.rank.title : monthStats.monthRank.title})
+              </span>
+            </div>
+            <div className="legend-right">
+              <strong>
+                {isDayScope
+                  ? `${selectedDayStats.rawPoints}/${selectedDayStats.maxPoints}đ`
+                  : `${monthStats.sumPoints}/${monthStats.maxMonthPoints}đ`}
+              </strong>
+            </div>
+          </div>
         </div>
       </div>
     </div>
