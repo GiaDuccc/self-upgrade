@@ -31,6 +31,43 @@
   --state-perfect: #16A34A;
 }
 
+[data-theme='dark'] {
+  --bg-primary: #121211;
+  --bg-surface: #1B1A18;
+  --bg-mixed: #262522;
+  --bg-mixed-subtle: #201F1C;
+  --text-primary: #EDE9E1;
+  --text-secondary: #9E9A91;
+  --text-muted: #6E6B62;
+  --border-color: #EDE9E1;
+  --border-subtle: #383632;
+  --btn-bg: #1B1A18;
+  --btn-text: #EDE9E1;
+  --btn-border: #4E4B44;
+  --btn-hover-bg: #EDE9E1;
+  --btn-hover-text: #121211;
+  --level-perfect: #EDE9E1;
+  --level-good: #9E9A91;
+  --level-bad: #6E6B62;
+  --level-none: #2E2D29;
+  --chart-line: #EDE9E1;
+  --chart-area: rgba(237, 233, 225, 0.08);
+  --chart-grid: #282724;
+}
+
+[data-theme='dark'] .timetable-th,
+[data-theme='dark'] .timetable-td {
+  border: 1px solid rgba(237, 233, 225, 0.1);
+}
+
+[data-theme='dark'] .timetable-wrapper {
+  border: 1px solid rgba(237, 233, 225, 0.14);
+}
+
+[data-theme='dark'] .modal-container {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
 html {
   font-size: 16px; /* Thu nhỏ cỡ chữ 2px (từ 18px về 16px) theo yêu cầu */
   overflow-y: scroll; /* Cố định thanh cuộn để tránh giật layout/nhảy chiều ngang 17px khi chuyển trang */
@@ -2483,6 +2520,12 @@ input {
   background-color: var(--bg-mixed);
 }
 
+.btn-settings-header {
+  border-width: 1.5px;
+  font-weight: 600;
+  background-color: var(--bg-mixed);
+}
+
 .profile-section-block {
   background-color: var(--bg-mixed-subtle);
   border: 1px solid var(--border-subtle);
@@ -3378,6 +3421,251 @@ input {
     font-size: 1.25rem;
   }
 }
+
+/* ============================================================================
+   SETTINGS MODAL & THEME / FEATURE CONTROLS
+   ============================================================================ */
+.settings-modal-container {
+  max-width: 540px;
+}
+
+.settings-modal-body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-section-tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.settings-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.settings-section-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Theme selector cards */
+.theme-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-subtle);
+  background-color: var(--bg-mixed-subtle);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.theme-card:hover {
+  border-color: var(--border-color);
+  background-color: var(--bg-mixed);
+}
+
+.theme-card.active {
+  border-color: var(--border-color);
+  background-color: var(--bg-surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.theme-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-card-icon-box.light-preview {
+  background-color: #FAF7F2;
+  color: #222220;
+  border: 1px solid #D6D1C7;
+}
+
+.theme-card-icon-box.dark-preview {
+  background-color: #181716;
+  color: #EDE9E1;
+  border: 1px solid #484642;
+}
+
+.theme-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theme-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.theme-badge-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.theme-card-desc {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+/* Feature Item Row */
+.feature-item-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+}
+
+.feature-item-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-mixed);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feature-item-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feature-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+
+.feature-status-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.feature-status-tag.status-enabled {
+  background-color: #16A34A;
+  color: #FFFFFF;
+}
+
+.feature-status-tag.status-disabled {
+  background-color: var(--bg-mixed);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.feature-item-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* Minimalist Toggle Switch Button */
+.toggle-switch-btn {
+  width: 46px;
+  height: 26px;
+  border-radius: 14px;
+  background-color: var(--bg-mixed);
+  border: 1.5px solid var(--border-subtle);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+
+.toggle-switch-btn.is-active {
+  background-color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.toggle-switch-btn.is-active .toggle-switch-thumb {
+  transform: translateX(20px);
+  background-color: var(--bg-primary);
+}
+
+.settings-modal-footer {
+  padding: 14px 22px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-primary);
+}
+
+.btn-close-settings {
+  padding: 6px 18px;
+  font-weight: 600;
+}
+
 
 
 

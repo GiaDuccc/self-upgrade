@@ -14,6 +14,7 @@ import { AiCoachWidget } from '~/components/AiCoachWidget/AiCoachWidget';
 import { Footer } from '~/components/Footer/Footer';
 import { Header } from '~/components/Header/Header';
 import { ProfileModal } from '~/components/ProfileModal/ProfileModal';
+import { SettingsModal } from '~/components/SettingsModal/SettingsModal';
 import { TaskModal } from '~/components/TaskModal/TaskModal';
 import { MonthStats, TaskItem, TaskScope } from '~/interface/discipline.interface';
 import { UserProfile } from '~/interface/user.interface';
@@ -35,9 +36,34 @@ export interface ClientOutletContext {
   onOpenAddTaskModal: (preset?: Partial<TaskItem>) => void;
   onEditTask: (task: TaskItem) => void;
   onOpenProfileModal: () => void;
+  onOpenSettingsModal: () => void;
   notifyAiCoach: (signal: string) => void;
   dayRefreshTrigger: number;
+  isCaloriesEnabled: boolean;
+  theme: 'light' | 'dark';
 }
+
+interface AppSettings {
+  theme: 'light' | 'dark';
+  enableCalories: boolean;
+}
+
+const getStoredSettings = (): AppSettings => {
+  try {
+    const raw = localStorage.getItem('app_settings');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        theme: parsed.theme === 'dark' ? 'dark' : 'light',
+        enableCalories: parsed.enableCalories !== false,
+      };
+    }
+  } catch {}
+  return {
+    theme: 'light',
+    enableCalories: true,
+  };
+};
 
 export const ClientPage: React.FC = () => {
   const today = useMemo(() => getTodayInfo(), []);
@@ -57,6 +83,33 @@ export const ClientPage: React.FC = () => {
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [settings, setSettings] = useState<AppSettings>(getStoredSettings);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', settings.theme);
+    try {
+      localStorage.setItem('app_settings', JSON.stringify(settings));
+    } catch {}
+  }, [settings]);
+
+  const handleToggleTheme = useCallback((newTheme: 'light' | 'dark') => {
+    setSettings((prev) => ({ ...prev, theme: newTheme }));
+  }, []);
+
+  const handleToggleCalories = useCallback((enabled: boolean) => {
+    setSettings((prev) => ({ ...prev, enableCalories: enabled }));
+    toast.info(
+      enabled
+        ? 'Đã bật chế độ Calories & Dinh dưỡng'
+        : 'Đã tắt chế độ Calories & Dinh dưỡng'
+    );
+  }, []);
+
+  const handleOpenSettingsModal = useCallback(() => {
+    setIsSettingsModalOpen(true);
+  }, []);
+
   const [aiTriggerSignal, setAiTriggerSignal] = useState<string>('');
   const [dayRefreshTrigger, setDayRefreshTrigger] = useState<number>(0);
 
@@ -293,8 +346,11 @@ export const ClientPage: React.FC = () => {
     onOpenAddTaskModal: handleOpenAddTaskModal,
     onEditTask: handleEditTask,
     onOpenProfileModal: handleOpenProfileModal,
+    onOpenSettingsModal: handleOpenSettingsModal,
     notifyAiCoach: (sig: string) => setAiTriggerSignal(sig),
     dayRefreshTrigger,
+    isCaloriesEnabled: settings.enableCalories,
+    theme: settings.theme,
   };
 
   return (
@@ -310,6 +366,7 @@ export const ClientPage: React.FC = () => {
         onJumpToday={handleJumpToday}
         onOpenAddTaskModal={handleOpenAddTaskModal}
         onOpenProfileModal={handleOpenProfileModal}
+        onOpenSettingsModal={handleOpenSettingsModal}
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onLogout={handleLogout}
@@ -338,6 +395,15 @@ export const ClientPage: React.FC = () => {
         userProfile={userProfile}
         isFirstTimeSetup={!isProfileSetup}
         onSaveProfile={handleSaveProfile}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        theme={settings.theme}
+        onToggleTheme={handleToggleTheme}
+        isCaloriesEnabled={settings.enableCalories}
+        onToggleCalories={handleToggleCalories}
       />
 
       <AiCoachWidget

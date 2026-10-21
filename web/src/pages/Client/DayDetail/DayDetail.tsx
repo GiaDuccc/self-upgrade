@@ -103,6 +103,7 @@ export const DayDetail: React.FC = () => {
     onOpenProfileModal,
     notifyAiCoach,
     dayRefreshTrigger,
+    isCaloriesEnabled,
   } = useOutletContext<ClientOutletContext>();
 
   const buildInitialDayData = useCallback(
@@ -157,12 +158,26 @@ export const DayDetail: React.FC = () => {
   });
   const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories'>('todolist');
   const [isSavingCalories, setIsSavingCalories] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isCaloriesEnabled && activeDayTab === 'calories') {
+      setActiveDayTab('todolist');
+    }
+  }, [isCaloriesEnabled, activeDayTab]);
 
   // Hooks phải được gọi trước mọi câu lệnh return sớm (Rules of Hooks)
   const rawCaloriesMeals = dayData?.dayRecord?.caloriesData?.meals;
   const caloriesMeals = useMemo(() => rawCaloriesMeals || [], [rawCaloriesMeals]);
   const caloriesSummary = dayData?.dayRecord?.caloriesData?.summary;
+
+  const currentTasksList = dayData?.dayStats?.tasksList || [];
+  const taskGridMap = useMemo(
+    () => buildTaskGridMap(currentTasksList),
+    [currentTasksList]
+  );
 
   const handleSaveCalories = async (meals: FoodItem[]) => {
     setIsSavingCalories(true);
@@ -218,8 +233,6 @@ export const DayDetail: React.FC = () => {
       isMounted = false;
     };
   }, [activeDateKey, dayRefreshTrigger, buildInitialDayData]);
-
-  const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Khóa cuộn trang ngoài khi di chuột vào bảng: kể cả khi cuộn hết trên/dưới cũng không cuộn web bên ngoài
   useEffect(() => {
@@ -345,8 +358,6 @@ export const DayDetail: React.FC = () => {
     }
   };
 
-  const [isSavingNote, setIsSavingNote] = useState(false);
-
   const handleNoteInputChange = (val: string) => {
     setNoteInput(val);
   };
@@ -396,13 +407,7 @@ export const DayDetail: React.FC = () => {
 
   const { dayStats, dayRecord, weekday, day, month } = dayData;
   const tasksMap = dayRecord?.tasks || {};
-  const currentTasksList = dayStats.tasksList || [];
   const isToday = activeDateKey === today.dateKey;
-
-  const taskGridMap = useMemo(
-    () => buildTaskGridMap(currentTasksList),
-    [currentTasksList]
-  );
 
   const allTasksCompleted =
     currentTasksList.length > 0 &&
@@ -616,30 +621,31 @@ export const DayDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* 2 NÚT TAB TRÊN CÙNG: TO-DO LIST & CALORIES */}
-      <div className="day-mode-tab-bar">
-        <button
-          type="button"
-          className={`btn-minimal day-mode-btn ${activeDayTab === 'todolist' ? 'active' : ''}`}
-          onClick={() => setActiveDayTab('todolist')}
-        >
-          <CheckSquare size={15} />
-          <span>To-do List ({currentTasksList.length})</span>
-        </button>
-        <button
-          type="button"
-          className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
-          onClick={() => setActiveDayTab('calories')}
-        >
-          <Flame size={15} />
-          <span>
-            Calories & Dinh dưỡng
-            {dayRecord?.caloriesData?.meals?.length ? ` (${dayRecord.caloriesData.meals.length} món)` : ''}
-          </span>
-        </button>
-      </div>
+      {/* 2 NÚT TAB TRÊN CÙNG: TO-DO LIST & CALORIES (CHỈ HIỂN THỊ KHI BẬT CALORIES) */}
+      {isCaloriesEnabled && (
+        <div className="day-mode-tab-bar">
+          <button
+            type="button"
+            className={`btn-minimal day-mode-btn ${activeDayTab === 'todolist' ? 'active' : ''}`}
+            onClick={() => setActiveDayTab('todolist')}
+          >
+            <CheckSquare size={15} />
+            <span>To-do List ({currentTasksList.length})</span>
+          </button>
+          <button
+            type="button"
+            className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
+            onClick={() => setActiveDayTab('calories')}
+          >
+            <Flame size={15} />
+            <span>
+              Calories & Dinh dưỡng
+            </span>
+          </button>
+        </div>
+      )}
 
-      {activeDayTab === 'todolist' ? (
+      {(!isCaloriesEnabled || activeDayTab === 'todolist') ? (
         <div className="day-workspace-layout">
           {currentTasksList.length === 0 ? (
             <div className="empty-tasks-placeholder">
@@ -679,7 +685,7 @@ export const DayDetail: React.FC = () => {
                               y1="0"
                               x2="100"
                               y2="100"
-                              stroke="rgba(34, 34, 32, 0.15)"
+                              stroke="var(--border-subtle)"
                               strokeWidth="1"
                               vectorEffect="non-scaling-stroke"
                             />

@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   CheckSquare,
   LogOut,
+  Settings,
 } from 'lucide-react';
 import { UserProfile } from '~/interface/user.interface';
 import { getTodayInfo } from '~/utils/constants';
@@ -26,6 +27,7 @@ interface HeaderProps {
   onJumpToday: () => void;
   onOpenAddTaskModal: () => void;
   onOpenProfileModal: () => void;
+  onOpenSettingsModal: () => void;
   onExportJson: () => void;
   onImportJson: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onLogout: () => void;
@@ -42,6 +44,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   onJumpToday,
   onOpenAddTaskModal,
   onOpenProfileModal,
+  onOpenSettingsModal,
   onExportJson,
   onImportJson,
   onLogout,
@@ -182,6 +185,16 @@ export const Header: React.FC<HeaderProps> = React.memo(({
               ? `${userProfile.name.trim()} • Cá nhân hóa`
               : 'Thông tin cá nhân'}
           </span>
+        </button>
+
+        <button
+          type="button"
+          className="btn-minimal btn-settings-header"
+          onClick={onOpenSettingsModal}
+          title="Cài đặt hệ thống: Giao diện sáng/tối, bật/tắt calories..."
+        >
+          <Settings size={15} />
+          <span>Cài đặt</span>
         </button>
 
         <button
