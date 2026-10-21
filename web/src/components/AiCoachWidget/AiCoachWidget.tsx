@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { getAiCoachingMessageAPI } from '~/apis/clientAPI/aiCoachApi';
 import { UserProfile } from '~/interface/user.interface';
@@ -23,6 +24,10 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
   const isInitialMountRef = useRef(true);
   const lastSignalRef = useRef('');
 
+  // Lưu controller hủy request đang chạy & ID của request mới nhất
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const latestRequestIdRef = useRef<number>(0);
+
   const openWithAutoClose = (seconds = 5) => {
     setIsOpen(true);
     if (autoCloseTimerRef.current) {
@@ -32,6 +37,21 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       setIsOpen(false);
     }, seconds * 1000);
   };
+
+  // Hủy mọi request & timer khi unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   // 1. KHI VÀO DỰ ÁN: Gọi BE lấy câu lời chào + lời nhắc, khi CÓ DỮ LIỆU TRẢ VỀ thì MỚI mở đoạn chat
   useEffect(() => {
@@ -46,7 +66,6 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         if (!isCancelled && msg) {
           setAiMessage(msg);
           setIsAiLoading(false);
-          // Chỉ khi dữ liệu API trả về thì mới hiện đoạn chat
           openWithAutoClose(5);
         }
       })
@@ -63,7 +82,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
   }, []);
 
   // 2. KHI CÓ THAY ĐỔI (tích việc, lưu ghi chú, đổi trạng thái cá nhân):
-  // Mở ngay ô chat ra ngoài với hiệu ứng 3 chấm đang chat (chưa có nội dung), khi API trả về thì hiện nội dung
+  // Nếu có lượt tích mới, HỦY NGAY request cũ đang chờ và thay bằng dữ liệu của lượt tích mới
   useEffect(() => {
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
@@ -76,41 +95,73 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     }
     lastSignalRef.current = triggerSignal;
 
-    // Ngay khi có thay đổi: Mở ô chat ra ngay lập tức và bật hiệu ứng 3 chấm đang gõ
+    // 1. Hủy ngay request AI Coach đang chạy dở trước đó
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    // 2. Hủy timer debounce trước đó
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // 3. Tăng id phiên request để phân biệt và chỉ nhận kết quả của lượt tích mới nhất
+    const requestId = ++latestRequestIdRef.current;
+
+    // 4. Mở ô chat ra ngay lập tức và bật hiệu ứng 3 chấm đang gõ
     if (autoCloseTimerRef.current) {
       clearTimeout(autoCloseTimerRef.current);
     }
     setIsOpen(true);
     setIsAiLoading(true);
 
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
+    // 5. Debounce 400ms: gom nhóm các lượt tích liên tiếp trong thời gian ngắn
     debounceTimerRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
-        const msg = await getAiCoachingMessageAPI({
-          dateKey,
-          mode: 'feedback',
-          changeSignal: triggerSignal,
-        });
-        if (msg) {
+        const msg = await getAiCoachingMessageAPI(
+          {
+            dateKey,
+            mode: 'feedback',
+            changeSignal: triggerSignal,
+          },
+          controller.signal
+        );
+
+        // Chỉ cập nhật nội dung nếu đây vẫn là request mới nhất
+        if (requestId === latestRequestIdRef.current && msg) {
           setAiMessage(msg);
           setIsAiLoading(false);
-          // Sau khi nội dung về thì hiện ra và đếm lùi 6 giây tự thu về
           openWithAutoClose(6);
-        } else {
+        }
+      } catch (error: any) {
+        // Nếu bị hủy bởi lượt tích mới tiếp theo, bỏ qua an toàn
+        if (
+          axios.isCancel(error) ||
+          error?.name === 'CanceledError' ||
+          error?.name === 'AbortError' ||
+          error?.code === 'ERR_CANCELED'
+        ) {
+          return;
+        }
+        if (requestId === latestRequestIdRef.current) {
           setIsAiLoading(false);
           openWithAutoClose(4);
         }
-      } catch {
-        setIsAiLoading(false);
-        openWithAutoClose(4);
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
-    }, 350);
+    }, 400);
 
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
   }, [triggerSignal, dateKey, userProfile]);
 
@@ -125,29 +176,51 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
   const handleManualRefresh = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
-    // Mở ngay ô chat và hiện 3 chấm đang gõ
+
+    const requestId = ++latestRequestIdRef.current;
     setIsOpen(true);
     setIsAiLoading(true);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const msg = await getAiCoachingMessageAPI({
-        dateKey,
-        mode: 'feedback',
-        changeSignal: lastSignalRef.current,
-      });
-      if (msg) {
+      const msg = await getAiCoachingMessageAPI(
+        {
+          dateKey,
+          mode: 'feedback',
+          changeSignal: lastSignalRef.current,
+        },
+        controller.signal
+      );
+      if (requestId === latestRequestIdRef.current && msg) {
         setAiMessage(msg);
         setIsAiLoading(false);
         openWithAutoClose(6);
-      } else {
+      }
+    } catch (error: any) {
+      if (
+        axios.isCancel(error) ||
+        error?.name === 'CanceledError' ||
+        error?.name === 'AbortError' ||
+        error?.code === 'ERR_CANCELED'
+      ) {
+        return;
+      }
+      if (requestId === latestRequestIdRef.current) {
         setIsAiLoading(false);
         openWithAutoClose(3);
       }
-    } catch {
-      setIsAiLoading(false);
-      openWithAutoClose(3);
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
   };
 

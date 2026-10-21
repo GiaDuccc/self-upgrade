@@ -41,10 +41,14 @@ const OPENING_SUGGESTIONS = [
   'Mở đầu bằng so sánh/ví von đời thường dí dỏm',
 ];
 
-async function callGeminiCascade(promptContext: string): Promise<string | null> {
+async function callGeminiCascade(
+  promptContext: string,
+  signal?: AbortSignal
+): Promise<string | null> {
   if (!env.GEMINI_API_KEY) return null;
 
   for (const model of CANDIDATE_MODELS) {
+    if (signal?.aborted) return null;
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
@@ -60,6 +64,7 @@ async function callGeminiCascade(promptContext: string): Promise<string | null> 
               maxOutputTokens: 2500,
             },
           }),
+          signal,
         }
       );
 
@@ -497,7 +502,8 @@ const getCoachingMessage = async (
     dateKey?: string;
     mode?: 'greeting' | 'feedback';
     changeSignal?: string;
-  }
+  },
+  signal?: AbortSignal
 ) => {
   const mode = payload.mode || 'feedback';
   const todayInfo = getTodayInfo();
@@ -726,7 +732,15 @@ ${specificContextAndRules}
 `.trim();
   }
 
-  let message = await callGeminiCascade(promptContext);
+  if (signal?.aborted) {
+    return { message: '' };
+  }
+
+  let message = await callGeminiCascade(promptContext, signal);
+
+  if (signal?.aborted) {
+    return { message: '' };
+  }
 
   if (!message) {
     message = generateDiverseFallback({

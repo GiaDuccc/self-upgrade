@@ -1012,7 +1012,7 @@ input {
 }
 
 .timetable-container {
-  max-height: 640px;
+  max-height: 720px;
   overflow-y: auto;
   overflow-x: auto;
   /* Ẩn hoàn toàn thanh cuộn trên mọi trình duyệt */
