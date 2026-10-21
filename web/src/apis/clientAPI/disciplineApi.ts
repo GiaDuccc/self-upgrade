@@ -27,6 +27,7 @@ export const setTaskLevelAPI = async (payload: {
   dateKey: string;
   taskId: string;
   levelKey: TaskLevelKey;
+  hours?: number[];
 }): Promise<DayDataResponse> => {
   const res = await axiosClient.put('/disciplines/task-level', payload);
   return res.data;
@@ -73,6 +74,8 @@ export const saveTaskAPI = async (payload: {
   timeHint: string;
   scope: TaskScope;
   dateKey: string;
+  hour?: number;
+  columnIndex?: number;
 }): Promise<DayDataResponse> => {
   const res = await axiosClient.post('/disciplines/task', payload);
   return res.data;

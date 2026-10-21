@@ -21,6 +21,8 @@ export interface TaskItem {
   dateKey?: string;
   weekDates?: string[];
   monthKey?: string;
+  hour?: number;
+  columnIndex?: number;
 }
 
 export type MealSession = 'morning' | 'afternoon' | 'evening';
@@ -55,6 +57,7 @@ export interface CaloriesData {
 
 export interface DayRecord {
   tasks?: Record<string, TaskLevelKey>;
+  taskHours?: Record<string, number[]>;
   note?: string;
   caloriesData?: CaloriesData;
   updatedAt?: string;
@@ -86,6 +89,7 @@ export interface DayStats {
   note: string;
   tasksList: TaskItem[];
   tasksMap: Record<string, TaskLevelKey>;
+  taskHours?: Record<string, number[]>;
 }
 
 export interface MonthDayItem extends DayStats {

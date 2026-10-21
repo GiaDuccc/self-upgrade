@@ -16,6 +16,9 @@ const setTaskLevel = async (
     levelKey: Joi.string()
       .valid('PERFECT', 'GOOD', 'BAD', 'NONE')
       .required(),
+    hours: Joi.array()
+      .items(Joi.number().integer().min(0).max(24))
+      .optional(),
   });
 
   try {

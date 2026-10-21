@@ -202,6 +202,7 @@ export function calculateDayStats(
     note: dayRecord?.note || '',
     tasksList,
     tasksMap,
+    taskHours: dayRecord?.taskHours || {},
   };
 }
 

@@ -15,6 +15,8 @@ export interface TaskItem {
   dateKey?: string;
   weekDates?: string[];
   monthKey?: string;
+  hour?: number;
+  columnIndex?: number;
 }
 
 export type CustomTaskItem = TaskItem;
@@ -24,6 +26,8 @@ export interface TaskOverride {
   category: string;
   timeHint?: string;
   target?: string;
+  hour?: number;
+  columnIndex?: number;
 }
 
 export interface TaskConfig {
@@ -65,6 +69,7 @@ export interface CaloriesData {
 
 export interface DayRecord {
   tasks?: Record<string, TaskLevelKey>;
+  taskHours?: Record<string, number[]>;
   note?: string;
   caloriesData?: CaloriesData;
   updatedAt?: string;
@@ -92,6 +97,7 @@ export interface DayStats {
   note: string;
   tasksList: TaskItem[];
   tasksMap: Record<string, TaskLevelKey>;
+  taskHours?: Record<string, number[]>;
 }
 
 export interface MonthDayItem extends DayStats {

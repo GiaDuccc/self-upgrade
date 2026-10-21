@@ -32,7 +32,7 @@ export interface ClientOutletContext {
   userProfile: UserProfile;
   isLoadingMonth: boolean;
   refreshMonthStats: () => void;
-  onOpenAddTaskModal: () => void;
+  onOpenAddTaskModal: (preset?: Partial<TaskItem>) => void;
   onEditTask: (task: TaskItem) => void;
   onOpenProfileModal: () => void;
   notifyAiCoach: (signal: string) => void;
@@ -139,9 +139,9 @@ export const ClientPage: React.FC = () => {
     navigate(`/day/${t.dateKey}`);
   };
 
-  const handleOpenAddTaskModal = () => {
+  const handleOpenAddTaskModal = (preset?: Partial<TaskItem>) => {
     setTaskModalMode('add');
-    setEditingTask(null);
+    setEditingTask(preset ? (preset as TaskItem) : null);
     setIsTaskModalOpen(true);
   };
 
@@ -158,6 +158,8 @@ export const ClientPage: React.FC = () => {
     timeHint: string;
     scope: TaskScope;
     dateKey: string;
+    hour?: number;
+    columnIndex?: number;
   }) => {
     try {
       await saveTaskAPI({
@@ -168,6 +170,8 @@ export const ClientPage: React.FC = () => {
         timeHint: payload.timeHint,
         scope: payload.scope,
         dateKey: payload.dateKey,
+        hour: payload.hour,
+        columnIndex: payload.columnIndex,
       });
       toast.success(
         payload.id ? 'Đã cập nhật đầu việc!' : 'Đã thêm đầu việc mới!'

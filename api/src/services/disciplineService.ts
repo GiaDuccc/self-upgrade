@@ -44,7 +44,21 @@ const getMonthData = async (userId: string, year: number, month: number) => {
 
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
-  const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
+  let taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
+
+  // Tự động đồng bộ chuẩn 10 việc mặc định nếu tài khoản đang mang danh sách 12 việc cũ
+  if (
+    Array.isArray(taskConfig.globalTasks) &&
+    taskConfig.globalTasks.length === 12 &&
+    taskConfig.globalTasks.some((t) => t.id === 'morning_exercise') &&
+    taskConfig.globalTasks.some((t) => t.id === 'read_book')
+  ) {
+    taskConfig = {
+      ...taskConfig,
+      globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
+    };
+    disciplineModel.updateByUserId(userId, { taskConfig });
+  }
 
   const monthStats = calculateMonthStats(year, month, records, taskConfig, profile);
 
@@ -73,7 +87,21 @@ const getDayData = async (userId: string, dateKey: string) => {
 
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
-  const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
+  let taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
+
+  // Tự động đồng bộ chuẩn 10 việc mặc định nếu tài khoản đang mang danh sách 12 việc cũ
+  if (
+    Array.isArray(taskConfig.globalTasks) &&
+    taskConfig.globalTasks.length === 12 &&
+    taskConfig.globalTasks.some((t) => t.id === 'morning_exercise') &&
+    taskConfig.globalTasks.some((t) => t.id === 'read_book')
+  ) {
+    taskConfig = {
+      ...taskConfig,
+      globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
+    };
+    disciplineModel.updateByUserId(userId, { taskConfig });
+  }
 
   const dayRecord = records[dateKey] || { tasks: {}, note: '' };
   const tasksForDay = getTasksForDate(dateKey, taskConfig);
@@ -96,23 +124,33 @@ const getDayData = async (userId: string, dateKey: string) => {
 
 const setTaskLevel = async (
   userId: string,
-  payload: { dateKey: string; taskId: string; levelKey: TaskLevelKey }
+  payload: { dateKey: string; taskId: string; levelKey: TaskLevelKey; hours?: number[] }
 ) => {
-  const { dateKey, taskId, levelKey } = payload;
+  const { dateKey, taskId, levelKey, hours } = payload;
   const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const records = { ...(disciplineDoc.records || {}) };
   const currentDay: DayRecord = { ...(records[dateKey] || {}) };
   const currentTasks = { ...(currentDay.tasks || {}) };
+  const currentTaskHours = { ...(currentDay.taskHours || {}) };
 
   if (levelKey === 'NONE') {
     delete currentTasks[taskId];
+    delete currentTaskHours[taskId];
   } else {
     currentTasks[taskId] = levelKey;
+    if (hours !== undefined) {
+      if (hours.length === 0) {
+        delete currentTaskHours[taskId];
+      } else {
+        currentTaskHours[taskId] = hours;
+      }
+    }
   }
 
   records[dateKey] = {
     ...currentDay,
     tasks: currentTasks,
+    taskHours: currentTaskHours,
     updatedAt: new Date().toISOString(),
   };
 
@@ -132,16 +170,22 @@ const markAllLevel = async (
 
   const currentDay: DayRecord = { ...(records[dateKey] || {}) };
   const newTasksMap: Record<string, TaskLevelKey> = {};
+  const newTaskHours: Record<string, number[]> = { ...(currentDay.taskHours || {}) };
 
   if (levelKey !== 'NONE') {
     tasksForDay.forEach((t) => {
       newTasksMap[t.id] = levelKey;
     });
+  } else {
+    for (const t of tasksForDay) {
+      delete newTaskHours[t.id];
+    }
   }
 
   records[dateKey] = {
     ...currentDay,
     tasks: newTasksMap,
+    taskHours: newTaskHours,
     updatedAt: new Date().toISOString(),
   };
 
@@ -240,9 +284,11 @@ const saveTask = async (
     target?: string;
     scope: 'day' | 'week' | 'month' | 'all';
     dateKey: string;
+    hour?: number;
+    columnIndex?: number;
   }
 ) => {
-  const { mode, taskId, title, category, scope, dateKey } = payload;
+  const { mode, taskId, title, category, scope, dateKey, hour, columnIndex } = payload;
   const timeHint = payload.timeHint || payload.target || '';
   const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const prev = disciplineDoc.taskConfig || getDefaultTaskConfig();
@@ -263,6 +309,8 @@ const saveTask = async (
       title,
       category,
       timeHint,
+      hour,
+      columnIndex,
     };
 
     if (scope === 'all') {
@@ -276,12 +324,16 @@ const saveTask = async (
       next.customTasks.push({ ...newTaskObj, scope: 'month', monthKey });
     }
   } else if (mode === 'edit' && taskId) {
+    const extraFields = {
+      ...(hour !== undefined ? { hour } : {}),
+      ...(columnIndex !== undefined ? { columnIndex } : {}),
+    };
     if (scope === 'all') {
       next.globalTasks = next.globalTasks.map((t) =>
-        t.id === taskId ? { ...t, title, category, timeHint } : t
+        t.id === taskId ? { ...t, title, category, timeHint, ...extraFields } : t
       );
       next.customTasks = next.customTasks.map((t) =>
-        t.id === taskId ? { ...t, title, category, timeHint } : t
+        t.id === taskId ? { ...t, title, category, timeHint, ...extraFields } : t
       );
       Object.keys(next.taskOverrides).forEach((dKey) => {
         if (next.taskOverrides[dKey]?.[taskId]) {
@@ -296,7 +348,7 @@ const saveTask = async (
         const curOverrides = next.taskOverrides[dKey] || {};
         next.taskOverrides[dKey] = {
           ...curOverrides,
-          [taskId]: { title, category, timeHint },
+          [taskId]: { title, category, timeHint, ...extraFields },
         };
       });
     }

@@ -22,17 +22,70 @@ import {
   updateNoteAPI,
   saveDayCaloriesAPI,
 } from '~/apis/clientAPI/disciplineApi';
-import { DayDataResponse, FoodItem, TaskLevelKey } from '~/interface/discipline.interface';
+import { DayDataResponse, FoodItem, TaskItem, TaskLevelKey } from '~/interface/discipline.interface';
 import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import {
   formatDateKey,
   getTodayInfo,
   isTaskBoostedByProfile,
-  LEVEL_LIST,
   PERSONALIZATION_OPTIONS,
   SCORING,
 } from '~/utils/constants';
+
+const HOURS_24 = Array.from({ length: 25 }, (_, i) => i);
+const COLUMNS_10 = Array.from({ length: 10 }, (_, i) => i);
+
+const DEFAULT_TASK_HOURS: Record<string, number> = {
+  wake_5am: 5,
+  learn_english: 7,
+  work: 8,
+  learn_code: 9,
+  play_2_games: 11,
+  nap: 13,
+  drink_3l_water: 15,
+  gym: 17,
+  no_junk_food: 19,
+  sleep_before_11pm: 22,
+};
+
+function resolveTaskHour(task: TaskItem): number {
+  if (typeof task.hour === 'number' && task.hour >= 0 && task.hour <= 24) {
+    return task.hour;
+  }
+  if (task.timeHint) {
+    const match = task.timeHint.match(/(\d{1,2}):\d{2}/);
+    if (match) return parseInt(match[1], 10);
+    const matchH = task.timeHint.match(/(\d{1,2})h/);
+    if (matchH) return parseInt(matchH[1], 10);
+  }
+  if (DEFAULT_TASK_HOURS[task.id] !== undefined) {
+    return DEFAULT_TASK_HOURS[task.id];
+  }
+  return 8;
+}
+
+function buildTaskGridMap(tasks: TaskItem[]): Map<string, TaskItem> {
+  const gridMap = new Map<string, TaskItem>();
+  const hourCounts: Record<number, number> = {};
+
+  tasks.forEach((task) => {
+    const hour = resolveTaskHour(task);
+    let col = typeof task.columnIndex === 'number' ? task.columnIndex : -1;
+    if (col < 0 || col > 9) {
+      col = hourCounts[hour] || 0;
+      hourCounts[hour] = col + 1;
+    }
+    while (col < 10 && gridMap.has(`${hour}_${col}`)) {
+      col++;
+    }
+    if (col < 10) {
+      gridMap.set(`${hour}_${col}`, task);
+    }
+  });
+
+  return gridMap;
+}
 
 export const DayDetail: React.FC = () => {
   const { dateKey: paramDateKey } = useParams<{ dateKey: string }>();
@@ -77,9 +130,11 @@ export const DayDetail: React.FC = () => {
           note: found.note || '',
           tasksList: found.tasksList || [],
           tasksMap: found.tasksMap || {},
+          taskHours: found.taskHours || {},
         },
         dayRecord: {
           tasks: found.tasksMap || {},
+          taskHours: found.taskHours || {},
           note: found.note || '',
         },
         profile: userProfile,
@@ -164,40 +219,104 @@ export const DayDetail: React.FC = () => {
     };
   }, [activeDateKey, dayRefreshTrigger, buildInitialDayData]);
 
-  const handleSetTaskLevel = async (taskId: string, levelKey: TaskLevelKey) => {
-    // 1. Cập nhật lạc quan (Optimistic update) ngay lập tức trên UI
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Khóa cuộn trang ngoài khi di chuột vào bảng: kể cả khi cuộn hết trên/dưới cũng không cuộn web bên ngoài
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.stopPropagation();
+
+      const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey;
+      if (isHorizontal) {
+        container.scrollLeft += e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      } else {
+        container.scrollTop += e.deltaY;
+      }
+
+      e.preventDefault();
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [isLoading, activeDayTab]);
+
+  const handleToggleTask = async (taskId: string) => {
+    const currentLevel = dayData?.dayRecord?.tasks?.[taskId] || 'NONE';
+    const isCurrentlyChecked = currentLevel !== 'NONE';
+    const nextLevel: TaskLevelKey = isCurrentlyChecked ? 'NONE' : 'PERFECT';
+
+    const taskObj = dayData?.dayStats?.tasksList?.find((t) => t.id === taskId);
+    const hour = taskObj ? resolveTaskHour(taskObj) : 8;
+    const nextHours = nextLevel === 'PERFECT' ? [hour] : [];
+
+    // Cập nhật lạc quan (Optimistic update)
     if (dayData) {
-      const currentLevel = dayData.dayRecord?.tasks?.[taskId] || 'NONE';
-      const nextLevel = currentLevel === levelKey ? 'NONE' : levelKey;
       setDayData((prev) => {
         if (!prev) return prev;
-        const currentTasks = prev.dayRecord?.tasks || {};
+        const currentTasks = { ...(prev.dayRecord?.tasks || {}) };
+        const currentTaskHours = { ...(prev.dayRecord?.taskHours || {}) };
+
+        if (nextLevel === 'NONE') {
+          delete currentTasks[taskId];
+          delete currentTaskHours[taskId];
+        } else {
+          currentTasks[taskId] = nextLevel;
+          currentTaskHours[taskId] = nextHours;
+        }
+
         return {
           ...prev,
           dayRecord: {
             ...(prev.dayRecord || {}),
-            tasks: { ...currentTasks, [taskId]: nextLevel },
+            tasks: currentTasks,
+            taskHours: currentTaskHours,
           },
         };
       });
     }
 
     try {
-      // 2. Gọi API nền lưu vào CSDL
       const updated = await setTaskLevelAPI({
         dateKey: activeDateKey,
         taskId,
-        levelKey,
+        levelKey: nextLevel,
+        hours: nextHours,
       });
-      // 3. Cập nhật state với số điểm & xếp hạng chính xác từ backend trả về
       setDayData(updated);
       refreshMonthStats();
-      notifyAiCoach(`${activeDateKey}|${taskId}|${levelKey}|${Date.now()}`);
+      notifyAiCoach(`${activeDateKey}|${taskId}|${nextLevel}|${hour}h|${Date.now()}`);
     } catch {
-      toast.error('Lỗi cập nhật điểm công việc!');
-      // Tải lại để rollback nếu lỗi
+      toast.error('Lỗi cập nhật việc!');
       getDayDataAPI(activeDateKey).then(setDayData);
     }
+  };
+
+  const handleEmptyCellClick = (hour: number, colIndex: number) => {
+    const timeFormatted = `${String(hour).padStart(2, '0')}:00`;
+    onOpenAddTaskModal({
+      hour,
+      columnIndex: colIndex,
+      timeHint: timeFormatted,
+    });
+  };
+
+  const handleEditTaskClick = (task: TaskItem) => {
+    const taskHour = resolveTaskHour(task);
+    const hourLabel = `${String(taskHour).padStart(2, '0')}:00`;
+    onEditTask({
+      ...task,
+      hour: taskHour,
+      timeHint:
+        task.timeHint && /\d{1,2}/.test(task.timeHint)
+          ? task.timeHint
+          : hourLabel,
+    });
   };
 
   const handleMarkAllLevel = async (levelKey: TaskLevelKey) => {
@@ -279,6 +398,23 @@ export const DayDetail: React.FC = () => {
   const tasksMap = dayRecord?.tasks || {};
   const currentTasksList = dayStats.tasksList || [];
   const isToday = activeDateKey === today.dateKey;
+
+  const taskGridMap = useMemo(
+    () => buildTaskGridMap(currentTasksList),
+    [currentTasksList]
+  );
+
+  const allTasksCompleted =
+    currentTasksList.length > 0 &&
+    currentTasksList.every((t) => (tasksMap[t.id] || 'NONE') !== 'NONE');
+
+  const handleToggleAllTasks = () => {
+    if (allTasksCompleted) {
+      handleMarkAllLevel('NONE');
+    } else {
+      handleMarkAllLevel('PERFECT');
+    }
+  };
 
   const physObj =
     PERSONALIZATION_OPTIONS.physicalStates.find(
@@ -441,7 +577,14 @@ export const DayDetail: React.FC = () => {
             <button
               type="button"
               className="btn-minimal btn-sm"
-              onClick={onOpenAddTaskModal}
+              onClick={() => {
+                const nowH = new Date().getHours();
+                onOpenAddTaskModal({
+                  hour: nowH,
+                  columnIndex: 0,
+                  timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                });
+              }}
               title="Thêm đầu việc mới cho ngày/tuần/tháng này"
             >
               <Plus size={14} />
@@ -450,11 +593,15 @@ export const DayDetail: React.FC = () => {
             <button
               type="button"
               className="btn-minimal btn-sm"
-              onClick={() => handleMarkAllLevel('PERFECT')}
-              title={`Tích nhanh tất cả ${currentTasksList.length} việc ở mức Hoàn Hảo (100%)`}
+              onClick={handleToggleAllTasks}
+              title={
+                allTasksCompleted
+                  ? 'Bỏ tích toàn bộ việc của ngày'
+                  : `Tích nhanh tất cả ${currentTasksList.length} việc (100%)`
+              }
             >
-              <Sparkles size={14} />
-              <span>Tất cả Hoàn Hảo</span>
+              <CheckSquare size={14} />
+              <span>{allTasksCompleted ? 'Bỏ tích tất cả' : 'Tích tất cả'}</span>
             </button>
             <button
               type="button"
@@ -494,109 +641,187 @@ export const DayDetail: React.FC = () => {
 
       {activeDayTab === 'todolist' ? (
         <div className="day-workspace-layout">
-          <div className="tasks-grid">
           {currentTasksList.length === 0 ? (
             <div className="empty-tasks-placeholder">
               <p>Chưa có đầu việc nào cho ngày này.</p>
               <button
                 type="button"
                 className="btn-minimal"
-                onClick={onOpenAddTaskModal}
+                onClick={() => {
+                  const nowH = new Date().getHours();
+                  onOpenAddTaskModal({
+                    hour: nowH,
+                    columnIndex: 0,
+                    timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                  });
+                }}
               >
                 <Plus size={15} />
                 <span>Thêm đầu việc ngay</span>
               </button>
             </div>
           ) : (
-            currentTasksList.map((task, idx) => {
-              const currentLevelKey = tasksMap[task.id] || 'NONE';
-              const currentScoreObj = SCORING[currentLevelKey] || SCORING.NONE;
-              const isBoosted = isTaskBoostedByProfile(task, userProfile);
-              const weight = isBoosted ? 1.25 : 1;
-              const weightedPoints =
-                Math.round(currentScoreObj.points * weight * 10) / 10;
-
-              return (
-                <div
-                  key={task.id}
-                  className={`task-card ${
-                    currentLevelKey !== 'NONE' ? 'task-card-checked' : ''
-                  }`}
-                  onClick={() => onEditTask(task)}
-                  title="Nhấn vào thẻ để chỉnh sửa hoặc xoá đầu việc này"
-                >
-                  <div className="task-card-top">
-                    <div className="task-index-title">
-                      <span className="task-index">
-                        {String(idx + 1).padStart(2, '0')}
-                      </span>
-                      <div>
-                        <div className="task-title-row">
-                          <h4 className="task-title">{task.title}</h4>
-                          <span
-                            className="task-edit-indicator"
-                            title="Chỉnh sửa/Xoá"
+            <div className="timetable-wrapper">
+              <div className="timetable-container" ref={tableContainerRef}>
+                <table className="timetable-table">
+                  <thead>
+                    <tr>
+                      {/* Ô góc chia đôi chéo như Excel: Việc cần làm ở trên phải, Thời gian ở dưới trái */}
+                      <th className="timetable-th timetable-corner-th">
+                        <div className="diagonal-cell">
+                          <svg
+                            className="diagonal-svg"
+                            viewBox="0 0 100 100"
+                            preserveAspectRatio="none"
                           >
-                            <Edit2 size={12} />
+                            <line
+                              x1="0"
+                              y1="0"
+                              x2="100"
+                              y2="100"
+                              stroke="rgba(34, 34, 32, 0.15)"
+                              strokeWidth="1"
+                              vectorEffect="non-scaling-stroke"
+                            />
+                          </svg>
+                          <span className="diagonal-label diagonal-task-label">
+                            Việc cần làm
+                          </span>
+                          <span className="diagonal-label diagonal-time-label">
+                            Thời gian
                           </span>
                         </div>
-                        <span className="task-meta">
-                          {task.category} • {task.timeHint || task.target || 'Mỗi ngày'}
-                          {isBoosted && (
-                            <strong className="boost-inline-tag">
-                              {' '}
-                              • ★ ×1.25
-                            </strong>
-                          )}
-                        </span>
-                      </div>
-                    </div>
+                      </th>
 
-                    <div className="task-current-point">
-                      {currentLevelKey !== 'NONE' ? (
-                        <span className="point-pill active">
-                          +{weightedPoints}đ
-                        </span>
-                      ) : (
-                        <span className="point-pill">0đ</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    className="task-level-buttons"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {LEVEL_LIST.map((lvl) => {
-                      const isSelected = currentLevelKey === lvl.key;
-                      const lvlPts =
-                        Math.round(lvl.points * weight * 10) / 10;
+                      {/* 10 cột tiêu đề Việc 1, Việc 2, ..., Việc 10 */}
+                      {COLUMNS_10.map((colIdx) => (
+                        <th key={colIdx} className="timetable-th timetable-th-col">
+                          <div className="timetable-col-header-text">
+                            Việc {colIdx + 1}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {HOURS_24.map((hour) => {
+                      const hourLabel = `${String(hour).padStart(2, '0')}:00`;
                       return (
-                        <button
-                          key={lvl.key}
-                          type="button"
-                          className={`level-btn ${isSelected ? 'selected' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetTaskLevel(
-                              task.id,
-                              isSelected ? 'NONE' : lvl.key
+                        <tr key={hour} className="timetable-row">
+                          <td className="timetable-td timetable-td-time">
+                            <span className="timetable-time-text">
+                              {hourLabel}
+                            </span>
+                          </td>
+                          {COLUMNS_10.map((colIdx) => {
+                            const task = taskGridMap.get(`${hour}_${colIdx}`);
+
+                            if (task) {
+                              const isTaskChecked =
+                                (tasksMap[task.id] || 'NONE') !== 'NONE';
+                              const isBoosted = isTaskBoostedByProfile(
+                                task,
+                                userProfile
+                              );
+
+                              return (
+                                <td
+                                  key={colIdx}
+                                  className={`timetable-td timetable-td-task-cell ${
+                                    isTaskChecked
+                                      ? 'cell-has-task-checked'
+                                      : 'cell-has-task'
+                                  }`}
+                                >
+                                  <div
+                                    className={`grid-task-card ${
+                                      isTaskChecked
+                                        ? 'grid-task-card-checked'
+                                        : ''
+                                    }`}
+                                    onClick={() => handleEditTaskClick(task)}
+                                    title="Nhấp để chỉnh sửa hoặc xoá đầu việc này"
+                                  >
+                                    <div className="grid-task-top">
+                                      <div className="grid-task-left">
+                                        <div className="grid-task-badge-row">
+                                          <span className="grid-task-badge">
+                                            {task.category || 'Mục tiêu'}
+                                          </span>
+                                          {isBoosted && (
+                                            <span className="grid-task-boost">
+                                              ★ ×1.25
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h4 className="grid-task-title">
+                                          {task.title}
+                                        </h4>
+                                        <div className="grid-task-meta">
+                                          <span>
+                                            {task.timeHint || hourLabel}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        className="grid-task-right"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleToggleTask(task.id);
+                                        }}
+                                        title={
+                                          isTaskChecked
+                                            ? 'Bỏ tích hoàn thành'
+                                            : 'Tích hoàn thành việc này'
+                                        }
+                                      >
+                                        <button
+                                          type="button"
+                                          className={`timetable-checkbox ${
+                                            isTaskChecked ? 'checked' : ''
+                                          }`}
+                                        >
+                                          {isTaskChecked && (
+                                            <Check
+                                              size={14}
+                                              strokeWidth={3}
+                                            />
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              );
+                            }
+
+                            return (
+                              <td
+                                key={colIdx}
+                                className="timetable-td timetable-td-empty-cell"
+                                onClick={() =>
+                                  handleEmptyCellClick(hour, colIdx)
+                                }
+                                title={`Nhấp để thêm việc vào lúc ${hourLabel} (Cột Việc ${colIdx + 1})`}
+                              >
+                                <div className="grid-empty-target">
+                                  <Plus
+                                    size={14}
+                                    className="grid-empty-plus-icon"
+                                  />
+                                </div>
+                              </td>
                             );
-                          }}
-                        >
-                          <span className="level-btn-name">{lvl.label}</span>
-                          <span className="level-btn-pts">
-                            {isSelected ? <Check size={12} /> : `${lvlPts}đ`}
-                          </span>
-                        </button>
+                          })}
+                        </tr>
                       );
                     })}
-                  </div>
-                </div>
-              );
-            })
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
-        </div>
 
         {/* PHẦN GHI CHÚ NẰM Ở DƯỚI CÙNG CỦA TO DO LIST */}
         <div className="day-note-box">

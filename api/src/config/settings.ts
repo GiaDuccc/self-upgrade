@@ -87,18 +87,16 @@ export const TASK_CATEGORIES: string[] = [
 ];
 
 export const DAILY_TASKS: TaskItem[] = [
-  { id: 'wake_5am', title: 'Thức dậy lúc 5h', category: 'Kỷ luật sáng', timeHint: '05:00' },
-  { id: 'morning_exercise', title: 'Tập thể dục buổi sáng', category: 'Thể chất', timeHint: 'Buổi sáng' },
-  { id: 'learn_english', title: 'Học tiếng Anh', category: 'Ngoại ngữ', timeHint: 'Mỗi ngày' },
-  { id: 'learn_code', title: 'Học code', category: 'Kỹ năng', timeHint: 'Chuyên sâu' },
-  { id: 'play_2_games', title: 'Chơi game 2 ván', category: 'Giải trí giới hạn', timeHint: 'Tối đa 2 ván' },
-  { id: 'nap', title: 'Ngủ trưa', category: 'Phục hồi', timeHint: '20–30 phút' },
-  { id: 'gym', title: 'Tập gym', category: 'Thể hình', timeHint: 'Buổi chiều' },
-  { id: 'no_junk_food', title: 'Không ăn vặt', category: 'Dinh dưỡng', timeHint: 'Cả ngày' },
-  { id: 'drink_3l_water', title: 'Uống 3 lít nước', category: 'Sức khỏe', timeHint: '3.0 Lít' },
-  { id: 'work', title: 'Làm việc', category: 'Sự nghiệp', timeHint: 'Tập trung' },
-  { id: 'read_book', title: 'Đọc sách', category: 'Trí tuệ', timeHint: 'Mỗi ngày' },
-  { id: 'sleep_before_11pm', title: 'Ngủ trước 11h', category: 'Giấc ngủ', timeHint: 'Trước 23:00' },
+  { id: 'wake_5am', title: 'Thức dậy lúc 5h', category: 'Kỷ luật sáng', timeHint: '05:00', hour: 5, columnIndex: 0 },
+  { id: 'learn_english', title: 'Học tiếng Anh', category: 'Ngoại ngữ', timeHint: '07:00', hour: 7, columnIndex: 0 },
+  { id: 'work', title: 'Làm việc', category: 'Sự nghiệp', timeHint: '08:00', hour: 8, columnIndex: 0 },
+  { id: 'learn_code', title: 'Học code', category: 'Kỹ năng', timeHint: '09:00', hour: 9, columnIndex: 0 },
+  { id: 'play_2_games', title: 'Chơi game 2 ván', category: 'Giải trí giới hạn', timeHint: '11:00', hour: 11, columnIndex: 0 },
+  { id: 'nap', title: 'Ngủ trưa', category: 'Phục hồi', timeHint: '13:00', hour: 13, columnIndex: 0 },
+  { id: 'drink_3l_water', title: 'Uống 3 lít nước', category: 'Sức khỏe', timeHint: '15:00', hour: 15, columnIndex: 0 },
+  { id: 'gym', title: 'Tập gym', category: 'Thể hình', timeHint: '17:00', hour: 17, columnIndex: 0 },
+  { id: 'no_junk_food', title: 'Không ăn vặt', category: 'Dinh dưỡng', timeHint: '19:00', hour: 19, columnIndex: 0 },
+  { id: 'sleep_before_11pm', title: 'Ngủ trước 11h', category: 'Giấc ngủ', timeHint: '22:00', hour: 22, columnIndex: 0 },
 ];
 
 export const MAX_POINTS_PER_TASK = SCORING.PERFECT.points;
