@@ -258,7 +258,7 @@ export const DayDetail: React.FC = () => {
     if (!container || currentTasksList.length === 0) return;
     const hours = currentTasksList.map((t) => resolveTaskHour(t));
     const minHour = Math.max(0, Math.min(...hours) - 1);
-    container.scrollLeft = minHour * 210;
+    container.scrollLeft = minHour * 160;
   }, [activeDateKey, isLoading, activeDayTab, currentTasksList.length]);
 
   const handleToggleTask = async (taskId: string) => {
