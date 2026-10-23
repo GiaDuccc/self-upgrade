@@ -687,7 +687,7 @@ export const DayDetail: React.FC = () => {
               <label htmlFor="daily-note-input" className="day-note-label">
                 {isEn
                   ? `DAILY NOTE / SELF-REFLECTION (${day}/${month})`
-                  : `GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY ${day}/{month}`}
+                  : `GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY ${day}/${month}`}
               </label>
               <span className="day-note-hint">
                 {isEn

@@ -28,7 +28,7 @@ export const MonthDaysGrid: React.FC<MonthDaysGridProps> = ({
           <h2 className="section-heading">
             {isEn
               ? `DAYS IN MONTH ${month}/${year}`
-              : `DANH SÁCH CÁC NGÀY TRONG THÁNG ${month}/{year}`}
+              : `DANH SÁCH CÁC NGÀY TRONG THÁNG ${month}/${year}`}
           </h2>
           <p className="section-subtext">
             {isEn
