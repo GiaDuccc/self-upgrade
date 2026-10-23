@@ -774,15 +774,6 @@ export const DayDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* BỘ THEO DÕI NƯỚC UỐNG 1 CHẠM */}
-          <WaterTracker
-            dateKey={activeDateKey}
-            initialWaterData={dayData?.dayRecord?.waterData}
-            userWeightKg={userProfile?.weightKg}
-            onSaveWater={handleSaveWater}
-            isSaving={isSavingWater}
-          />
-
           {/* GHI CHÚ NGÀY (BÊN DƯỚI ĐIỂM SỐ Ở CỘT TRÁI) */}
           <div className="day-note-box">
             <div className="day-note-header">
@@ -1083,6 +1074,13 @@ export const DayDetail: React.FC = () => {
             </div>
           ) : (
             <div className="day-calories-pane">
+              <WaterTracker
+                dateKey={activeDateKey}
+                initialWaterData={dayData?.dayRecord?.waterData}
+                userWeightKg={userProfile?.weightKg}
+                onSaveWater={handleSaveWater}
+                isSaving={isSavingWater}
+              />
               <CaloriesTracker
                 dateKey={activeDateKey}
                 initialMeals={caloriesMeals}

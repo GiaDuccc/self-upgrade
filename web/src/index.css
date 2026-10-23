@@ -759,28 +759,6 @@ input {
   border: 1px solid currentColor;
 }
 
-.day-cell-water-tag {
-  font-size: 0.62rem;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background-color: rgba(56, 189, 248, 0.12);
-  color: #0284c7;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  white-space: nowrap;
-}
-
-.day-cell-water-tag.reached {
-  background-color: rgba(22, 163, 74, 0.12);
-  color: #16A34A;
-  border-color: rgba(22, 163, 74, 0.3);
-}
-
-[data-theme='dark'] .day-cell-water-tag {
-  color: #38bdf8;
-}
-
 .day-cell-middle {
   display: flex;
   align-items: baseline;
@@ -1177,10 +1155,17 @@ input {
   gap: 8px;
 }
 
-.day-table-pane,
+.day-table-pane {
+  width: 100%;
+  min-width: 0;
+}
+
 .day-calories-pane {
   width: 100%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 @media (max-width: 1180px) {
