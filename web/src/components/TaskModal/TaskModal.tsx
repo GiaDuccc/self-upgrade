@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { TaskItem, TaskScope } from '~/interface/discipline.interface';
 import { TASK_CATEGORIES } from '~/utils/constants';
+import { translateCategory, useLanguage } from '~/utils/i18n';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [timeHint, setTimeHint] = useState('');
   const [scope, setScope] = useState<TaskScope>('all');
   const [errorMsg, setErrorMsg] = useState('');
+  const { language, isEn } = useLanguage();
 
   useEffect(() => {
     if (isOpen) {
@@ -202,23 +204,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const scopeOptions: Array<{ id: TaskScope; title: string; desc: string }> = [
     {
       id: 'day',
-      title: 'Áp dụng ngày',
-      desc: `Chỉ riêng ngày ${currentDateKey}`,
+      title: isEn ? 'Apply to Day' : 'Áp dụng ngày',
+      desc: isEn ? `Only for ${currentDateKey}` : `Chỉ riêng ngày ${currentDateKey}`,
     },
     {
       id: 'week',
-      title: 'Áp dụng tuần',
-      desc: 'Áp dụng cho 7 ngày của tuần này (T2 – CN)',
+      title: isEn ? 'Apply to Week' : 'Áp dụng tuần',
+      desc: isEn
+        ? 'Applies to all 7 days of this week (Mon – Sun)'
+        : 'Áp dụng cho 7 ngày của tuần này (T2 – CN)',
     },
     {
       id: 'month',
-      title: 'Áp dụng tháng',
-      desc: `Toàn bộ các ngày trong tháng ${currentDateKey.substring(0, 7)}`,
+      title: isEn ? 'Apply to Month' : 'Áp dụng tháng',
+      desc: isEn
+        ? `All days in month ${currentDateKey.substring(0, 7)}`
+        : `Toàn bộ các ngày trong tháng ${currentDateKey.substring(0, 7)}`,
     },
     {
       id: 'all',
-      title: 'Áp dụng tất cả',
-      desc: 'Áp dụng vĩnh viễn cho tất cả các ngày (Toàn hệ thống)',
+      title: isEn ? 'Apply to All' : 'Áp dụng tất cả',
+      desc: isEn
+        ? 'Applies permanently across all days (System-wide)'
+        : 'Áp dụng vĩnh viễn cho tất cả các ngày (Toàn hệ thống)',
     },
   ];
 
@@ -245,10 +253,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
             <div>
               <h3 className="modal-title">
-                {mode === 'add' ? 'Thêm đầu việc mới' : 'Chỉnh sửa đầu việc'}
+                {mode === 'add'
+                  ? isEn
+                    ? 'Add New Task'
+                    : 'Thêm đầu việc mới'
+                  : isEn
+                  ? 'Edit Task'
+                  : 'Chỉnh sửa đầu việc'}
               </h3>
               <p className="modal-subtitle">
-                Đang thao tác tại ngày: <code>{currentDateKey}</code>
+                {isEn ? 'Target date:' : 'Đang thao tác tại ngày:'}{' '}
+                <code>{currentDateKey}</code>
               </p>
             </div>
           </div>
@@ -257,7 +272,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             type="button"
             className="btn-modal-close"
             onClick={onClose}
-            aria-label="Đóng modal"
+            aria-label={isEn ? 'Close modal' : 'Đóng modal'}
           >
             <X size={18} />
           </button>
@@ -269,17 +284,24 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <div className="form-group">
             <div className="form-label-with-hint">
               <label htmlFor="task-title-input" className="form-label">
-                TÊN ĐẦU VIỆC <span className="required-star">*</span>
+                {isEn ? 'TASK TITLE' : 'TÊN ĐẦU VIỆC'}{' '}
+                <span className="required-star">*</span>
               </label>
               {isDuplicateName && (
-                <span className="live-duplicate-badge">⚠️ Trùng tên</span>
+                <span className="live-duplicate-badge">
+                  {isEn ? '⚠️ Duplicate title' : '⚠️ Trùng tên'}
+                </span>
               )}
             </div>
             <input
               id="task-title-input"
               type="text"
               className={`form-input ${isDuplicateName ? 'form-input-error' : ''}`}
-              placeholder="VD: Chạy bộ 5km, Học từ vựng tiếng Anh, Nghe podcast..."
+              placeholder={
+                isEn
+                  ? 'e.g., Run 5km, Learn English vocabulary, Listen to podcast...'
+                  : 'VD: Chạy bộ 5km, Học từ vựng tiếng Anh, Nghe podcast...'
+              }
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -291,7 +313,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           <div className="form-group">
             <label className="form-label">
-              TRƯỜNG / DANH MỤC (TÍCH CHỌN)
+              {isEn ? 'CATEGORY (SELECT ONE)' : 'TRƯỜNG / DANH MỤC (TÍCH CHỌN)'}
             </label>
             <div className="category-pills-wrap">
               {TASK_CATEGORIES.map((cat) => {
@@ -306,7 +328,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     <span className="pill-check-box">
                       {isSelected ? <Check size={12} /> : null}
                     </span>
-                    <span>{cat}</span>
+                    <span>{translateCategory(cat, language)}</span>
                   </button>
                 );
               })}
@@ -316,7 +338,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <input
                 type="text"
                 className="form-input form-input-sub"
-                placeholder="Nhập tên trường khác..."
+                placeholder={
+                  isEn ? 'Enter custom category...' : 'Nhập tên trường khác...'
+                }
                 value={customCategory}
                 onChange={(e) => setCustomCategory(e.target.value)}
               />
@@ -326,11 +350,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <div className="form-group">
             <div className="form-label-with-hint">
               <label htmlFor="task-time-input" className="form-label">
-                THỜI GIAN THỰC HIỆN (00:00 – 24:00) <span className="required-star">*</span>
+                {isEn
+                  ? 'SCHEDULED TIME (00:00 – 24:00)'
+                  : 'THỜI GIAN THỰC HIỆN (00:00 – 24:00)'}{' '}
+                <span className="required-star">*</span>
               </label>
               <span className="form-hint">
                 <Clock size={13} />
-                Khung giờ hiển thị trên bảng thời khóa biểu
+                {isEn
+                  ? 'Hour slot displayed on the timetable'
+                  : 'Khung giờ hiển thị trên bảng thời khóa biểu'}
               </span>
             </div>
             <div className="form-time-input-wrap">
@@ -339,7 +368,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 type="text"
                 list="quick-hours-list"
                 className="form-input form-time-field"
-                placeholder="VD: 08:00, 14:30, 22:00..."
+                placeholder={
+                  isEn
+                    ? 'e.g., 08:00, 14:30, 22:00...'
+                    : 'VD: 08:00, 14:30, 22:00...'
+                }
                 value={timeHint}
                 onChange={(e) => setTimeHint(e.target.value)}
                 required
@@ -367,10 +400,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           <div className="form-group">
             <div className="form-label-with-hint">
-              <label className="form-label">PHẠM VI ÁP DỤNG</label>
+              <label className="form-label">
+                {isEn ? 'APPLICATION SCOPE' : 'PHẠM VI ÁP DỤNG'}
+              </label>
               <span className="form-hint">
                 <Info size={13} />
-                Chọn phạm vi mà thay đổi này sẽ có hiệu lực
+                {isEn
+                  ? 'Choose where this change will take effect'
+                  : 'Chọn phạm vi mà thay đổi này sẽ có hiệu lực'}
               </span>
             </div>
 
@@ -413,10 +450,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 type="button"
                 className="btn-delete-task"
                 onClick={handleDelete}
-                title="Xoá đầu việc này"
+                title={isEn ? 'Delete this task' : 'Xoá đầu việc này'}
               >
                 <Trash2 size={15} />
-                <span>Xoá đầu việc</span>
+                <span>{isEn ? 'Delete Task' : 'Xoá đầu việc'}</span>
               </button>
             ) : (
               <div />
@@ -428,7 +465,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 className="btn-minimal"
                 onClick={onClose}
               >
-                Hủy
+                {isEn ? 'Cancel' : 'Hủy'}
               </button>
               <button
                 type="submit"
@@ -437,12 +474,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 {mode === 'add' ? (
                   <>
                     <Plus size={15} />
-                    <span>Thêm đầu việc</span>
+                    <span>{isEn ? 'Add Task' : 'Thêm đầu việc'}</span>
                   </>
                 ) : (
                   <>
                     <Check size={15} />
-                    <span>Lưu thay đổi</span>
+                    <span>{isEn ? 'Save Changes' : 'Lưu thay đổi'}</span>
                   </>
                 )}
               </button>

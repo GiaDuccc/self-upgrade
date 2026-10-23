@@ -9,13 +9,17 @@ import {
   Download,
   Upload,
   LogOut,
+  Globe,
 } from 'lucide-react';
+import { AppLanguage } from '~/utils/i18n';
 
 export interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: (theme: 'light' | 'dark') => void;
+  language: AppLanguage;
+  onToggleLanguage: (lang: AppLanguage) => void;
   isCaloriesEnabled: boolean;
   onToggleCalories: (enabled: boolean) => void;
   onExportJson?: () => void;
@@ -29,6 +33,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   theme,
   onToggleTheme,
+  language,
+  onToggleLanguage,
   isCaloriesEnabled,
   onToggleCalories,
   onExportJson,
@@ -37,6 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   userEmail,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const isEn = language === 'en';
 
   // Khóa cuộn trang nền khi mở modal
   useEffect(() => {
@@ -78,9 +85,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Settings size={18} />
             </div>
             <div>
-              <h3 className="modal-title">CÀI ĐẶT HỆ THỐNG</h3>
+              <h3 className="modal-title">
+                {isEn ? 'SYSTEM SETTINGS' : 'CÀI ĐẶT HỆ THỐNG'}
+              </h3>
               <p className="modal-subtitle">
-                Tùy chỉnh giao diện, tính năng, sao lưu dữ liệu và tài khoản
+                {isEn
+                  ? 'Customize display theme, language, modules, data backup and account'
+                  : 'Tùy chỉnh giao diện, ngôn ngữ, tính năng, sao lưu dữ liệu và tài khoản'}
               </p>
             </div>
           </div>
@@ -89,7 +100,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             type="button"
             className="btn-modal-close"
             onClick={onClose}
-            aria-label="Đóng cài đặt"
+            aria-label={isEn ? 'Close settings' : 'Đóng cài đặt'}
           >
             <X size={18} />
           </button>
@@ -100,10 +111,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* 1. GIAO DIỆN (THEME) */}
           <div className="settings-section">
             <div className="settings-section-header">
-              <span className="settings-section-tag">GIAO DIỆN</span>
-              <h4 className="settings-section-title">Chế độ hiển thị màu sắc</h4>
+              <span className="settings-section-tag">
+                {isEn ? 'APPEARANCE' : 'GIAO DIỆN'}
+              </span>
+              <h4 className="settings-section-title">
+                {isEn ? 'Color Theme Mode' : 'Chế độ hiển thị màu sắc'}
+              </h4>
               <p className="settings-section-desc">
-                Chọn giao diện nền Sáng (Light) cổ điển hoặc Tối (Dark) dịu mắt ban đêm
+                {isEn
+                  ? 'Choose classic Light Kraft paper theme or eye-friendly Dark mode'
+                  : 'Chọn giao diện nền Sáng (Light) cổ điển hoặc Tối (Dark) dịu mắt ban đêm'}
               </p>
             </div>
 
@@ -119,15 +136,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div className="theme-card-info">
                   <div className="theme-card-title-row">
-                    <strong>Chế độ Sáng</strong>
+                    <strong>{isEn ? 'Light Mode' : 'Chế độ Sáng'}</strong>
                     {theme === 'light' && (
                       <span className="theme-badge-current">
-                        <Check size={12} /> Đang dùng
+                        <Check size={12} /> {isEn ? 'Active' : 'Đang dùng'}
                       </span>
                     )}
                   </div>
                   <span className="theme-card-desc">
-                    Tông giấy Kraft ấm áp, độ tương phản cao, tối ưu cho ban ngày
+                    {isEn
+                      ? 'Warm Kraft paper tone, high contrast, optimal for daytime'
+                      : 'Tông giấy Kraft ấm áp, độ tương phản cao, tối ưu cho ban ngày'}
                   </span>
                 </div>
               </button>
@@ -143,28 +162,105 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div className="theme-card-info">
                   <div className="theme-card-title-row">
-                    <strong>Chế độ Tối</strong>
+                    <strong>{isEn ? 'Dark Mode' : 'Chế độ Tối'}</strong>
                     {theme === 'dark' && (
                       <span className="theme-badge-current">
-                        <Check size={12} /> Đang dùng
+                        <Check size={12} /> {isEn ? 'Active' : 'Đang dùng'}
                       </span>
                     )}
                   </div>
                   <span className="theme-card-desc">
-                    Nền tối dịu mắt, giảm căng thẳng thị giác khi làm việc ban đêm
+                    {isEn
+                      ? 'Soothing dark background, reduces eye strain at night'
+                      : 'Nền tối dịu mắt, giảm căng thẳng thị giác khi làm việc ban đêm'}
                   </span>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* 2. THIẾT LẬP TÍNH NĂNG (FEATURES) */}
+          {/* 2. NGÔN NGỮ HIỂN THỊ (LANGUAGE) */}
           <div className="settings-section">
             <div className="settings-section-header">
-              <span className="settings-section-tag">TÍNH NĂNG BỔ TRỢ</span>
-              <h4 className="settings-section-title">Quản lý các module hệ thống</h4>
+              <span className="settings-section-tag">
+                {isEn ? 'LANGUAGE' : 'NGÔN NGỮ HIỂN THỊ'}
+              </span>
+              <h4 className="settings-section-title">
+                {isEn ? 'Interface Language' : 'Ngôn ngữ giao diện màn hình'}
+              </h4>
               <p className="settings-section-desc">
-                Bật hoặc tắt các tính năng phù hợp với nhu cầu theo dõi của bạn
+                {isEn
+                  ? 'Applies only to screen labels. User inputs and API payloads remain unchanged.'
+                  : 'Chỉ đổi nhãn hiển thị trên màn hình, giữ nguyên nội dung người dùng nhập và dữ liệu gửi API.'}
+              </p>
+            </div>
+
+            <div className="theme-options-grid">
+              <button
+                type="button"
+                className={`theme-card ${language === 'vi' ? 'active' : ''}`}
+                onClick={() => onToggleLanguage('vi')}
+              >
+                <div className="theme-card-icon-box light-preview">
+                  <Globe size={18} />
+                </div>
+                <div className="theme-card-info">
+                  <div className="theme-card-title-row">
+                    <strong>Tiếng Việt (VI)</strong>
+                    {language === 'vi' && (
+                      <span className="theme-badge-current">
+                        <Check size={12} /> {isEn ? 'Active' : 'Đang dùng'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="theme-card-desc">
+                    {isEn
+                      ? 'Default Vietnamese interface for all screens'
+                      : 'Giao diện tiếng Việt mặc định cho toàn bộ hệ thống'}
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`theme-card ${language === 'en' ? 'active' : ''}`}
+                onClick={() => onToggleLanguage('en')}
+              >
+                <div className="theme-card-icon-box dark-preview">
+                  <Globe size={18} />
+                </div>
+                <div className="theme-card-info">
+                  <div className="theme-card-title-row">
+                    <strong>English (EN)</strong>
+                    {language === 'en' && (
+                      <span className="theme-badge-current">
+                        <Check size={12} /> {isEn ? 'Active' : 'Đang dùng'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="theme-card-desc">
+                    {isEn
+                      ? 'Clean English UI for discipline tracking & analytics'
+                      : 'Giao diện tiếng Anh tối giản cho theo dõi kỷ luật & thống kê'}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* 3. THIẾT LẬP TÍNH NĂNG (FEATURES) */}
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <span className="settings-section-tag">
+                {isEn ? 'ADD-ON MODULES' : 'TÍNH NĂNG BỔ TRỢ'}
+              </span>
+              <h4 className="settings-section-title">
+                {isEn ? 'System Modules Management' : 'Quản lý các module hệ thống'}
+              </h4>
+              <p className="settings-section-desc">
+                {isEn
+                  ? 'Enable or disable modules based on your tracking preferences'
+                  : 'Bật hoặc tắt các tính năng phù hợp với nhu cầu theo dõi của bạn'}
               </p>
             </div>
 
@@ -174,13 +270,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               <div className="feature-item-text">
                 <div className="feature-item-title-row">
-                  <strong>Theo dõi Calories & Dinh dưỡng</strong>
-                  <span className={`feature-status-tag ${isCaloriesEnabled ? 'status-enabled' : 'status-disabled'}`}>
-                    {isCaloriesEnabled ? 'ĐANG BẬT' : 'ĐÃ TẮT'}
+                  <strong>
+                    {isEn
+                      ? 'Calories & Nutrition Tracker'
+                      : 'Theo dõi Calories & Dinh dưỡng'}
+                  </strong>
+                  <span
+                    className={`feature-status-tag ${
+                      isCaloriesEnabled ? 'status-enabled' : 'status-disabled'
+                    }`}
+                  >
+                    {isCaloriesEnabled
+                      ? isEn
+                        ? 'ENABLED'
+                        : 'ĐANG BẬT'
+                      : isEn
+                      ? 'DISABLED'
+                      : 'ĐÃ TẮT'}
                   </span>
                 </div>
                 <p className="feature-item-desc">
-                  Hiển thị tab ghi nhận bữa ăn, tính toán 5 chỉ số đa lượng và AI dinh dưỡng trong trang Chi tiết ngày. Tắt đi nếu bạn chỉ muốn tập trung hoàn toàn vào To-do list.
+                  {isEn
+                    ? 'Show meal logging tab, 5 macro metrics and AI Nutritionist in Day Detail. Disable to focus purely on your To-do list.'
+                    : 'Hiển thị tab ghi nhận bữa ăn, tính toán 5 chỉ số đa lượng và AI dinh dưỡng trong trang Chi tiết ngày. Tắt đi nếu bạn chỉ muốn tập trung hoàn toàn vào To-do list.'}
                 </p>
               </div>
 
@@ -191,20 +303,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 aria-checked={isCaloriesEnabled}
                 className={`toggle-switch-btn ${isCaloriesEnabled ? 'is-active' : ''}`}
                 onClick={() => onToggleCalories(!isCaloriesEnabled)}
-                title={isCaloriesEnabled ? 'Nhấn để tắt chế độ Calories' : 'Nhấn để bật chế độ Calories'}
+                title={
+                  isCaloriesEnabled
+                    ? isEn
+                      ? 'Click to disable Calories mode'
+                      : 'Nhấn để tắt chế độ Calories'
+                    : isEn
+                    ? 'Click to enable Calories mode'
+                    : 'Nhấn để bật chế độ Calories'
+                }
               >
                 <span className="toggle-switch-thumb" />
               </button>
             </div>
           </div>
 
-          {/* 3. DỮ LIỆU & SAO LƯU (BACKUP) */}
+          {/* 4. DỮ LIỆU & SAO LƯU (BACKUP) */}
           <div className="settings-section">
             <div className="settings-section-header">
-              <span className="settings-section-tag">DỮ LIỆU & SAO LƯU</span>
-              <h4 className="settings-section-title">Sao lưu và khôi phục dữ liệu</h4>
+              <span className="settings-section-tag">
+                {isEn ? 'DATA & BACKUP' : 'DỮ LIỆU & SAO LƯU'}
+              </span>
+              <h4 className="settings-section-title">
+                {isEn ? 'Backup & Restore Data' : 'Sao lưu và khôi phục dữ liệu'}
+              </h4>
               <p className="settings-section-desc">
-                Xuất file JSON sao lưu toàn bộ quá trình hoặc khôi phục dữ liệu từ máy tính khác
+                {isEn
+                  ? 'Export a JSON backup of all your progress or restore data from another device'
+                  : 'Xuất file JSON sao lưu toàn bộ quá trình hoặc khôi phục dữ liệu từ máy tính khác'}
               </p>
             </div>
 
@@ -213,20 +339,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="button"
                 className="settings-action-btn"
                 onClick={onExportJson}
-                title="Tải file sao lưu dữ liệu (.json)"
+                title={
+                  isEn
+                    ? 'Download backup data file (.json)'
+                    : 'Tải file sao lưu dữ liệu (.json)'
+                }
               >
                 <Download size={15} />
-                <span>Lưu file (Xuất JSON)</span>
+                <span>
+                  {isEn ? 'Save File (Export JSON)' : 'Lưu file (Xuất JSON)'}
+                </span>
               </button>
 
               <button
                 type="button"
                 className="settings-action-btn"
                 onClick={() => fileInputRef.current?.click()}
-                title="Nhập file sao lưu (.json) vào hệ thống"
+                title={
+                  isEn
+                    ? 'Import backup file (.json) into system'
+                    : 'Nhập file sao lưu (.json) vào hệ thống'
+                }
               >
                 <Upload size={15} />
-                <span>Nhập file (Khôi phục)</span>
+                <span>
+                  {isEn ? 'Import File (Restore)' : 'Nhập file (Khôi phục)'}
+                </span>
               </button>
               <input
                 ref={fileInputRef}
@@ -238,14 +376,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 4. TÀI KHOẢN & PHIÊN ĐĂNG NHẬP */}
+          {/* 5. TÀI KHOẢN & PHIÊN ĐĂNG NHẬP */}
           <div className="settings-section">
             <div className="settings-section-header">
-              <span className="settings-section-tag">TÀI KHOẢN</span>
-              <h4 className="settings-section-title">Phiên đăng nhập</h4>
+              <span className="settings-section-tag">
+                {isEn ? 'ACCOUNT' : 'TÀI KHOẢN'}
+              </span>
+              <h4 className="settings-section-title">
+                {isEn ? 'Active Session' : 'Phiên đăng nhập'}
+              </h4>
               <p className="settings-section-desc">
                 {userEmail
-                  ? `Đang đăng nhập với tài khoản: ${userEmail}`
+                  ? isEn
+                    ? `Signed in as: ${userEmail}`
+                    : `Đang đăng nhập với tài khoản: ${userEmail}`
+                  : isEn
+                  ? 'Sign out of your account on this browser'
                   : 'Đăng xuất tài khoản khỏi trình duyệt này'}
               </p>
             </div>
@@ -257,10 +403,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClose();
                 onLogout?.();
               }}
-              title="Đăng xuất tài khoản"
+              title={isEn ? 'Sign out of account' : 'Đăng xuất tài khoản'}
             >
               <LogOut size={15} />
-              <span>Đăng xuất tài khoản</span>
+              <span>{isEn ? 'Sign Out' : 'Đăng xuất tài khoản'}</span>
             </button>
           </div>
         </div>
@@ -272,11 +418,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className="btn-minimal btn-close-settings"
             onClick={onClose}
           >
-            Đóng
+            {isEn ? 'Close' : 'Đóng'}
           </button>
         </div>
       </div>
     </div>
   );
 };
-

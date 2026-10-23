@@ -31,6 +31,14 @@ import {
   PERSONALIZATION_OPTIONS,
   SCORING,
 } from '~/utils/constants';
+import {
+  getLocalizedPersonalization,
+  translateCategory,
+  translateRankDesc,
+  translateRankTitle,
+  translateWeekday,
+  useLanguage,
+} from '~/utils/i18n';
 
 const HOURS_24 = Array.from({ length: 25 }, (_, i) => i);
 const COLUMNS_5 = Array.from({ length: 5 }, (_, i) => i);
@@ -104,6 +112,7 @@ export const DayDetail: React.FC = () => {
     dayRefreshTrigger,
     isCaloriesEnabled,
   } = useOutletContext<ClientOutletContext>();
+  const { language, isEn } = useLanguage();
 
   const buildInitialDayData = useCallback(
     (key: string): DayDataResponse | null => {
@@ -402,7 +411,11 @@ export const DayDetail: React.FC = () => {
   if (isLoading || !dayData) {
     return (
       <div className="page-loading-box">
-        <span>Đang tải chi tiết công việc ngày {activeDateKey}...</span>
+        <span>
+          {isEn
+            ? `Loading daily schedule for ${activeDateKey}...`
+            : `Đang tải chi tiết công việc ngày ${activeDateKey}...`}
+        </span>
       </div>
     );
   }
@@ -410,6 +423,7 @@ export const DayDetail: React.FC = () => {
   const { dayStats, dayRecord, weekday, day, month } = dayData;
   const tasksMap = dayRecord?.tasks || {};
   const isToday = activeDateKey === today.dateKey;
+  const localizedOptions = getLocalizedPersonalization(language);
 
   const allTasksCompleted =
     currentTasksList.length > 0 &&
@@ -424,17 +438,17 @@ export const DayDetail: React.FC = () => {
   };
 
   const physObj =
-    PERSONALIZATION_OPTIONS.physicalStates.find(
+    localizedOptions.physicalStates.find(
       (x) => x.id === userProfile.physicalState
-    ) || PERSONALIZATION_OPTIONS.physicalStates[2];
+    ) || localizedOptions.physicalStates[2];
   const mentObj =
-    PERSONALIZATION_OPTIONS.mentalStates.find(
+    localizedOptions.mentalStates.find(
       (x) => x.id === userProfile.mentalState
-    ) || PERSONALIZATION_OPTIONS.mentalStates[2];
+    ) || localizedOptions.mentalStates[2];
   const emoObj =
-    PERSONALIZATION_OPTIONS.emotionalStates.find(
+    localizedOptions.emotionalStates.find(
       (x) => x.id === userProfile.emotionalState
-    ) || PERSONALIZATION_OPTIONS.emotionalStates[2];
+    ) || localizedOptions.emotionalStates[2];
 
   return (
     <div className="day-split-page-wrapper" id="day-detail-panel">
@@ -450,14 +464,14 @@ export const DayDetail: React.FC = () => {
                 onClick={() => handleStepDay(-1)}
               >
                 <ChevronLeft size={14} />
-                <span>Ngày trước</span>
+                <span>{isEn ? 'Prev Day' : 'Ngày trước'}</span>
               </button>
               <button
                 type="button"
                 className="btn-minimal btn-sm"
                 onClick={() => handleStepDay(1)}
               >
-                <span>Ngày sau</span>
+                <span>{isEn ? 'Next Day' : 'Ngày sau'}</span>
                 <ChevronRight size={14} />
               </button>
             </div>
@@ -466,13 +480,21 @@ export const DayDetail: React.FC = () => {
           <div className="day-detail-title-group">
             <div className="day-tag-row">
               <span className="day-badge-mono">{activeDateKey}</span>
-              <span className="day-weekday-pill">{weekday}</span>
-              {isToday && <span className="today-indicator-pill">Hôm nay</span>}
+              <span className="day-weekday-pill">
+                {translateWeekday(weekday, language)}
+              </span>
+              {isToday && (
+                <span className="today-indicator-pill">
+                  {isEn ? 'Today' : 'Hôm nay'}
+                </span>
+              )}
             </div>
             <h2 className="section-heading">
-              Chi tiết & Tích việc
+              {isEn ? 'Day Detail & Check-in' : 'Chi tiết & Tích việc'}
             </h2>
-            <p className="day-rank-desc">{dayStats.rank.description}</p>
+            <p className="day-rank-desc">
+              {translateRankDesc(dayStats.rank.description, language)}
+            </p>
           </div>
 
           {/* Thẻ điểm số tổng hợp & Trạng thái & Nút thao tác */}
@@ -480,29 +502,44 @@ export const DayDetail: React.FC = () => {
             <div className="day-score-main">
               <div className="day-score-left">
                 <span className="day-score-label">
-                  ĐIỂM ĐẠT ĐƯỢC (ĐÃ CÁ NHÂN HÓA)
+                  {isEn
+                    ? 'ACHIEVED SCORE (PERSONALIZED)'
+                    : 'ĐIỂM ĐẠT ĐƯỢC (ĐÃ CÁ NHÂN HÓA)'}
                 </span>
                 <div className="day-score-big-row">
                   <div className="day-score-big">{dayStats.percentage}%</div>
                   {dayStats.stateBonusPct !== 0 && (
                     <span
                       className="score-mod-pill"
-                      title="Điều chỉnh điểm dựa trên Thể chất, Tinh thần, Cảm xúc & Chế độ kỷ luật"
+                      title={
+                        isEn
+                          ? 'Score adjusted based on Physical, Mental, Emotional states & Discipline mode'
+                          : 'Điều chỉnh điểm dựa trên Thể chất, Tinh thần, Cảm xúc & Chế độ kỷ luật'
+                      }
                     >
                       {dayStats.stateBonusPct > 0
-                        ? `+${dayStats.stateBonusPct}% vượt khó`
+                        ? isEn
+                          ? `+${dayStats.stateBonusPct}% resilience`
+                          : `+${dayStats.stateBonusPct}% vượt khó`
+                        : isEn
+                        ? `${dayStats.stateBonusPct}% strict`
                         : `${dayStats.stateBonusPct}% kỷ luật`}
                     </span>
                   )}
                 </div>
                 <span className="day-score-raw">
-                  {dayStats.rawPoints} / {dayStats.maxPoints} điểm •{' '}
-                  {dayStats.checkedCount}/{dayStats.totalTasks} việc
+                  {dayStats.rawPoints} / {dayStats.maxPoints}{' '}
+                  {isEn ? 'pts' : 'điểm'} • {dayStats.checkedCount}/
+                  {dayStats.totalTasks} {isEn ? 'tasks' : 'việc'}
                 </span>
               </div>
               <div className="day-rank-box">
-                <span className="day-rank-label">MỨC ĐẠT</span>
-                <span className="day-rank-value">{dayStats.rank.title}</span>
+                <span className="day-rank-label">
+                  {isEn ? 'RANK' : 'MỨC ĐẠT'}
+                </span>
+                <span className="day-rank-value">
+                  {translateRankTitle(dayStats.rank.title, language)}
+                </span>
               </div>
             </div>
 
@@ -514,7 +551,7 @@ export const DayDetail: React.FC = () => {
                   onClick={onOpenProfileModal}
                   style={{ cursor: 'pointer' }}
                 >
-                  Thể chất:{' '}
+                  {isEn ? 'Physical:' : 'Thể chất:'}{' '}
                   <strong
                     className={`state-text-val state-text-${physObj.tier || 'good'}`}
                   >
@@ -527,7 +564,7 @@ export const DayDetail: React.FC = () => {
                   onClick={onOpenProfileModal}
                   style={{ cursor: 'pointer' }}
                 >
-                  Tinh thần:{' '}
+                  {isEn ? 'Mental:' : 'Tinh thần:'}{' '}
                   <strong
                     className={`state-text-val state-text-${mentObj.tier || 'good'}`}
                   >
@@ -540,7 +577,7 @@ export const DayDetail: React.FC = () => {
                   onClick={onOpenProfileModal}
                   style={{ cursor: 'pointer' }}
                 >
-                  Cảm xúc:{' '}
+                  {isEn ? 'Emotional:' : 'Cảm xúc:'}{' '}
                   <strong
                     className={`state-text-val state-text-${emoObj.tier || 'good'}`}
                   >
@@ -553,16 +590,24 @@ export const DayDetail: React.FC = () => {
                 type="button"
                 className="btn-minimal btn-sm btn-state-quick"
                 onClick={onOpenProfileModal}
-                title="Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân"
+                title={
+                  isEn
+                    ? 'Update Physical, Mental & Emotional states'
+                    : 'Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân'
+                }
               >
                 <UserCheck size={14} />
-                <span>Trạng thái</span>
+                <span>{isEn ? 'States' : 'Trạng thái'}</span>
               </button>
             </div>
 
             <div
               className="progress-bar-track"
-              title={`Tiến độ ngày: ${dayStats.percentage}%`}
+              title={
+                isEn
+                  ? `Daily progress: ${dayStats.percentage}%`
+                  : `Tiến độ ngày: ${dayStats.percentage}%`
+              }
             >
               <div
                 className="progress-bar-fill"
@@ -586,10 +631,14 @@ export const DayDetail: React.FC = () => {
                     timeHint: `${String(nowH).padStart(2, '0')}:00`,
                   });
                 }}
-                title="Thêm đầu việc mới cho ngày/tuần/tháng này"
+                title={
+                  isEn
+                    ? 'Add a new task for this day/week/month'
+                    : 'Thêm đầu việc mới cho ngày/tuần/tháng này'
+                }
               >
                 <Plus size={14} />
-                <span>Thêm việc</span>
+                <span>{isEn ? 'Add Task' : 'Thêm việc'}</span>
               </button>
               <button
                 type="button"
@@ -597,21 +646,37 @@ export const DayDetail: React.FC = () => {
                 onClick={handleToggleAllTasks}
                 title={
                   allTasksCompleted
-                    ? 'Bỏ tích toàn bộ việc của ngày'
+                    ? isEn
+                      ? 'Uncheck all tasks for today'
+                      : 'Bỏ tích toàn bộ việc của ngày'
+                    : isEn
+                    ? `Check all ${currentTasksList.length} tasks (100%)`
                     : `Tích nhanh tất cả ${currentTasksList.length} việc (100%)`
                 }
               >
                 <CheckSquare size={14} />
-                <span>{allTasksCompleted ? 'Bỏ tích tất cả' : 'Tích tất cả'}</span>
+                <span>
+                  {allTasksCompleted
+                    ? isEn
+                      ? 'Uncheck All'
+                      : 'Bỏ tích tất cả'
+                    : isEn
+                    ? 'Check All'
+                    : 'Tích tất cả'}
+                </span>
               </button>
               <button
                 type="button"
                 className="btn-minimal btn-sm"
                 onClick={handleClearDay}
-                title="Xóa toàn bộ tích chọn của ngày này"
+                title={
+                  isEn
+                    ? 'Reset all check-ins for this day'
+                    : 'Xóa toàn bộ tích chọn của ngày này'
+                }
               >
                 <RotateCcw size={14} />
-                <span>Đặt lại ngày</span>
+                <span>{isEn ? 'Reset Day' : 'Đặt lại ngày'}</span>
               </button>
             </div>
           </div>
@@ -620,17 +685,25 @@ export const DayDetail: React.FC = () => {
           <div className="day-note-box">
             <div className="day-note-header">
               <label htmlFor="daily-note-input" className="day-note-label">
-                GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {day}/{month}
+                {isEn
+                  ? `DAILY NOTE / SELF-REFLECTION (${day}/${month})`
+                  : `GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY ${day}/{month}`}
               </label>
               <span className="day-note-hint">
-                AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa
+                {isEn
+                  ? 'AI Coach observes your note to provide personalized advice'
+                  : 'AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa'}
               </span>
             </div>
             <textarea
               id="daily-note-input"
               rows={4}
               className="day-note-input day-note-textarea"
-              placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)..."
+              placeholder={
+                isEn
+                  ? 'Write down what went well today or what needs improvement (click Save to let AI analyze and give feedback)...'
+                  : 'Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)...'
+              }
               value={noteInput}
               onChange={(e) => handleNoteInputChange(e.target.value)}
             />
@@ -641,20 +714,36 @@ export const DayDetail: React.FC = () => {
                 className="btn-minimal btn-sm btn-note-cancel"
                 onClick={handleCancelNote}
                 disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
-                title="Hủy các thay đổi và khôi phục nội dung cũ"
+                title={
+                  isEn
+                    ? 'Discard changes and restore previous note'
+                    : 'Hủy các thay đổi và khôi phục nội dung cũ'
+                }
               >
                 <RotateCcw size={13} />
-                <span>Hủy thay đổi</span>
+                <span>{isEn ? 'Cancel' : 'Hủy thay đổi'}</span>
               </button>
               <button
                 type="button"
                 className="btn-minimal btn-sm btn-save-task btn-note-save"
                 onClick={handleSaveNote}
                 disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
-                title="Lưu ghi chú và kích hoạt AI Coach nhận xét"
+                title={
+                  isEn
+                    ? 'Save note and trigger AI Coach feedback'
+                    : 'Lưu ghi chú và kích hoạt AI Coach nhận xét'
+                }
               >
                 <Check size={14} />
-                <span>{isSavingNote ? 'Đang lưu...' : 'Lưu ghi chú'}</span>
+                <span>
+                  {isSavingNote
+                    ? isEn
+                      ? 'Saving...'
+                      : 'Đang lưu...'
+                    : isEn
+                    ? 'Save Note'
+                    : 'Lưu ghi chú'}
+                </span>
               </button>
             </div>
           </div>
@@ -679,7 +768,9 @@ export const DayDetail: React.FC = () => {
                 onClick={() => setActiveDayTab('calories')}
               >
                 <Flame size={15} />
-                <span>Calories & Dinh dưỡng</span>
+                <span>
+                  {isEn ? 'Calories & Nutrition' : 'Calories & Dinh dưỡng'}
+                </span>
               </button>
             </div>
           )}
@@ -688,7 +779,11 @@ export const DayDetail: React.FC = () => {
             <div className="day-table-pane">
               {currentTasksList.length === 0 ? (
                 <div className="empty-tasks-placeholder">
-                  <p>Chưa có đầu việc nào cho ngày này.</p>
+                  <p>
+                    {isEn
+                      ? 'No tasks scheduled for this day yet.'
+                      : 'Chưa có đầu việc nào cho ngày này.'}
+                  </p>
                   <button
                     type="button"
                     className="btn-minimal"
@@ -702,7 +797,9 @@ export const DayDetail: React.FC = () => {
                     }}
                   >
                     <Plus size={15} />
-                    <span>Thêm đầu việc ngay</span>
+                    <span>
+                      {isEn ? 'Add Task Now' : 'Thêm đầu việc ngay'}
+                    </span>
                   </button>
                 </div>
               ) : (
@@ -730,10 +827,10 @@ export const DayDetail: React.FC = () => {
                                 />
                               </svg>
                               <span className="diagonal-label diagonal-time-label">
-                                Thời gian
+                                {isEn ? 'Time' : 'Thời gian'}
                               </span>
                               <span className="diagonal-label diagonal-task-label">
-                                Việc làm
+                                {isEn ? 'Tasks' : 'Việc làm'}
                               </span>
                             </div>
                           </th>
@@ -757,7 +854,7 @@ export const DayDetail: React.FC = () => {
                           <tr key={colIdx} className="timetable-row">
                             <td className="timetable-td timetable-td-time">
                               <span className="timetable-time-text">
-                                Việc {colIdx + 1}
+                                {isEn ? `Task ${colIdx + 1}` : `Việc ${colIdx + 1}`}
                               </span>
                             </td>
                             {HOURS_24.map((hour) => {
@@ -788,13 +885,17 @@ export const DayDetail: React.FC = () => {
                                           : ''
                                       }`}
                                       onClick={() => handleEditTaskClick(task)}
-                                      title="Nhấp để chỉnh sửa hoặc xoá đầu việc này"
+                                      title={
+                                        isEn
+                                          ? 'Click to edit or delete this task'
+                                          : 'Nhấp để chỉnh sửa hoặc xoá đầu việc này'
+                                      }
                                     >
                                       <div className="grid-task-top">
                                         <div className="grid-task-left">
                                           <div className="grid-task-badge-row">
                                             <span className="grid-task-badge">
-                                              {task.category || 'Mục tiêu'}
+                                              {translateCategory(task.category, language)}
                                             </span>
                                             {isBoosted && (
                                               <span className="grid-task-boost">
@@ -820,7 +921,11 @@ export const DayDetail: React.FC = () => {
                                           }}
                                           title={
                                             isTaskChecked
-                                              ? 'Bỏ tích hoàn thành'
+                                              ? isEn
+                                                ? 'Unmark completion'
+                                                : 'Bỏ tích hoàn thành'
+                                              : isEn
+                                              ? 'Mark task as completed'
                                               : 'Tích hoàn thành việc này'
                                           }
                                         >
@@ -851,7 +956,11 @@ export const DayDetail: React.FC = () => {
                                   onClick={() =>
                                     handleEmptyCellClick(hour, colIdx)
                                   }
-                                  title={`Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`}
+                                  title={
+                                    isEn
+                                      ? `Click to add task at ${hourLabel} (Row Task ${colIdx + 1})`
+                                      : `Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`
+                                  }
                                 >
                                   <div className="grid-empty-target">
                                     <Plus

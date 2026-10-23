@@ -10,7 +10,8 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { UserProfile } from '~/interface/user.interface';
-import { DEFAULT_USER_PROFILE, PERSONALIZATION_OPTIONS } from '~/utils/constants';
+import { DEFAULT_USER_PROFILE } from '~/utils/constants';
+import { getLocalizedPersonalization, useLanguage } from '~/utils/i18n';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     ...(userProfile || {}),
   });
   const [isSaving, setIsSaving] = useState(false);
+  const { language, isEn } = useLanguage();
+  const localizedOptions = getLocalizedPersonalization(language);
 
   useEffect(() => {
     if (isOpen) {
@@ -115,12 +118,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <div>
               <h3 className="modal-title">
                 {isFirstTimeSetup
-                  ? 'Chào mừng! Thiết lập Hồ sơ Cá nhân hóa lần đầu'
+                  ? isEn
+                    ? 'Welcome! First-Time Personalization Setup'
+                    : 'Chào mừng! Thiết lập Hồ sơ Cá nhân hóa lần đầu'
+                  : isEn
+                  ? 'Personalization — Physical, Mental & Emotional States'
                   : 'Cá nhân hóa — Thể chất, Tinh thần & Cảm xúc'}
               </h3>
               <p className="modal-subtitle">
                 {isFirstTimeSetup
-                  ? 'Hãy cập nhật thông tin & trạng thái của bạn sau khi đăng nhập để bắt đầu hành trình kỷ luật'
+                  ? isEn
+                    ? 'Update your profile & current states after signing in to start your discipline journey'
+                    : 'Hãy cập nhật thông tin & trạng thái của bạn sau khi đăng nhập để bắt đầu hành trình kỷ luật'
+                  : isEn
+                  ? 'Configure your states so the system automatically adjusts scoring & provides tailored coaching'
                   : 'Thiết lập trạng thái để hệ thống tự động điều chỉnh chấm điểm & đưa ra lời khuyên/chê sát nhất'}
               </p>
             </div>
@@ -131,7 +142,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               type="button"
               className="btn-modal-close"
               onClick={onClose}
-              aria-label="Đóng modal"
+              aria-label={isEn ? 'Close modal' : 'Đóng modal'}
             >
               <X size={18} />
             </button>
@@ -143,19 +154,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="profile-section-block">
             <div className="profile-section-title">
               <UserCheck size={15} />
-              <span>1. THÔNG TIN CÁ NHÂN & CHỈ SỐ SINH HỌC</span>
+              <span>
+                {isEn
+                  ? '1. PERSONAL INFO & BIOLOGICAL METRICS'
+                  : '1. THÔNG TIN CÁ NHÂN & CHỈ SỐ SINH HỌC'}
+              </span>
             </div>
 
             <div className="profile-inputs-grid-5">
               <div className="form-group">
                 <label className="form-label" htmlFor="prof-name">
-                  TÊN / BIỆT DANH
+                  {isEn ? 'NAME / NICKNAME' : 'TÊN / BIỆT DANH'}
                 </label>
                 <input
                   id="prof-name"
                   type="text"
                   className="form-input"
-                  placeholder="VD: Minh, Duy..."
+                  placeholder={isEn ? 'e.g., Alex, Minh...' : 'VD: Minh, Duy...'}
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                 />
@@ -163,13 +178,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="form-group">
                 <label className="form-label" htmlFor="prof-age">
-                  TUỔI
+                  {isEn ? 'AGE' : 'TUỔI'}
                 </label>
                 <input
                   id="prof-age"
                   type="number"
                   className="form-input"
-                  placeholder="VD: 22"
+                  placeholder="e.g., 22"
                   value={formData.age || ''}
                   onChange={(e) => handleChange('age', e.target.value)}
                 />
@@ -177,14 +192,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="form-group">
                 <label className="form-label" htmlFor="prof-weight">
-                  CÂN NẶNG (KG)
+                  {isEn ? 'WEIGHT (KG)' : 'CÂN NẶNG (KG)'}
                 </label>
                 <input
                   id="prof-weight"
                   type="number"
                   step="0.5"
                   className="form-input"
-                  placeholder="VD: 68"
+                  placeholder="e.g., 68"
                   value={formData.weightKg}
                   onChange={(e) => handleChange('weightKg', e.target.value)}
                 />
@@ -192,13 +207,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="form-group">
                 <label className="form-label" htmlFor="prof-height">
-                  CHIỀU CAO (CM)
+                  {isEn ? 'HEIGHT (CM)' : 'CHIỀU CAO (CM)'}
                 </label>
                 <input
                   id="prof-height"
                   type="number"
                   className="form-input"
-                  placeholder="VD: 172"
+                  placeholder="e.g., 172"
                   value={formData.heightCm}
                   onChange={(e) => handleChange('heightCm', e.target.value)}
                 />
@@ -206,14 +221,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="form-group">
                 <label className="form-label" htmlFor="prof-sleep">
-                  GIỜ NGỦ MỤC TIÊU
+                  {isEn ? 'TARGET SLEEP (HRS)' : 'GIỜ NGỦ MỤC TIÊU'}
                 </label>
                 <input
                   id="prof-sleep"
                   type="number"
                   step="0.5"
                   className="form-input"
-                  placeholder="VD: 7"
+                  placeholder="e.g., 7"
                   value={formData.sleepTargetHours}
                   onChange={(e) =>
                     handleChange('sleepTargetHours', e.target.value)
@@ -224,12 +239,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {(bmiValue || waterRecommend) && (
               <div className="bio-preview-banner">
-                <span>Chỉ số tự động:</span>
+                <span>{isEn ? 'Auto metrics:' : 'Chỉ số tự động:'}</span>
                 {bmiValue && <strong>BMI {bmiValue}</strong>}
                 {waterRecommend && (
                   <span>
-                    • Khuyến nghị uống tối thiểu:{' '}
-                    <strong>{waterRecommend} lít nước/ngày</strong>
+                    •{' '}
+                    {isEn
+                      ? 'Recommended minimum water intake:'
+                      : 'Khuyến nghị uống tối thiểu:'}{' '}
+                    <strong>
+                      {waterRecommend} {isEn ? 'L/day' : 'lít nước/ngày'}
+                    </strong>
                   </span>
                 )}
               </div>
@@ -237,13 +257,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             <div className="form-group" style={{ marginTop: '6px' }}>
               <label className="form-label" htmlFor="prof-motto">
-                CHÂM NGÔN KỶ LUẬT / MỤC TIÊU LỚN NHẤT
+                {isEn
+                  ? 'DISCIPLINE MOTTO / PRIMARY GOAL'
+                  : 'CHÂM NGÔN KỶ LUẬT / MỤC TIÊU LỚN NHẤT'}
               </label>
               <input
                 id="prof-motto"
                 type="text"
                 className="form-input"
-                placeholder="VD: Kỷ luật là tự do — Không đánh đổi tương lai lấy sự thoải mái ngắn hạn!"
+                placeholder={
+                  isEn
+                    ? 'e.g., Discipline equals freedom — Never trade your future for short-term comfort!'
+                    : 'VD: Kỷ luật là tự do — Không đánh đổi tương lai lấy sự thoải mái ngắn hạn!'
+                }
                 value={formData.personalMotto}
                 onChange={(e) => handleChange('personalMotto', e.target.value)}
               />
@@ -254,10 +280,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="profile-section-block">
             <div className="profile-section-title">
               <HeartPulse size={15} />
-              <span>2. TRẠNG THÁI THỂ CHẤT HIỆN TẠI</span>
+              <span>
+                {isEn
+                  ? '2. CURRENT PHYSICAL STATE'
+                  : '2. TRẠNG THÁI THỂ CHẤT HIỆN TẠI'}
+              </span>
             </div>
             <div className="scope-cards-grid">
-              {PERSONALIZATION_OPTIONS.physicalStates.map((item) => {
+              {localizedOptions.physicalStates.map((item) => {
                 const isSelected = formData.physicalState === item.id;
                 return (
                   <label
@@ -297,10 +327,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="profile-section-block">
             <div className="profile-section-title">
               <Brain size={15} />
-              <span>3. TRẠNG THÁI TINH THẦN & ĐỘ TẬP TRUNG</span>
+              <span>
+                {isEn
+                  ? '3. MENTAL STATE & FOCUS LEVEL'
+                  : '3. TRẠNG THÁI TINH THẦN & ĐỘ TẬP TRUNG'}
+              </span>
             </div>
             <div className="scope-cards-grid">
-              {PERSONALIZATION_OPTIONS.mentalStates.map((item) => {
+              {localizedOptions.mentalStates.map((item) => {
                 const isSelected = formData.mentalState === item.id;
                 return (
                   <label
@@ -340,10 +374,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="profile-section-block">
             <div className="profile-section-title">
               <Smile size={15} />
-              <span>4. TRẠNG THÁI CẢM XÚC</span>
+              <span>
+                {isEn ? '4. EMOTIONAL STATE' : '4. TRẠNG THÁI CẢM XÚC'}
+              </span>
             </div>
             <div className="scope-cards-grid">
-              {PERSONALIZATION_OPTIONS.emotionalStates.map((item) => {
+              {localizedOptions.emotionalStates.map((item) => {
                 const isSelected = formData.emotionalState === item.id;
                 return (
                   <label
@@ -383,11 +419,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="profile-section-block">
             <div className="profile-section-title">
               <Target size={15} />
-              <span>5. MỤC TIÊU TRỌNG TÂM (TRỌNG SỐ ĐIỂM ×1.25) & PHONG CÁCH HUẤN LUYỆN</span>
+              <span>
+                {isEn
+                  ? '5. PRIMARY FOCUS GOAL (×1.25 SCORE BOOST) & COACHING STYLE'
+                  : '5. MỤC TIÊU TRỌNG TÂM (TRỌNG SỐ ĐIỂM ×1.25) & PHONG CÁCH HUẤN LUYỆN'}
+              </span>
             </div>
 
             <div className="scope-cards-grid">
-              {PERSONALIZATION_OPTIONS.focusGoals.map((item) => {
+              {localizedOptions.focusGoals.map((item) => {
                 const isSelected = formData.focusGoal === item.id;
                 return (
                   <label
@@ -418,9 +458,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
 
             <div className="form-group" style={{ marginTop: '10px' }}>
-              <label className="form-label">PHONG CÁCH LỜI KHUYÊN / LỜI CHÊ</label>
+              <label className="form-label">
+                {isEn ? 'AI COACHING FEEDBACK STYLE' : 'PHONG CÁCH LỜI KHUYÊN / LỜI CHÊ'}
+              </label>
               <div className="category-pills-wrap">
-                {PERSONALIZATION_OPTIONS.coachingStyles.map((st) => {
+                {localizedOptions.coachingStyles.map((st) => {
                   const isSelected = formData.coachingStyle === st.id;
                   return (
                     <button
@@ -448,7 +490,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               onClick={handleReset}
             >
               <RotateCcw size={14} />
-              <span>Đặt lại mặc định</span>
+              <span>{isEn ? 'Reset to Default' : 'Đặt lại mặc định'}</span>
             </button>
 
             <div className="modal-footer-right">
@@ -458,7 +500,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   className="btn-minimal"
                   onClick={onClose}
                 >
-                  Hủy
+                  {isEn ? 'Cancel' : 'Hủy'}
                 </button>
               )}
               <button
@@ -467,7 +509,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 disabled={isSaving}
               >
                 <Check size={15} />
-                <span>{isSaving ? 'Đang lưu...' : 'Lưu cá nhân hóa'}</span>
+                <span>
+                  {isSaving
+                    ? isEn
+                      ? 'Saving...'
+                      : 'Đang lưu...'
+                    : isEn
+                    ? 'Save Personalization'
+                    : 'Lưu cá nhân hóa'}
+                </span>
               </button>
             </div>
           </div>

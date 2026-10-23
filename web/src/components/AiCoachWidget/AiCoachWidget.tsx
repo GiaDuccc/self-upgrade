@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { getAiCoachingMessageAPI } from '~/apis/clientAPI/aiCoachApi';
 import { UserProfile } from '~/interface/user.interface';
+import { useLanguage } from '~/utils/i18n';
 
 interface AiCoachWidgetProps {
   dateKey: string;
@@ -18,6 +19,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
+  const { isEn } = useLanguage();
 
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -312,7 +314,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       <div
         className={`ai-floating-bubble ${isOpen ? 'is-open' : 'is-closed'}`}
         role="dialog"
-        aria-label="Lời nhắc AI Coach"
+        aria-label={isEn ? 'AI Coach Reminder' : 'Lời nhắc AI Coach'}
       >
         <div className="ai-speech-bubble-header">
           <div className="ai-speech-badge">
@@ -326,16 +328,20 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
               className="btn-ai-reload"
               onClick={handleManualRefresh}
               disabled={isAiLoading}
-              title="Nhận một câu nhận xét khác từ AI"
+              title={
+                isEn
+                  ? 'Get another feedback from AI'
+                  : 'Nhận một câu nhận xét khác từ AI'
+              }
             >
               <RefreshCw size={11} className={isAiLoading ? 'spin-anim' : ''} />
-              <span>Đổi câu</span>
+              <span>{isEn ? 'Refresh' : 'Đổi câu'}</span>
             </button>
             <button
               type="button"
               className="btn-ai-close"
               onClick={handleCloseManually}
-              title="Thu gọn bong bóng"
+              title={isEn ? 'Collapse bubble' : 'Thu gọn bong bóng'}
             >
               <X size={13} />
             </button>
@@ -344,15 +350,23 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
         <div className="ai-speech-bubble-body">
           {isAiLoading ? (
-            <div className="ai-typing-indicator" aria-label="AI đang phân tích">
+            <div
+              className="ai-typing-indicator"
+              aria-label={isEn ? 'AI is analyzing' : 'AI đang phân tích'}
+            >
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
-              <span className="typing-text">AI đang suy nghĩ...</span>
+              <span className="typing-text">
+                {isEn ? 'AI is thinking...' : 'AI đang suy nghĩ...'}
+              </span>
             </div>
           ) : (
             <p className="ai-bubble-message">
-              {aiMessage || 'Hãy tích các việc trong ngày để AI đồng hành cùng bạn.'}
+              {aiMessage ||
+                (isEn
+                  ? 'Check off your daily tasks to let AI coach you.'
+                  : 'Hãy tích các việc trong ngày để AI đồng hành cùng bạn.')}
             </p>
           )}
         </div>
@@ -362,7 +376,15 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         type="button"
         className={`ai-floating-avatar-btn ${isOpen ? 'is-active' : ''}`}
         onClick={handleToggleBubble}
-        title={isOpen ? 'Thu gọn bong bóng AI' : 'Mở xem lời nhắc từ AI Coach'}
+        title={
+          isOpen
+            ? isEn
+              ? 'Collapse AI bubble'
+              : 'Thu gọn bong bóng AI'
+            : isEn
+            ? 'Open AI Coach reminder'
+            : 'Mở xem lời nhắc từ AI Coach'
+        }
         aria-label="AI Coach Avatar"
       >
         <img

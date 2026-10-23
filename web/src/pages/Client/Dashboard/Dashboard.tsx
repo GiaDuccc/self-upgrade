@@ -4,6 +4,7 @@ import { MonthlyLineChart, DistributionDonutChart } from '~/components/Charts/Ch
 import { MonthDaysGrid } from '~/components/MonthDaysGrid/MonthDaysGrid';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import { getTodayInfo } from '~/utils/constants';
+import { translateRankTitle, useLanguage } from '~/utils/i18n';
 
 export const Dashboard: React.FC = () => {
   const {
@@ -17,11 +18,16 @@ export const Dashboard: React.FC = () => {
 
   const navigate = useNavigate();
   const today = useMemo(() => getTodayInfo(), []);
+  const { language, isEn } = useLanguage();
 
   if (isLoadingMonth || !monthStats) {
     return (
       <div className="page-loading-box">
-        <span>Đang tải dữ liệu thống kê tháng {currentMonth}/{currentYear}...</span>
+        <span>
+          {isEn
+            ? `Loading statistics for ${currentMonth}/${currentYear}...`
+            : `Đang tải dữ liệu thống kê tháng ${currentMonth}/{currentYear}...`}
+        </span>
       </div>
     );
   }
@@ -35,83 +41,110 @@ export const Dashboard: React.FC = () => {
     navigate(`/day/${dateKey}`);
   };
 
+  const monthRankTitle = translateRankTitle(monthStats.monthRank.title, language);
+
   return (
     <div className="overview-split-container">
-      {/* CỘT BÊN TRÁI: BIỂU ĐỒ & THÔNG KÊ THÁNG */}
+      {/* CỘT BÊN TRÁI: BIỂU ĐỒ & THỐNG KÊ THÁNG */}
       <div className="overview-split-left-col">
         <div className="section-header-bar">
           <div>
             <h2 className="section-heading">
-              TỔNG QUAN THỐNG KÊ THÁNG {currentMonth}/{currentYear}
+              {isEn
+                ? `MONTHLY OVERVIEW — ${currentMonth}/${currentYear}`
+                : `TỔNG QUAN THỐNG KÊ THÁNG ${currentMonth}/${currentYear}`}
             </h2>
             <p className="section-subtext">
-              Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ)
+              {isEn
+                ? 'Scoring Scale: Unselected (0pt) • Poor (1pt) • Good (5pts) • Perfect (10pts)'
+                : 'Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ)'}
             </p>
           </div>
           <div className="month-rank-pill">
-            <span>Đánh giá tháng:</span>
-            <strong>{monthStats.monthRank.title}</strong>
+            <span>{isEn ? 'Monthly Rank:' : 'Đánh giá tháng:'}</span>
+            <strong>{monthRankTitle}</strong>
           </div>
         </div>
 
         {/* 4 Thẻ chỉ số tổng hợp tháng (dạng lưới 2x2 gọn gàng) */}
         <div className="stats-cards-grid stats-cards-grid-split">
           <div className="stat-card stat-card-highlight">
-            <span className="stat-label">ĐIỂM TRUNG BÌNH (NGÀY ĐÃ TÍCH)</span>
+            <span className="stat-label">
+              {isEn ? 'AVERAGE SCORE (ACTIVE DAYS)' : 'ĐIỂM TRUNG BÌNH (NGÀY ĐÃ TÍCH)'}
+            </span>
             <div className="stat-value-row">
               <span className="stat-big-number">
                 {monthStats.avgActivePercentage}%
               </span>
-              <span className="stat-tag">{monthStats.monthRank.title}</span>
+              <span className="stat-tag">{monthRankTitle}</span>
             </div>
             <span className="stat-footnote">
-              Tính trên {monthStats.activeDaysCount} ngày có hoạt động trong tháng
+              {isEn
+                ? `Calculated across ${monthStats.activeDaysCount} active days this month`
+                : `Tính trên ${monthStats.activeDaysCount} ngày có hoạt động trong tháng`}
             </span>
           </div>
 
           <div className="stat-card">
-            <span className="stat-label">TỔNG ĐIỂM TÍCH LŨY THÁNG</span>
+            <span className="stat-label">
+              {isEn ? 'TOTAL ACCUMULATED POINTS' : 'TỔNG ĐIỂM TÍCH LŨY THÁNG'}
+            </span>
             <div className="stat-value-row">
               <span className="stat-big-number">
-                {monthStats.sumPoints.toLocaleString('vi-VN')}
+                {monthStats.sumPoints.toLocaleString(isEn ? 'en-US' : 'vi-VN')}
               </span>
               <span className="stat-unit">
-                / {monthStats.maxMonthPoints.toLocaleString('vi-VN')}đ
+                / {monthStats.maxMonthPoints.toLocaleString(isEn ? 'en-US' : 'vi-VN')}
+                {isEn ? ' pts' : 'đ'}
               </span>
             </div>
             <span className="stat-footnote">
-              Đạt {monthStats.overallMonthPercentage}% tổng điểm tối đa toàn tháng
+              {isEn
+                ? `Reached ${monthStats.overallMonthPercentage}% of maximum monthly points`
+                : `Đạt ${monthStats.overallMonthPercentage}% tổng điểm tối đa toàn tháng`}
             </span>
           </div>
 
           <div className="stat-card">
-            <span className="stat-label">SỐ NGÀY DUY TRÌ CHECK-IN</span>
+            <span className="stat-label">
+              {isEn ? 'ACTIVE CHECK-IN DAYS' : 'SỐ NGÀY DUY TRÌ CHECK-IN'}
+            </span>
             <div className="stat-value-row">
               <span className="stat-big-number">
                 {monthStats.activeDaysCount}
               </span>
-              <span className="stat-unit">/ {monthStats.totalDays} ngày</span>
+              <span className="stat-unit">
+                / {monthStats.totalDays} {isEn ? 'days' : 'ngày'}
+              </span>
             </div>
             <span className="stat-footnote">
-              {monthStats.perfectDaysCount} ngày đạt mức Hoàn Hảo (≥90%)
+              {isEn
+                ? `${monthStats.perfectDaysCount} days reached Perfect rank (≥90%)`
+                : `${monthStats.perfectDaysCount} ngày đạt mức Hoàn Hảo (≥90%)`}
             </span>
           </div>
 
           <div className="stat-card">
-            <span className="stat-label">NGÀY PHONG ĐỘ CAO NHẤT</span>
+            <span className="stat-label">
+              {isEn ? 'PEAK PERFORMANCE DAY' : 'NGÀY PHONG ĐỘ CAO NHẤT'}
+            </span>
             <div className="stat-value-row">
               <span className="stat-big-number">
                 {monthStats.bestDay ? `${monthStats.bestDay.percentage}%` : '—'}
               </span>
               {monthStats.bestDay && (
                 <span className="stat-tag">
-                  Ngày {monthStats.bestDay.day}/{currentMonth}
+                  {isEn ? 'Day' : 'Ngày'} {monthStats.bestDay.day}/{currentMonth}
                 </span>
               )}
             </div>
             <span className="stat-footnote">
               {monthStats.bestDay
-                ? `${monthStats.bestDay.rawPoints}/${monthStats.bestDay.maxPoints} điểm (${monthStats.bestDay.rank.title})`
+                ? isEn
+                  ? `${monthStats.bestDay.rawPoints}/${monthStats.bestDay.maxPoints} pts (${translateRankTitle(monthStats.bestDay.rank.title, language)})`
+                  : `${monthStats.bestDay.rawPoints}/${monthStats.bestDay.maxPoints} điểm (${monthStats.bestDay.rank.title})`
+                : isEn
+                ? 'No records logged this month yet'
                 : 'Chưa có dữ liệu ghi nhận trong tháng'}
             </span>
           </div>
@@ -127,7 +160,11 @@ export const Dashboard: React.FC = () => {
 
           <DistributionDonutChart
             selectedDayStats={selectedDayItem}
-            selectedDayLabel={`Ngày ${selectedDayItem.day}/${currentMonth}`}
+            selectedDayLabel={
+              isEn
+                ? `Day ${selectedDayItem.day}/${currentMonth}`
+                : `Ngày ${selectedDayItem.day}/${currentMonth}`
+            }
             monthStats={monthStats}
           />
         </div>
@@ -147,4 +184,3 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
-

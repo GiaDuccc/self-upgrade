@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MonthDayItem, MonthStats } from '~/interface/discipline.interface';
+import { translateRankTitle, useLanguage } from '~/utils/i18n';
 
 interface MonthlyLineChartProps {
   daysList: MonthDayItem[];
@@ -13,6 +14,7 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
   onSelectDay,
 }) => {
   const [hoveredDay, setHoveredDay] = useState<MonthDayItem | null>(null);
+  const { language, isEn } = useLanguage();
 
   const width = 760;
   const height = 230;
@@ -61,16 +63,26 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
     <div className="chart-box">
       <div className="chart-header">
         <div>
-          <h3 className="chart-title">BIỂU ĐỒ ĐƯỜNG — HIỆU SUẤT THEO NGÀY (%)</h3>
+          <h3 className="chart-title">
+            {isEn
+              ? 'LINE CHART — DAILY PERFORMANCE (%)'
+              : 'BIỂU ĐỒ ĐƯỜNG — HIỆU SUẤT THEO NGÀY (%)'}
+          </h3>
           <p className="chart-subtitle">
-            Nhấn vào điểm bất kỳ trên biểu đồ để mở trang chi tiết & tích việc ngày đó
+            {isEn
+              ? 'Click any point on the chart to open that day’s detail & check-in page'
+              : 'Nhấn vào điểm bất kỳ trên biểu đồ để mở trang chi tiết & tích việc ngày đó'}
           </p>
           {activePoint && (
             <div className="chart-active-badge">
-              <span>Ngày {activePoint.day}:</span>
+              <span>
+                {isEn ? 'Day' : 'Ngày'} {activePoint.day}:
+              </span>
               <strong>{activePoint.percentage}%</strong>
               <span className="chart-badge-sub">
-                ({activePoint.rawPoints}/{activePoint.maxPoints}đ • {activePoint.rank.title})
+                ({activePoint.rawPoints}/{activePoint.maxPoints}
+                {isEn ? ' pts' : 'đ'} •{' '}
+                {translateRankTitle(activePoint.rank.title, language)})
               </span>
             </div>
           )}
@@ -225,6 +237,7 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
   monthStats,
 }) => {
   const [scope, setScope] = useState<'DAY' | 'MONTH'>('MONTH');
+  const { language, isEn } = useLanguage();
 
   const isDayScope = scope === 'DAY';
 
@@ -239,7 +252,11 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
   );
 
   const centerSubLabel = isDayScope
-    ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 10} việc hoàn thành`
+    ? isEn
+      ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 5} tasks done`
+      : `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 5} việc hoàn thành`
+    : isEn
+    ? `${monthStats.activeDaysCount}/${monthStats.totalDays} active days`
     : `${monthStats.activeDaysCount}/${monthStats.totalDays} ngày đã tích`;
 
   const size = 180;
@@ -253,10 +270,18 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
     <div className="chart-box">
       <div className="chart-header">
         <div>
-          <h3 className="chart-title">BIỂU ĐỒ TRÒN — TIẾN ĐỘ HOÀN THÀNH (%)</h3>
+          <h3 className="chart-title">
+            {isEn
+              ? 'DONUT CHART — COMPLETION PROGRESS (%)'
+              : 'BIỂU ĐỒ TRÒN — TIẾN ĐỘ HOÀN THÀNH (%)'}
+          </h3>
           <p className="chart-subtitle">
             {isDayScope
-              ? `Tỷ lệ hoàn thành công việc của ${selectedDayLabel}`
+              ? isEn
+                ? `Task completion rate for ${selectedDayLabel}`
+                : `Tỷ lệ hoàn thành công việc của ${selectedDayLabel}`
+              : isEn
+              ? `Average completion performance in ${monthStats.month}/${monthStats.year}`
               : `Hiệu suất hoàn thành trung bình trong tháng ${monthStats.month}/${monthStats.year}`}
           </p>
           <div className="segmented-toggle" role="tablist">
@@ -265,14 +290,14 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
               className={`seg-btn ${isDayScope ? 'active' : ''}`}
               onClick={() => setScope('DAY')}
             >
-              Ngày đang chọn
+              {isEn ? 'Selected Day' : 'Ngày đang chọn'}
             </button>
             <button
               type="button"
               className={`seg-btn ${!isDayScope ? 'active' : ''}`}
               onClick={() => setScope('MONTH')}
             >
-              Cả tháng
+              {isEn ? 'Whole Month' : 'Cả tháng'}
             </button>
           </div>
         </div>
@@ -286,7 +311,11 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
             viewBox={`0 0 ${size} ${size}`}
             className="donut-svg"
             role="img"
-            aria-label="Biểu đồ tròn tiến độ hoàn thành"
+            aria-label={
+              isEn
+                ? 'Donut chart of completion progress'
+                : 'Biểu đồ tròn tiến độ hoàn thành'
+            }
           >
             {/* Vòng nền 100% */}
             <circle
@@ -349,10 +378,16 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
                 className="legend-swatch"
                 style={{ backgroundColor: 'var(--text-primary)' }}
               />
-              <span className="legend-label">Đã hoàn thành</span>
+              <span className="legend-label">
+                {isEn ? 'Completed' : 'Đã hoàn thành'}
+              </span>
               <span className="legend-pts">
                 ({isDayScope
-                  ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 10} việc`
+                  ? isEn
+                    ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 5} tasks`
+                    : `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 5} việc`
+                  : isEn
+                  ? `${monthStats.activeDaysCount}/${monthStats.totalDays} days`
                   : `${monthStats.activeDaysCount}/${monthStats.totalDays} ngày`})
               </span>
             </div>
@@ -367,10 +402,16 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
                 className="legend-swatch"
                 style={{ backgroundColor: 'var(--level-none)' }}
               />
-              <span className="legend-label">Chưa hoàn thành</span>
+              <span className="legend-label">
+                {isEn ? 'Remaining' : 'Chưa hoàn thành'}
+              </span>
               <span className="legend-pts">
                 ({isDayScope
-                  ? `${Math.max(0, (selectedDayStats.totalTasks || 10) - selectedDayStats.checkedCount)} việc còn lại`
+                  ? isEn
+                    ? `${Math.max(0, (selectedDayStats.totalTasks || 5) - selectedDayStats.checkedCount)} tasks left`
+                    : `${Math.max(0, (selectedDayStats.totalTasks || 5) - selectedDayStats.checkedCount)} việc còn lại`
+                  : isEn
+                  ? `${Math.max(0, monthStats.totalDays - monthStats.activeDaysCount)} unlogged days`
                   : `${Math.max(0, monthStats.totalDays - monthStats.activeDaysCount)} ngày chưa ghi`})
               </span>
             </div>
@@ -385,16 +426,19 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
                 className="legend-swatch"
                 style={{ backgroundColor: 'var(--border-subtle)' }}
               />
-              <span className="legend-label">Đánh giá</span>
+              <span className="legend-label">{isEn ? 'Rank' : 'Đánh giá'}</span>
               <span className="legend-pts">
-                ({isDayScope ? selectedDayStats.rank.title : monthStats.monthRank.title})
+                ({translateRankTitle(
+                  isDayScope ? selectedDayStats.rank.title : monthStats.monthRank.title,
+                  language
+                )})
               </span>
             </div>
             <div className="legend-right">
               <strong>
                 {isDayScope
-                  ? `${selectedDayStats.rawPoints}/${selectedDayStats.maxPoints}đ`
-                  : `${monthStats.sumPoints}/${monthStats.maxMonthPoints}đ`}
+                  ? `${selectedDayStats.rawPoints}/${selectedDayStats.maxPoints}${isEn ? ' pts' : 'đ'}`
+                  : `${monthStats.sumPoints}/${monthStats.maxMonthPoints}${isEn ? ' pts' : 'đ'}`}
               </strong>
             </div>
           </div>

@@ -20,6 +20,7 @@ import {
   FoodState,
   CookingMethod,
 } from '~/interface/discipline.interface';
+import { useLanguage } from '~/utils/i18n';
 
 interface CaloriesTrackerProps {
   dateKey: string;
@@ -43,24 +44,41 @@ const COOKING_METHOD_LABELS: Record<CookingMethod, string> = {
   nuong: 'Nướng',
 };
 
+const COOKING_METHOD_LABELS_EN: Record<CookingMethod, string> = {
+  hap: 'Steamed',
+  luoc: 'Boiled',
+  xao: 'Stir-fried',
+  chien: 'Fried',
+  nuong: 'Grilled',
+};
+
 const SESSION_METADATA: Record<
   MealSession,
-  { label: string; icon: React.ReactNode; timeRange: string; desc: string }
+  {
+    label: string;
+    labelEn: string;
+    icon: React.ReactNode;
+    timeRange: string;
+    desc: string;
+  }
 > = {
   morning: {
     label: 'Buổi Sáng',
+    labelEn: 'Morning',
     icon: <Sun size={17} />,
     timeRange: '06:00 – 11:30',
     desc: 'Khởi đầu ngày mới với năng lượng sạch & protein',
   },
   afternoon: {
     label: 'Buổi Chiều',
+    labelEn: 'Afternoon',
     icon: <Sunset size={17} />,
     timeRange: '11:30 – 17:30',
     desc: 'Bữa chính nạp đạm, tinh bột chậm & rau củ',
   },
   evening: {
     label: 'Buổi Tối',
+    labelEn: 'Evening',
     icon: <Moon size={17} />,
     timeRange: '17:30 – 21:00',
     desc: 'Bữa tối nhẹ nhàng, ưu tiên chất xơ & dễ tiêu',
@@ -74,6 +92,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
   onSaveCalories,
   isSaving = false,
 }) => {
+  const { isEn } = useLanguage();
   const [meals, setMeals] = useState<FoodItem[]>(() => initialMeals);
   const [activeSessionAdd, setActiveSessionAdd] = useState<MealSession | null>(
     null
@@ -198,17 +217,35 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
 
   const renderFoodBadge = (item: FoodItem) => {
     if (item.foodState === 'raw') {
-      return <span className="food-prep-badge badge-raw">Sống</span>;
+      return (
+        <span className="food-prep-badge badge-raw">
+          {isEn ? 'Raw' : 'Sống'}
+        </span>
+      );
     }
     if (item.foodState === 'cooked') {
       const method = item.cookingMethod;
-      const label = method ? COOKING_METHOD_LABELS[method] || 'Chín' : 'Chín';
-      return <span className={`food-prep-badge badge-method-${method || 'cooked'}`}>{label}</span>;
+      const label = method
+        ? isEn
+          ? COOKING_METHOD_LABELS_EN[method] || 'Cooked'
+          : COOKING_METHOD_LABELS[method] || 'Chín'
+        : isEn
+        ? 'Cooked'
+        : 'Chín';
+      return (
+        <span className={`food-prep-badge badge-method-${method || 'cooked'}`}>
+          {label}
+        </span>
+      );
     }
     if (item.time) {
       return <span className="food-prep-badge badge-time">{item.time}</span>;
     }
-    return <span className="food-prep-badge badge-cooked">Chín</span>;
+    return (
+      <span className="food-prep-badge badge-cooked">
+        {isEn ? 'Cooked' : 'Chín'}
+      </span>
+    );
   };
 
   // Chỉ cho phép lưu và phân tích AI khi có thay đổi thực đơn (hoặc đang nhập dở, hoặc chưa từng phân tích)
@@ -228,21 +265,48 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         <div>
           <div className="calories-header-tag">
             <UtensilsCrossed size={15} />
-            <span>NHẬT KÝ DINH DƯỠNG & BỮA ĂN HẰNG NGÀY</span>
+            <span>
+              {isEn
+                ? 'DAILY NUTRITION & MEAL JOURNAL'
+                : 'NHẬT KÝ DINH DƯỠNG & BỮA ĂN HẰNG NGÀY'}
+            </span>
           </div>
           <h3 className="calories-heading">
-            Theo dõi Calories & Dinh dưỡng — {dateKey}
+            {isEn
+              ? `Calories & Nutrition Tracker — ${dateKey}`
+              : `Theo dõi Calories & Dinh dưỡng — ${dateKey}`}
           </h3>
           <p className="calories-subtext">
-            Khung giờ ghi nhận từ <strong>06:00 sáng đến 21:00 tối</strong>. Nhập các món ăn cùng định lượng (gram / khẩu phần), chọn trạng thái Sống hoặc Chín kèm cách chế biến, sau đó nhấn Lưu để AI tự động tính toán 5 chỉ số và nhận xét chuyên sâu.
+            {isEn ? (
+              <>
+                Logging window from <strong>06:00 AM to 09:00 PM</strong>. Enter
+                food items with portion sizes, choose Raw or Cooked with cooking
+                method, then click Save for AI to calculate 5 macro metrics and
+                provide in-depth feedback.
+              </>
+            ) : (
+              <>
+                Khung giờ ghi nhận từ <strong>06:00 sáng đến 21:00 tối</strong>.
+                Nhập các món ăn cùng định lượng (gram / khẩu phần), chọn trạng
+                thái Sống hoặc Chín kèm cách chế biến, sau đó nhấn Lưu để AI tự
+                động tính toán 5 chỉ số và nhận xét chuyên sâu.
+              </>
+            )}
           </p>
         </div>
 
         <div className="calories-actions-row">
           {hasMenuChanged && !isSaving && (
-            <span className="unsaved-badge" title="Bạn có món ăn mới chưa được lưu và phân tích">
+            <span
+              className="unsaved-badge"
+              title={
+                isEn
+                  ? 'You have unsaved and unanalyzed meal items'
+                  : 'Bạn có món ăn mới chưa được lưu và phân tích'
+              }
+            >
               <AlertCircle size={13} />
-              <span>Chưa lưu thay đổi</span>
+              <span>{isEn ? 'Unsaved changes' : 'Chưa lưu thay đổi'}</span>
             </span>
           )}
 
@@ -252,10 +316,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
               className="btn-minimal btn-sm btn-calories-reset"
               onClick={handleResetMeals}
               disabled={isSaving}
-              title="Xóa trắng danh sách món ăn trong ngày"
+              title={
+                isEn
+                  ? 'Clear all food items for this day'
+                  : 'Xóa trắng danh sách món ăn trong ngày'
+              }
             >
               <RotateCcw size={13} />
-              <span>Đặt lại</span>
+              <span>{isEn ? 'Reset' : 'Đặt lại'}</span>
             </button>
           )}
 
@@ -266,14 +334,28 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             disabled={!canSaveAndAnalyze}
             title={
               isSaving
-                ? 'AI đang phân tích thực đơn...'
+                ? isEn
+                  ? 'AI is analyzing meals...'
+                  : 'AI đang phân tích thực đơn...'
                 : canSaveAndAnalyze
-                ? 'Lưu thực đơn và chạy AI Dinh dưỡng để tổng hợp 5 chỉ số'
+                ? isEn
+                  ? 'Save meals and run Nutrition AI to calculate 5 metrics'
+                  : 'Lưu thực đơn và chạy AI Dinh dưỡng để tổng hợp 5 chỉ số'
+                : isEn
+                ? 'No new meal changes to analyze'
                 : 'Thực đơn chưa có thay đổi mới để phân tích'
             }
           >
             <Sparkles size={15} className={isSaving ? 'spin-anim' : ''} />
-            <span>{isSaving ? 'AI đang phân tích...' : 'Lưu & Phân tích AI'}</span>
+            <span>
+              {isSaving
+                ? isEn
+                  ? 'AI Analyzing...'
+                  : 'AI đang phân tích...'
+                : isEn
+                ? 'Save & AI Analyze'
+                : 'Lưu & Phân tích AI'}
+            </span>
           </button>
         </div>
       </div>
@@ -282,6 +364,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
       <div className="meal-sessions-grid">
         {(['morning', 'afternoon', 'evening'] as MealSession[]).map((session) => {
           const meta = SESSION_METADATA[session];
+          const sessionLabel = isEn ? meta.labelEn : meta.label;
           const sessionMeals = getMealsBySession(session);
           const isAdding = activeSessionAdd === session;
 
@@ -291,7 +374,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                 <div className="session-title-group">
                   <div className="session-icon-box">{meta.icon}</div>
                   <div>
-                    <h4 className="session-title">{meta.label}</h4>
+                    <h4 className="session-title">{sessionLabel}</h4>
                     <span className="session-time-pill">
                       <Clock size={11} />
                       {meta.timeRange}
@@ -303,10 +386,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                   type="button"
                   className="btn-minimal btn-sm btn-add-food"
                   onClick={() => handleOpenAddForm(session)}
-                  title={`Thêm món ăn cho ${meta.label}`}
+                  title={
+                    isEn
+                      ? `Add food item for ${sessionLabel}`
+                      : `Thêm món ăn cho ${meta.label}`
+                  }
                 >
                   <Plus size={13} />
-                  <span>Thêm món</span>
+                  <span>{isEn ? 'Add Food' : 'Thêm món'}</span>
                 </button>
               </div>
 
@@ -314,7 +401,11 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
               <div className="food-items-list">
                 {sessionMeals.length === 0 && !isAdding && (
                   <div className="food-empty-box">
-                    <span>Chưa có món ăn nào cho {meta.label.toLowerCase()}</span>
+                    <span>
+                      {isEn
+                        ? `No food items logged for ${sessionLabel.toLowerCase()}`
+                        : `Chưa có món ăn nào cho ${meta.label.toLowerCase()}`}
+                    </span>
                   </div>
                 )}
 
@@ -332,7 +423,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                       type="button"
                       className="btn-food-delete"
                       onClick={() => handleDeleteFoodItem(item.id)}
-                      title="Xóa món này"
+                      title={isEn ? 'Delete this item' : 'Xóa món này'}
                     >
                       <Trash2 size={13} />
                     </button>
@@ -345,11 +436,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                     <div className="inline-form-inputs">
                       <div className="inline-form-row">
                         <div className="inline-input-group flex-2">
-                          <label className="inline-label">Tên món ăn:</label>
+                          <label className="inline-label">
+                            {isEn ? 'Food name:' : 'Tên món ăn:'}
+                          </label>
                           <input
                             type="text"
                             className="form-input inline-input"
-                            placeholder="VD: Cơm trắng, Ức gà, Trứng..."
+                            placeholder={
+                              isEn
+                                ? 'e.g., White rice, Chicken breast, Eggs...'
+                                : 'VD: Cơm trắng, Ức gà, Trứng...'
+                            }
                             value={foodNameInput}
                             onChange={(e) => setFoodNameInput(e.target.value)}
                             autoFocus
@@ -361,11 +458,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                         </div>
 
                         <div className="inline-input-group flex-1">
-                          <label className="inline-label">Định lượng:</label>
+                          <label className="inline-label">
+                            {isEn ? 'Portion:' : 'Định lượng:'}
+                          </label>
                           <input
                             type="text"
                             className="form-input inline-input"
-                            placeholder="VD: 150g, 1 bát, 2 quả..."
+                            placeholder={
+                              isEn
+                                ? 'e.g., 150g, 1 bowl, 2 eggs...'
+                                : 'VD: 150g, 1 bát, 2 quả...'
+                            }
                             value={foodWeightInput}
                             onChange={(e) => setFoodWeightInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -379,21 +482,23 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                       {/* Trạng thái: Sống vs Chín */}
                       <div className="inline-prep-group">
                         <div className="inline-prep-field">
-                          <label className="inline-label">Trạng thái:</label>
+                          <label className="inline-label">
+                            {isEn ? 'State:' : 'Trạng thái:'}
+                          </label>
                           <div className="state-toggle-group">
                             <button
                               type="button"
                               className={`btn-state-pill ${foodStateInput === 'cooked' ? 'active' : ''}`}
                               onClick={() => setFoodStateInput('cooked')}
                             >
-                              🍳 Chín
+                              🍳 {isEn ? 'Cooked' : 'Chín'}
                             </button>
                             <button
                               type="button"
                               className={`btn-state-pill ${foodStateInput === 'raw' ? 'active' : ''}`}
                               onClick={() => setFoodStateInput('raw')}
                             >
-                              🥩 Sống
+                              🥩 {isEn ? 'Raw' : 'Sống'}
                             </button>
                           </div>
                         </div>
@@ -401,15 +506,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                         {/* Nếu chọn Chín: Hiện thêm 5 phương pháp chế biến */}
                         {foodStateInput === 'cooked' && (
                           <div className="inline-prep-field">
-                            <label className="inline-label">Cách chế biến:</label>
+                            <label className="inline-label">
+                              {isEn ? 'Cooking method:' : 'Cách chế biến:'}
+                            </label>
                             <div className="method-toggle-group">
                               {(
                                 [
-                                  { key: 'luoc', label: 'Luộc' },
-                                  { key: 'hap', label: 'Hấp' },
-                                  { key: 'xao', label: 'Xào' },
-                                  { key: 'chien', label: 'Chiên' },
-                                  { key: 'nuong', label: 'Nướng' },
+                                  { key: 'luoc', label: isEn ? 'Boiled' : 'Luộc' },
+                                  { key: 'hap', label: isEn ? 'Steamed' : 'Hấp' },
+                                  { key: 'xao', label: isEn ? 'Stir-fried' : 'Xào' },
+                                  { key: 'chien', label: isEn ? 'Fried' : 'Chiên' },
+                                  { key: 'nuong', label: isEn ? 'Grilled' : 'Nướng' },
                                 ] as const
                               ).map((m) => (
                                 <button
@@ -435,14 +542,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                         disabled={!foodNameInput.trim()}
                       >
                         <CheckCircle2 size={13} />
-                        <span>Thêm vào buổi</span>
+                        <span>{isEn ? 'Add to Meal' : 'Thêm vào buổi'}</span>
                       </button>
                       <button
                         type="button"
                         className="btn-minimal btn-sm"
                         onClick={handleCloseAddForm}
                       >
-                        Hủy
+                        {isEn ? 'Cancel' : 'Hủy'}
                       </button>
                     </div>
                   </div>
@@ -458,11 +565,19 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         <div className="nutrition-ai-header">
           <div className="nutrition-ai-badge">
             <Sparkles size={15} />
-            <span>AI DINH DƯỠNG (MINI NUTRITIONIST AI)</span>
+            <span>
+              {isEn
+                ? 'MINI NUTRITIONIST AI'
+                : 'AI DINH DƯỠNG (MINI NUTRITIONIST AI)'}
+            </span>
           </div>
           {initialSummary?.updatedAt && (
             <span className="nutrition-ai-updated">
-              Phân tích lần cuối: {new Date(initialSummary.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+              {isEn ? 'Last analyzed:' : 'Phân tích lần cuối:'}{' '}
+              {new Date(initialSummary.updatedAt).toLocaleTimeString(
+                isEn ? 'en-US' : 'vi-VN',
+                { hour: '2-digit', minute: '2-digit' }
+              )}
             </span>
           )}
         </div>
@@ -470,48 +585,68 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         {/* 5 Thẻ chỉ số dinh dưỡng: Calories, Protein, Carb, Fat, Chất xơ */}
         <div className="nutrition-macros-grid">
           <div className="macro-card macro-calories">
-            <span className="macro-card-label">TỔNG CALORIES</span>
+            <span className="macro-card-label">
+              {isEn ? 'TOTAL CALORIES' : 'TỔNG CALORIES'}
+            </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.totalCalories : 0}</strong>
               <span className="macro-unit">kcal</span>
             </div>
-            <span className="macro-desc">Năng lượng nạp</span>
+            <span className="macro-desc">
+              {isEn ? 'Energy intake' : 'Năng lượng nạp'}
+            </span>
           </div>
 
           <div className="macro-card macro-protein">
-            <span className="macro-card-label">PROTEIN (ĐẠM)</span>
+            <span className="macro-card-label">
+              {isEn ? 'PROTEIN' : 'PROTEIN (ĐẠM)'}
+            </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.protein : 0}</strong>
               <span className="macro-unit">g</span>
             </div>
-            <span className="macro-desc">Phát triển cơ bắp</span>
+            <span className="macro-desc">
+              {isEn ? 'Muscle growth' : 'Phát triển cơ bắp'}
+            </span>
           </div>
 
           <div className="macro-card macro-carb">
-            <span className="macro-card-label">CARB (TINH BỘT)</span>
+            <span className="macro-card-label">
+              {isEn ? 'CARBS' : 'CARB (TINH BỘT)'}
+            </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.carb : 0}</strong>
               <span className="macro-unit">g</span>
             </div>
-            <span className="macro-desc">Nhiên liệu hoạt động</span>
+            <span className="macro-desc">
+              {isEn ? 'Active fuel' : 'Nhiên liệu hoạt động'}
+            </span>
           </div>
 
           <div className="macro-card macro-fat">
-            <span className="macro-card-label">FAT (CHẤT BÉO)</span>
+            <span className="macro-card-label">
+              {isEn ? 'FATS' : 'FAT (CHẤT BÉO)'}
+            </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.fat : 0}</strong>
               <span className="macro-unit">g</span>
             </div>
-            <span className="macro-desc">Hormone & tế bào</span>
+            <span className="macro-desc">
+              {isEn ? 'Hormones & cells' : 'Hormone & tế bào'}
+            </span>
           </div>
 
           <div className="macro-card macro-fiber">
-            <span className="macro-card-label">CHẤT XƠ (FIBER)</span>
+            <span className="macro-card-label">
+              {isEn ? 'FIBER' : 'CHẤT XƠ (FIBER)'}
+            </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.fiber : 0}</strong>
               <span className="macro-unit">g</span>
             </div>
-            <span className="macro-desc">Hệ tiêu hóa khỏe</span>
+            <span className="macro-desc">
+              {isEn ? 'Healthy digestion' : 'Hệ tiêu hóa khỏe'}
+            </span>
           </div>
         </div>
 
@@ -522,13 +657,28 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
               <Sparkles size={16} />
             </div>
             <div className="feedback-ai-text">
-              <span className="feedback-label">ĐÁNH GIÁ CHUYÊN MÔN CỦA AI:</span>
+              <span className="feedback-label">
+                {isEn ? 'AI NUTRITIONIST ASSESSMENT:' : 'ĐÁNH GIÁ CHUYÊN MÔN CỦA AI:'}
+              </span>
               <p className="feedback-paragraph">
                 {initialSummary?.aiFeedback ? (
                   initialSummary.aiFeedback
                 ) : (
                   <span className="feedback-placeholder">
-                    Chưa có nhận xét. Sau khi nhập các món ăn trong ngày, bạn hãy nhấn nút <strong>“Lưu & Phân tích AI”</strong> ở phía trên để AI tổng hợp 5 chỉ số và đưa ra lời khuyên cá nhân hóa!
+                    {isEn ? (
+                      <>
+                        No assessment yet. After logging your meals for the day,
+                        click <strong>“Save & AI Analyze”</strong> above to let
+                        AI calculate 5 macros and provide personalized advice!
+                      </>
+                    ) : (
+                      <>
+                        Chưa có nhận xét. Sau khi nhập các món ăn trong ngày, bạn
+                        hãy nhấn nút <strong>“Lưu & Phân tích AI”</strong> ở phía
+                        trên để AI tổng hợp 5 chỉ số và đưa ra lời khuyên cá nhân
+                        hóa!
+                      </>
+                    )}
                   </span>
                 )}
               </p>

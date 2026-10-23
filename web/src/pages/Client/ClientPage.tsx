@@ -23,6 +23,7 @@ import {
   formatDateKey,
   getTodayInfo,
 } from '~/utils/constants';
+import { AppLanguage, LanguageContext } from '~/utils/i18n';
 
 export interface ClientOutletContext {
   currentYear: number;
@@ -41,11 +42,13 @@ export interface ClientOutletContext {
   dayRefreshTrigger: number;
   isCaloriesEnabled: boolean;
   theme: 'light' | 'dark';
+  language: AppLanguage;
 }
 
 interface AppSettings {
   theme: 'light' | 'dark';
   enableCalories: boolean;
+  language: AppLanguage;
 }
 
 const getStoredSettings = (): AppSettings => {
@@ -56,12 +59,14 @@ const getStoredSettings = (): AppSettings => {
       return {
         theme: parsed.theme === 'dark' ? 'dark' : 'light',
         enableCalories: parsed.enableCalories !== false,
+        language: parsed.language === 'en' ? 'en' : 'vi',
       };
     }
   } catch {}
   return {
     theme: 'light',
     enableCalories: true,
+    language: 'vi',
   };
 };
 
@@ -97,13 +102,24 @@ export const ClientPage: React.FC = () => {
     setSettings((prev) => ({ ...prev, theme: newTheme }));
   }, []);
 
+  const handleToggleLanguage = useCallback((newLang: AppLanguage) => {
+    setSettings((prev) => ({ ...prev, language: newLang }));
+  }, []);
+
   const handleToggleCalories = useCallback((enabled: boolean) => {
-    setSettings((prev) => ({ ...prev, enableCalories: enabled }));
-    toast.info(
-      enabled
-        ? 'Đã bật chế độ Calories & Dinh dưỡng'
-        : 'Đã tắt chế độ Calories & Dinh dưỡng'
-    );
+    setSettings((prev) => {
+      const isEn = prev.language === 'en';
+      toast.info(
+        enabled
+          ? isEn
+            ? 'Enabled Calories & Nutrition mode'
+            : 'Đã bật chế độ Calories & Dinh dưỡng'
+          : isEn
+          ? 'Disabled Calories & Nutrition mode'
+          : 'Đã tắt chế độ Calories & Dinh dưỡng'
+      );
+      return { ...prev, enableCalories: enabled };
+    });
   }, []);
 
   const handleOpenSettingsModal = useCallback(() => {
@@ -367,68 +383,82 @@ export const ClientPage: React.FC = () => {
     dayRefreshTrigger,
     isCaloriesEnabled: settings.enableCalories,
     theme: settings.theme,
+    language: settings.language,
   };
 
+  const languageContextValue = useMemo(
+    () => ({
+      language: settings.language,
+      isEn: settings.language === 'en',
+      onToggleLanguage: handleToggleLanguage,
+    }),
+    [settings.language, handleToggleLanguage]
+  );
+
   return (
-    <div className="app-shell">
-      <Header
-        currentYear={currentYear}
-        currentMonth={currentMonth}
-        selectedDateKey={selectedDateKey}
-        userProfile={userProfile}
-        userEmail={storedUser?.email}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        onJumpToday={handleJumpToday}
-        onOpenAddTaskModal={handleOpenAddTaskModal}
-        onOpenProfileModal={handleOpenProfileModal}
-        onOpenSettingsModal={handleOpenSettingsModal}
-      />
+    <LanguageContext.Provider value={languageContextValue}>
+      <div className="app-shell">
+        <Header
+          currentYear={currentYear}
+          currentMonth={currentMonth}
+          selectedDateKey={selectedDateKey}
+          userProfile={userProfile}
+          userEmail={storedUser?.email}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onJumpToday={handleJumpToday}
+          onOpenAddTaskModal={handleOpenAddTaskModal}
+          onOpenProfileModal={handleOpenProfileModal}
+          onOpenSettingsModal={handleOpenSettingsModal}
+        />
 
-      <main className="main-container">
-        <Outlet context={outletContext} />
-      </main>
+        <main className="main-container">
+          <Outlet context={outletContext} />
+        </main>
 
-      <Footer />
+        <Footer />
 
-      <TaskModal
-        isOpen={isTaskModalOpen}
-        onClose={() => setIsTaskModalOpen(false)}
-        mode={taskModalMode}
-        initialTask={editingTask}
-        currentDateKey={selectedDateKey}
-        existingTasks={currentDayTasks}
-        onSaveTask={handleSaveTask}
-        onDeleteTask={handleDeleteTask}
-      />
+        <TaskModal
+          isOpen={isTaskModalOpen}
+          onClose={() => setIsTaskModalOpen(false)}
+          mode={taskModalMode}
+          initialTask={editingTask}
+          currentDateKey={selectedDateKey}
+          existingTasks={currentDayTasks}
+          onSaveTask={handleSaveTask}
+          onDeleteTask={handleDeleteTask}
+        />
 
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        userProfile={userProfile}
-        isFirstTimeSetup={!isProfileSetup}
-        onSaveProfile={handleSaveProfile}
-      />
+        <ProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          userProfile={userProfile}
+          isFirstTimeSetup={!isProfileSetup}
+          onSaveProfile={handleSaveProfile}
+        />
 
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        theme={settings.theme}
-        onToggleTheme={handleToggleTheme}
-        isCaloriesEnabled={settings.enableCalories}
-        onToggleCalories={handleToggleCalories}
-        onExportJson={handleExportJson}
-        onImportJson={handleImportJson}
-        onLogout={handleLogout}
-        userEmail={storedUser?.email}
-      />
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          theme={settings.theme}
+          onToggleTheme={handleToggleTheme}
+          language={settings.language}
+          onToggleLanguage={handleToggleLanguage}
+          isCaloriesEnabled={settings.enableCalories}
+          onToggleCalories={handleToggleCalories}
+          onExportJson={handleExportJson}
+          onImportJson={handleImportJson}
+          onLogout={handleLogout}
+          userEmail={storedUser?.email}
+        />
 
-      <AiCoachWidget
-        dateKey={selectedDateKey}
-        triggerSignal={aiTriggerSignal}
-        userProfile={userProfile}
-      />
-    </div>
+        <AiCoachWidget
+          dateKey={selectedDateKey}
+          triggerSignal={aiTriggerSignal}
+          userProfile={userProfile}
+        />
+      </div>
+    </LanguageContext.Provider>
   );
 };
 
