@@ -283,13 +283,13 @@ input {
    MAIN CONTAINER (THU NHỎ KHUNG, LỘ THÊM 50PX KHOẢNG TRỐNG 2 BÊN)
    ============================================================================ */
 .main-container {
-  max-width: 1350px; /* Thu nhỏ 100px so với 1450px cũ (50px mỗi bên) */
+  max-width: 1650px;
   width: 100%;
   margin: 0 auto;
-  padding: 28px 74px 56px; /* Tăng thêm +50px khoảng trống trái/phải (24px + 50px = 74px) */
+  padding: 24px 36px 56px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
 }
 
 .page-loading-box {
@@ -1042,7 +1042,130 @@ input {
 }
 
 /* ============================================================================
-   BẢNG TIMETABLE TO-DO LIST (EXCEL-STYLE GRID VỚI ĐƯỜNG KẺ MỜ)
+   BỐ CỤC CHIA 2 PHẦN: TỔNG QUAN THÁNG (OVERVIEW SPLIT LAYOUT)
+   ============================================================================ */
+.overview-split-container {
+  display: grid;
+  grid-template-columns: 480px minmax(0, 1fr);
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.overview-split-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.overview-left-header {
+  margin-bottom: 2px;
+}
+
+.stats-cards-grid-split {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.charts-split-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.overview-split-right-col {
+  min-width: 0;
+  width: 100%;
+}
+
+.overview-split-right-col .month-days-section {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  height: 100%;
+}
+
+/* ============================================================================
+   BỐ CỤC CHIA 2 KHUNG ĐỘC LẬP: CHI TIẾT NGÀY (DAY DETAIL 2 FRAMES SPLIT LAYOUT)
+   ============================================================================ */
+.day-split-page-wrapper {
+  width: 100%;
+}
+
+.day-split-container {
+  display: grid;
+  grid-template-columns: 460px minmax(0, 1fr);
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.day-split-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 22px 24px;
+}
+
+.day-split-left-col .day-page-topbar {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.day-split-left-col .day-detail-title-group {
+  gap: 4px;
+}
+
+.day-split-left-col .day-score-summary-card {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  flex: none;
+}
+
+.day-split-left-col .day-note-box {
+  width: 100%;
+  margin-top: 0;
+}
+
+.day-split-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  width: 100%;
+  padding: 22px 24px;
+}
+
+.day-split-right-col .day-mode-tab-bar {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-table-pane,
+.day-calories-pane {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .overview-split-container,
+  .day-split-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* ============================================================================
+   BẢNG TIMETABLE TO-DO LIST (TRỤC Y: VIỆC 1..5, TRỤC X: THỜI GIAN 00:00..24:00)
    ============================================================================ */
 .timetable-wrapper {
   width: 100%;
@@ -1054,24 +1177,23 @@ input {
 }
 
 .timetable-container {
-  max-height: 720px;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: auto;
-  /* Ẩn hoàn toàn thanh cuộn trên mọi trình duyệt */
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  /* Bỏ hoàn toàn thanh scroll hiển thị */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   overscroll-behavior: contain !important;
 }
 
 .timetable-container::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .timetable-table {
   width: max-content;
-  min-width: 2200px;
+  min-width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 0.85rem;
@@ -1098,9 +1220,9 @@ input {
   left: 0;
   top: 0;
   z-index: 20 !important;
-  width: 100px;
-  min-width: 100px;
-  max-width: 100px;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
   padding: 0 !important;
   background-color: var(--bg-surface);
 }
@@ -1130,19 +1252,20 @@ input {
   user-select: none;
 }
 
-.diagonal-task-label {
+/* Trục X (trên phải): Thời gian | Trục Y (dưới trái): Việc làm */
+.diagonal-time-label {
   top: 8px;
   right: 8px;
   text-align: right;
 }
 
-.diagonal-time-label {
+.diagonal-task-label {
   bottom: 8px;
   left: 8px;
   text-align: left;
 }
 
-/* Cột tiêu đề của từng cột Việc (Việc 1, Việc 2, ...) */
+/* Cột tiêu đề Thời gian trên trục X (00:00 .. 24:00) */
 .timetable-th-col {
   width: 210px;
   min-width: 210px;
@@ -1161,15 +1284,15 @@ input {
   letter-spacing: 0.02em;
 }
 
-/* Cột thời gian (cố định bên trái) */
+/* Cột Việc X trên trục Y (cố định bên trái: Việc 1 .. Việc 5) */
 .timetable-td-time {
   position: sticky !important;
   left: 0;
   z-index: 5;
   background-color: var(--bg-surface);
-  width: 100px;
-  min-width: 100px;
-  max-width: 100px;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
   text-align: center;
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -1185,7 +1308,7 @@ input {
   font-weight: 600;
 }
 
-/* Ô có thẻ công việc bên trong */
+/* Ô có thẻ công việc bên trong — giữ nguyên kích thước 210x84px */
 .timetable-td-task-cell {
   width: 210px;
   min-width: 210px;

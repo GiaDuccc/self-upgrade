@@ -36,15 +36,16 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <>
-      <section className="overview-top-section">
+    <div className="overview-split-container">
+      {/* CỘT BÊN TRÁI: BIỂU ĐỒ & THÔNG KÊ THÁNG */}
+      <div className="overview-split-left-col">
         <div className="section-header-bar">
           <div>
             <h2 className="section-heading">
               TỔNG QUAN THỐNG KÊ THÁNG {currentMonth}/{currentYear}
             </h2>
             <p className="section-subtext">
-              Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ) — Tự động điều chỉnh theo Thể chất, Tinh thần & Mục tiêu trọng tâm
+              Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ)
             </p>
           </div>
           <div className="month-rank-pill">
@@ -53,8 +54,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 Thẻ chỉ số tổng hợp tháng */}
-        <div className="stats-cards-grid">
+        {/* 4 Thẻ chỉ số tổng hợp tháng (dạng lưới 2x2 gọn gàng) */}
+        <div className="stats-cards-grid stats-cards-grid-split">
           <div className="stat-card stat-card-highlight">
             <span className="stat-label">ĐIỂM TRUNG BÌNH (NGÀY ĐÃ TÍCH)</span>
             <div className="stat-value-row">
@@ -116,8 +117,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Khu vực 2 Biểu đồ: Biểu đồ Đường & Biểu đồ Tròn */}
-        <div className="charts-grid">
+        {/* Khu vực 2 Biểu đồ: Biểu đồ Đường & Biểu đồ Tròn xếp dọc */}
+        <div className="charts-split-stack">
           <MonthlyLineChart
             daysList={monthStats.daysList}
             selectedDateKey={selectedDayItem.dateKey}
@@ -130,17 +131,20 @@ export const Dashboard: React.FC = () => {
             monthStats={monthStats}
           />
         </div>
-      </section>
+      </div>
 
-      <MonthDaysGrid
-        year={currentYear}
-        month={currentMonth}
-        daysList={monthStats.daysList}
-        selectedDateKey={selectedDayItem.dateKey}
-        todayDateKey={today.dateKey}
-        onSelectDay={handleNavigateToDay}
-      />
-    </>
+      {/* CỘT BÊN PHẢI: CHỈ ĐỂ CÁC NGÀY TRONG THÁNG */}
+      <div className="overview-split-right-col">
+        <MonthDaysGrid
+          year={currentYear}
+          month={currentMonth}
+          daysList={monthStats.daysList}
+          selectedDateKey={selectedDayItem.dateKey}
+          todayDateKey={today.dateKey}
+          onSelectDay={handleNavigateToDay}
+        />
+      </div>
+    </div>
   );
 };
 

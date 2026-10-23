@@ -34,7 +34,7 @@ import {
 } from '~/utils/constants';
 
 const HOURS_24 = Array.from({ length: 25 }, (_, i) => i);
-const COLUMNS_10 = Array.from({ length: 10 }, (_, i) => i);
+const COLUMNS_5 = Array.from({ length: 5 }, (_, i) => i);
 
 const DEFAULT_TASK_HOURS: Record<string, number> = {
   wake_5am: 5,
@@ -72,14 +72,14 @@ function buildTaskGridMap(tasks: TaskItem[]): Map<string, TaskItem> {
   tasks.forEach((task) => {
     const hour = resolveTaskHour(task);
     let col = typeof task.columnIndex === 'number' ? task.columnIndex : -1;
-    if (col < 0 || col > 9) {
+    if (col < 0 || col > 4) {
       col = hourCounts[hour] || 0;
       hourCounts[hour] = col + 1;
     }
-    while (col < 10 && gridMap.has(`${hour}_${col}`)) {
+    while (col < 5 && gridMap.has(`${hour}_${col}`)) {
       col++;
     }
-    if (col < 10) {
+    if (col < 5) {
       gridMap.set(`${hour}_${col}`, task);
     }
   });
@@ -234,21 +234,15 @@ export const DayDetail: React.FC = () => {
     };
   }, [activeDateKey, dayRefreshTrigger, buildInitialDayData]);
 
-  // Khóa cuộn trang ngoài khi di chuột vào bảng: kể cả khi cuộn hết trên/dưới cũng không cuộn web bên ngoài
+  // Cuộn ngang mượt mà khi lăn chuột trên bảng Thời gian (trục X) - Việc làm (trục Y)
   useEffect(() => {
     const container = tableContainerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.stopPropagation();
-
-      const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey;
-      if (isHorizontal) {
-        container.scrollLeft += e.deltaX !== 0 ? e.deltaX : e.deltaY;
-      } else {
-        container.scrollTop += e.deltaY;
-      }
-
+      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      container.scrollLeft += delta;
       e.preventDefault();
     };
 
@@ -258,6 +252,15 @@ export const DayDetail: React.FC = () => {
       container.removeEventListener('wheel', handleWheel);
     };
   }, [isLoading, activeDayTab]);
+
+  // Tự động đưa tầm nhìn ngang của bảng tới khung giờ có công việc đầu tiên trong ngày
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container || currentTasksList.length === 0) return;
+    const hours = currentTasksList.map((t) => resolveTaskHour(t));
+    const minHour = Math.max(0, Math.min(...hours) - 1);
+    container.scrollLeft = minHour * 210;
+  }, [activeDateKey, isLoading, activeDayTab, currentTasksList.length]);
 
   const handleToggleTask = async (taskId: string) => {
     const currentLevel = dayData?.dayRecord?.tasks?.[taskId] || 'NONE';
@@ -435,224 +438,156 @@ export const DayDetail: React.FC = () => {
     ) || PERSONALIZATION_OPTIONS.emotionalStates[2];
 
   return (
-    <section className="day-detail-section" id="day-detail-panel">
-      {/* Thanh điều hướng nhanh giữa bảng Tổng quan & chuyển ngày */}
-      <div className="day-page-topbar">
-        <button
-          type="button"
-          className="btn-minimal"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft size={15} />
-          <span>Quay lại Tổng quan tháng</span>
-        </button>
-
-        <div className="day-stepper-btns">
-          <button
-            type="button"
-            className="btn-minimal btn-sm"
-            onClick={() => handleStepDay(-1)}
-          >
-            <ChevronLeft size={14} />
-            <span>Ngày trước</span>
-          </button>
-          <button
-            type="button"
-            className="btn-minimal btn-sm"
-            onClick={() => handleStepDay(1)}
-          >
-            <span>Ngày sau</span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
-
-      <div className="day-detail-header">
-        <div className="day-detail-title-group">
-          <div className="day-tag-row">
-            <span className="day-badge-mono">{activeDateKey}</span>
-            <span className="day-weekday-pill">{weekday}</span>
-            {isToday && <span className="today-indicator-pill">Hôm nay</span>}
-          </div>
-          <h2 className="section-heading">
-            Chi tiết & Tích việc — Ngày {day}/{month}
-          </h2>
-          <p className="day-rank-desc">{dayStats.rank.description}</p>
-        </div>
-
-        <div className="day-score-summary-card">
-          <div className="day-score-main">
-            <div className="day-score-left">
-              <span className="day-score-label">
-                ĐIỂM ĐẠT ĐƯỢC (ĐÃ CÁ NHÂN HÓA)
-              </span>
-              <div className="day-score-big-row">
-                <div className="day-score-big">{dayStats.percentage}%</div>
-                {dayStats.stateBonusPct !== 0 && (
-                  <span
-                    className="score-mod-pill"
-                    title="Điều chỉnh điểm dựa trên Thể chất, Tinh thần, Cảm xúc & Chế độ kỷ luật"
-                  >
-                    {dayStats.stateBonusPct > 0
-                      ? `+${dayStats.stateBonusPct}% vượt khó`
-                      : `${dayStats.stateBonusPct}% kỷ luật`}
-                  </span>
-                )}
-              </div>
-              <span className="day-score-raw">
-                {dayStats.rawPoints} / {dayStats.maxPoints} điểm •{' '}
-                {dayStats.checkedCount}/{dayStats.totalTasks} việc
-              </span>
-            </div>
-            <div className="day-rank-box">
-              <span className="day-rank-label">MỨC ĐẠT</span>
-              <span className="day-rank-value">{dayStats.rank.title}</span>
-            </div>
-          </div>
-
-          <div className="score-card-state-row">
-            <div className="personal-state-strip">
-              <span
-                className="state-chip"
-                title={physObj.desc}
-                onClick={onOpenProfileModal}
-                style={{ cursor: 'pointer' }}
-              >
-                Thể chất:{' '}
-                <strong
-                  className={`state-text-val state-text-${physObj.tier || 'good'}`}
-                >
-                  {physObj.label.split('/')[0].trim()}
-                </strong>
-              </span>
-              <span
-                className="state-chip"
-                title={mentObj.desc}
-                onClick={onOpenProfileModal}
-                style={{ cursor: 'pointer' }}
-              >
-                Tinh thần:{' '}
-                <strong
-                  className={`state-text-val state-text-${mentObj.tier || 'good'}`}
-                >
-                  {mentObj.label.split('/')[0].trim()}
-                </strong>
-              </span>
-              <span
-                className="state-chip"
-                title={emoObj.desc}
-                onClick={onOpenProfileModal}
-                style={{ cursor: 'pointer' }}
-              >
-                Cảm xúc:{' '}
-                <strong
-                  className={`state-text-val state-text-${emoObj.tier || 'good'}`}
-                >
-                  {emoObj.label.split('/')[0].trim()}
-                </strong>
-              </span>
-            </div>
-
+    <div className="day-split-page-wrapper" id="day-detail-panel">
+      <div className="day-split-container">
+        {/* KHUNG 1 (BÊN TRÁI): ĐIỀU HƯỚNG, NỘI DUNG, ĐIỂM SỐ, VÀ GHI CHÚ NGÀY BÊN DƯỚI */}
+        <section className="day-detail-section day-split-left-col">
+          {/* Thanh điều hướng nhanh giữa bảng Tổng quan & chuyển ngày */}
+          <div className="day-page-topbar">
             <button
               type="button"
-              className="btn-minimal btn-sm btn-state-quick"
-              onClick={onOpenProfileModal}
-              title="Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân"
+              className="btn-minimal"
+              onClick={() => navigate('/')}
             >
-              <UserCheck size={14} />
-              <span>Trạng thái</span>
+              <ArrowLeft size={15} />
+              <span>Quay lại Tổng quan tháng</span>
             </button>
-          </div>
 
-          <div
-            className="progress-bar-track"
-            title={`Tiến độ ngày: ${dayStats.percentage}%`}
-          >
-            <div
-              className="progress-bar-fill"
-              style={{
-                opacity: dayStats.percentage > 0 ? 1 : 0,
-                clipPath: `inset(0 ${Math.max(0, 100 - dayStats.percentage)}% 0 0 round 999px)`,
-                WebkitClipPath: `inset(0 ${Math.max(0, 100 - dayStats.percentage)}% 0 0 round 999px)`,
-              }}
-            />
-          </div>
-
-          <div className="day-quick-actions">
-            <button
-              type="button"
-              className="btn-minimal btn-sm"
-              onClick={() => {
-                const nowH = new Date().getHours();
-                onOpenAddTaskModal({
-                  hour: nowH,
-                  columnIndex: 0,
-                  timeHint: `${String(nowH).padStart(2, '0')}:00`,
-                });
-              }}
-              title="Thêm đầu việc mới cho ngày/tuần/tháng này"
-            >
-              <Plus size={14} />
-              <span>Thêm việc</span>
-            </button>
-            <button
-              type="button"
-              className="btn-minimal btn-sm"
-              onClick={handleToggleAllTasks}
-              title={
-                allTasksCompleted
-                  ? 'Bỏ tích toàn bộ việc của ngày'
-                  : `Tích nhanh tất cả ${currentTasksList.length} việc (100%)`
-              }
-            >
-              <CheckSquare size={14} />
-              <span>{allTasksCompleted ? 'Bỏ tích tất cả' : 'Tích tất cả'}</span>
-            </button>
-            <button
-              type="button"
-              className="btn-minimal btn-sm"
-              onClick={handleClearDay}
-              title="Xóa toàn bộ tích chọn của ngày này"
-            >
-              <RotateCcw size={14} />
-              <span>Đặt lại ngày</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 2 NÚT TAB TRÊN CÙNG: TO-DO LIST & CALORIES (CHỈ HIỂN THỊ KHI BẬT CALORIES) */}
-      {isCaloriesEnabled && (
-        <div className="day-mode-tab-bar">
-          <button
-            type="button"
-            className={`btn-minimal day-mode-btn ${activeDayTab === 'todolist' ? 'active' : ''}`}
-            onClick={() => setActiveDayTab('todolist')}
-          >
-            <CheckSquare size={15} />
-            <span>To-do List ({currentTasksList.length})</span>
-          </button>
-          <button
-            type="button"
-            className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
-            onClick={() => setActiveDayTab('calories')}
-          >
-            <Flame size={15} />
-            <span>
-              Calories & Dinh dưỡng
-            </span>
-          </button>
-        </div>
-      )}
-
-      {(!isCaloriesEnabled || activeDayTab === 'todolist') ? (
-        <div className="day-workspace-layout">
-          {currentTasksList.length === 0 ? (
-            <div className="empty-tasks-placeholder">
-              <p>Chưa có đầu việc nào cho ngày này.</p>
+            <div className="day-stepper-btns">
               <button
                 type="button"
-                className="btn-minimal"
+                className="btn-minimal btn-sm"
+                onClick={() => handleStepDay(-1)}
+              >
+                <ChevronLeft size={14} />
+                <span>Ngày trước</span>
+              </button>
+              <button
+                type="button"
+                className="btn-minimal btn-sm"
+                onClick={() => handleStepDay(1)}
+              >
+                <span>Ngày sau</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="day-detail-title-group">
+            <div className="day-tag-row">
+              <span className="day-badge-mono">{activeDateKey}</span>
+              <span className="day-weekday-pill">{weekday}</span>
+              {isToday && <span className="today-indicator-pill">Hôm nay</span>}
+            </div>
+            <h2 className="section-heading">
+              Chi tiết & Tích việc — Ngày {day}/{month}
+            </h2>
+            <p className="day-rank-desc">{dayStats.rank.description}</p>
+          </div>
+
+          {/* Thẻ điểm số tổng hợp & Trạng thái & Nút thao tác */}
+          <div className="day-score-summary-card">
+            <div className="day-score-main">
+              <div className="day-score-left">
+                <span className="day-score-label">
+                  ĐIỂM ĐẠT ĐƯỢC (ĐÃ CÁ NHÂN HÓA)
+                </span>
+                <div className="day-score-big-row">
+                  <div className="day-score-big">{dayStats.percentage}%</div>
+                  {dayStats.stateBonusPct !== 0 && (
+                    <span
+                      className="score-mod-pill"
+                      title="Điều chỉnh điểm dựa trên Thể chất, Tinh thần, Cảm xúc & Chế độ kỷ luật"
+                    >
+                      {dayStats.stateBonusPct > 0
+                        ? `+${dayStats.stateBonusPct}% vượt khó`
+                        : `${dayStats.stateBonusPct}% kỷ luật`}
+                    </span>
+                  )}
+                </div>
+                <span className="day-score-raw">
+                  {dayStats.rawPoints} / {dayStats.maxPoints} điểm •{' '}
+                  {dayStats.checkedCount}/{dayStats.totalTasks} việc
+                </span>
+              </div>
+              <div className="day-rank-box">
+                <span className="day-rank-label">MỨC ĐẠT</span>
+                <span className="day-rank-value">{dayStats.rank.title}</span>
+              </div>
+            </div>
+
+            <div className="score-card-state-row">
+              <div className="personal-state-strip">
+                <span
+                  className="state-chip"
+                  title={physObj.desc}
+                  onClick={onOpenProfileModal}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Thể chất:{' '}
+                  <strong
+                    className={`state-text-val state-text-${physObj.tier || 'good'}`}
+                  >
+                    {physObj.label.split('/')[0].trim()}
+                  </strong>
+                </span>
+                <span
+                  className="state-chip"
+                  title={mentObj.desc}
+                  onClick={onOpenProfileModal}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Tinh thần:{' '}
+                  <strong
+                    className={`state-text-val state-text-${mentObj.tier || 'good'}`}
+                  >
+                    {mentObj.label.split('/')[0].trim()}
+                  </strong>
+                </span>
+                <span
+                  className="state-chip"
+                  title={emoObj.desc}
+                  onClick={onOpenProfileModal}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Cảm xúc:{' '}
+                  <strong
+                    className={`state-text-val state-text-${emoObj.tier || 'good'}`}
+                  >
+                    {emoObj.label.split('/')[0].trim()}
+                  </strong>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="btn-minimal btn-sm btn-state-quick"
+                onClick={onOpenProfileModal}
+                title="Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân"
+              >
+                <UserCheck size={14} />
+                <span>Trạng thái</span>
+              </button>
+            </div>
+
+            <div
+              className="progress-bar-track"
+              title={`Tiến độ ngày: ${dayStats.percentage}%`}
+            >
+              <div
+                className="progress-bar-fill"
+                style={{
+                  opacity: dayStats.percentage > 0 ? 1 : 0,
+                  clipPath: `inset(0 ${Math.max(0, 100 - dayStats.percentage)}% 0 0 round 999px)`,
+                  WebkitClipPath: `inset(0 ${Math.max(0, 100 - dayStats.percentage)}% 0 0 round 999px)`,
+                }}
+              />
+            </div>
+
+            <div className="day-quick-actions">
+              <button
+                type="button"
+                className="btn-minimal btn-sm"
                 onClick={() => {
                   const nowH = new Date().getHours();
                   onOpenAddTaskModal({
@@ -661,227 +596,304 @@ export const DayDetail: React.FC = () => {
                     timeHint: `${String(nowH).padStart(2, '0')}:00`,
                   });
                 }}
+                title="Thêm đầu việc mới cho ngày/tuần/tháng này"
               >
-                <Plus size={15} />
-                <span>Thêm đầu việc ngay</span>
+                <Plus size={14} />
+                <span>Thêm việc</span>
+              </button>
+              <button
+                type="button"
+                className="btn-minimal btn-sm"
+                onClick={handleToggleAllTasks}
+                title={
+                  allTasksCompleted
+                    ? 'Bỏ tích toàn bộ việc của ngày'
+                    : `Tích nhanh tất cả ${currentTasksList.length} việc (100%)`
+                }
+              >
+                <CheckSquare size={14} />
+                <span>{allTasksCompleted ? 'Bỏ tích tất cả' : 'Tích tất cả'}</span>
+              </button>
+              <button
+                type="button"
+                className="btn-minimal btn-sm"
+                onClick={handleClearDay}
+                title="Xóa toàn bộ tích chọn của ngày này"
+              >
+                <RotateCcw size={14} />
+                <span>Đặt lại ngày</span>
               </button>
             </div>
-          ) : (
-            <div className="timetable-wrapper">
-              <div className="timetable-container" ref={tableContainerRef}>
-                <table className="timetable-table">
-                  <thead>
-                    <tr>
-                      {/* Ô góc chia đôi chéo như Excel: Việc cần làm ở trên phải, Thời gian ở dưới trái */}
-                      <th className="timetable-th timetable-corner-th">
-                        <div className="diagonal-cell">
-                          <svg
-                            className="diagonal-svg"
-                            viewBox="0 0 100 100"
-                            preserveAspectRatio="none"
-                          >
-                            <line
-                              x1="0"
-                              y1="0"
-                              x2="100"
-                              y2="100"
-                              stroke="var(--border-subtle)"
-                              strokeWidth="1"
-                              vectorEffect="non-scaling-stroke"
-                            />
-                          </svg>
-                          <span className="diagonal-label diagonal-task-label">
-                            Việc cần làm
-                          </span>
-                          <span className="diagonal-label diagonal-time-label">
-                            Thời gian
-                          </span>
-                        </div>
-                      </th>
+          </div>
 
-                      {/* 10 cột tiêu đề Việc 1, Việc 2, ..., Việc 10 */}
-                      {COLUMNS_10.map((colIdx) => (
-                        <th key={colIdx} className="timetable-th timetable-th-col">
-                          <div className="timetable-col-header-text">
-                            Việc {colIdx + 1}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {HOURS_24.map((hour) => {
-                      const hourLabel = `${String(hour).padStart(2, '0')}:00`;
-                      return (
-                        <tr key={hour} className="timetable-row">
-                          <td className="timetable-td timetable-td-time">
-                            <span className="timetable-time-text">
-                              {hourLabel}
-                            </span>
-                          </td>
-                          {COLUMNS_10.map((colIdx) => {
-                            const task = taskGridMap.get(`${hour}_${colIdx}`);
+          {/* GHI CHÚ NGÀY (BÊN DƯỚI ĐIỂM SỐ Ở CỘT TRÁI) */}
+          <div className="day-note-box">
+            <div className="day-note-header">
+              <label htmlFor="daily-note-input" className="day-note-label">
+                GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {day}/{month}
+              </label>
+              <span className="day-note-hint">
+                AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa
+              </span>
+            </div>
+            <textarea
+              id="daily-note-input"
+              rows={4}
+              className="day-note-input day-note-textarea"
+              placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)..."
+              value={noteInput}
+              onChange={(e) => handleNoteInputChange(e.target.value)}
+            />
 
-                            if (task) {
-                              const isTaskChecked =
-                                (tasksMap[task.id] || 'NONE') !== 'NONE';
-                              const isBoosted = isTaskBoostedByProfile(
-                                task,
-                                userProfile
-                              );
+            <div className="day-note-actions">
+              <button
+                type="button"
+                className="btn-minimal btn-sm btn-note-cancel"
+                onClick={handleCancelNote}
+                disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
+                title="Hủy các thay đổi và khôi phục nội dung cũ"
+              >
+                <RotateCcw size={13} />
+                <span>Hủy thay đổi</span>
+              </button>
+              <button
+                type="button"
+                className="btn-minimal btn-sm btn-save-task btn-note-save"
+                onClick={handleSaveNote}
+                disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
+                title="Lưu ghi chú và kích hoạt AI Coach nhận xét"
+              >
+                <Check size={14} />
+                <span>{isSavingNote ? 'Đang lưu...' : 'Lưu ghi chú'}</span>
+              </button>
+            </div>
+          </div>
+        </section>
 
-                              return (
-                                <td
-                                  key={colIdx}
-                                  className={`timetable-td timetable-td-task-cell ${
-                                    isTaskChecked
-                                      ? 'cell-has-task-checked'
-                                      : 'cell-has-task'
-                                  }`}
-                                >
-                                  <div
-                                    className={`grid-task-card ${
-                                      isTaskChecked
-                                        ? 'grid-task-card-checked'
-                                        : ''
-                                    }`}
-                                    onClick={() => handleEditTaskClick(task)}
-                                    title="Nhấp để chỉnh sửa hoặc xoá đầu việc này"
-                                  >
-                                    <div className="grid-task-top">
-                                      <div className="grid-task-left">
-                                        <div className="grid-task-badge-row">
-                                          <span className="grid-task-badge">
-                                            {task.category || 'Mục tiêu'}
-                                          </span>
-                                          {isBoosted && (
-                                            <span className="grid-task-boost">
-                                              ★ ×1.25
-                                            </span>
-                                          )}
-                                        </div>
-                                        <h4 className="grid-task-title">
-                                          {task.title}
-                                        </h4>
-                                        <div className="grid-task-meta">
-                                          <span>
-                                            {task.timeHint || hourLabel}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      <div
-                                        className="grid-task-right"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleToggleTask(task.id);
-                                        }}
-                                        title={
-                                          isTaskChecked
-                                            ? 'Bỏ tích hoàn thành'
-                                            : 'Tích hoàn thành việc này'
-                                        }
-                                      >
-                                        <button
-                                          type="button"
-                                          className={`timetable-checkbox ${
-                                            isTaskChecked ? 'checked' : ''
-                                          }`}
-                                        >
-                                          {isTaskChecked && (
-                                            <Check
-                                              size={14}
-                                              strokeWidth={3}
-                                            />
-                                          )}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                              );
-                            }
-
-                            return (
-                              <td
-                                key={colIdx}
-                                className="timetable-td timetable-td-empty-cell"
-                                onClick={() =>
-                                  handleEmptyCellClick(hour, colIdx)
-                                }
-                                title={`Nhấp để thêm việc vào lúc ${hourLabel} (Cột Việc ${colIdx + 1})`}
-                              >
-                                <div className="grid-empty-target">
-                                  <Plus
-                                    size={14}
-                                    className="grid-empty-plus-icon"
-                                  />
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+        {/* KHUNG 2 (BÊN PHẢI): 2 NÚT TO-DO LIST VÀ CALORIES + BẢNG (TRỤC Y: VIỆC X, TRỤC X: THỜI GIAN) */}
+        <section className="day-detail-section day-split-right-col">
+          {/* 2 nút tab trên cùng: To-do List & Calories */}
+          {isCaloriesEnabled && (
+            <div className="day-mode-tab-bar">
+              <button
+                type="button"
+                className={`btn-minimal day-mode-btn ${activeDayTab === 'todolist' ? 'active' : ''}`}
+                onClick={() => setActiveDayTab('todolist')}
+              >
+                <CheckSquare size={15} />
+                <span>To-do List ({currentTasksList.length})</span>
+              </button>
+              <button
+                type="button"
+                className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
+                onClick={() => setActiveDayTab('calories')}
+              >
+                <Flame size={15} />
+                <span>Calories & Dinh dưỡng</span>
+              </button>
             </div>
           )}
 
-        {/* PHẦN GHI CHÚ NẰM Ở DƯỚI CÙNG CỦA TO DO LIST */}
-        <div className="day-note-box">
-          <div className="day-note-header">
-            <label htmlFor="daily-note-input" className="day-note-label">
-              GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY {day}/{month}
-            </label>
-            <span className="day-note-hint">
-              AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa
-            </span>
-          </div>
-          <textarea
-            id="daily-note-input"
-            rows={3}
-            className="day-note-input day-note-textarea"
-            placeholder="Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)..."
-            value={noteInput}
-            onChange={(e) => handleNoteInputChange(e.target.value)}
-          />
+          {(!isCaloriesEnabled || activeDayTab === 'todolist') ? (
+            <div className="day-table-pane">
+              {currentTasksList.length === 0 ? (
+                <div className="empty-tasks-placeholder">
+                  <p>Chưa có đầu việc nào cho ngày này.</p>
+                  <button
+                    type="button"
+                    className="btn-minimal"
+                    onClick={() => {
+                      const nowH = new Date().getHours();
+                      onOpenAddTaskModal({
+                        hour: nowH,
+                        columnIndex: 0,
+                        timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                      });
+                    }}
+                  >
+                    <Plus size={15} />
+                    <span>Thêm đầu việc ngay</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="timetable-wrapper">
+                  <div className="timetable-container" ref={tableContainerRef}>
+                    <table className="timetable-table">
+                      <thead>
+                        <tr>
+                          {/* Ô góc chia đôi chéo: Thời gian ở trên phải (trục X), Việc làm ở dưới trái (trục Y) */}
+                          <th className="timetable-th timetable-corner-th">
+                            <div className="diagonal-cell">
+                              <svg
+                                className="diagonal-svg"
+                                viewBox="0 0 100 100"
+                                preserveAspectRatio="none"
+                              >
+                                <line
+                                  x1="0"
+                                  y1="0"
+                                  x2="100"
+                                  y2="100"
+                                  stroke="var(--border-subtle)"
+                                  strokeWidth="1"
+                                  vectorEffect="non-scaling-stroke"
+                                />
+                              </svg>
+                              <span className="diagonal-label diagonal-time-label">
+                                Thời gian
+                              </span>
+                              <span className="diagonal-label diagonal-task-label">
+                                Việc làm
+                              </span>
+                            </div>
+                          </th>
 
-          <div className="day-note-actions">
-            <button
-              type="button"
-              className="btn-minimal btn-sm btn-note-cancel"
-              onClick={handleCancelNote}
-              disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
-              title="Hủy các thay đổi và khôi phục nội dung cũ"
-            >
-              <RotateCcw size={13} />
-              <span>Hủy thay đổi</span>
-            </button>
-            <button
-              type="button"
-              className="btn-minimal btn-sm btn-save-task btn-note-save"
-              onClick={handleSaveNote}
-              disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
-              title="Lưu ghi chú và kích hoạt AI Coach nhận xét"
-            >
-              <Check size={14} />
-              <span>{isSavingNote ? 'Đang lưu...' : 'Lưu ghi chú'}</span>
-            </button>
-          </div>
-        </div>
+                          {/* Trục X: Thời gian từ 00:00 đến 24:00 */}
+                          {HOURS_24.map((hour) => {
+                            const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+                            return (
+                              <th key={hour} className="timetable-th timetable-th-col">
+                                <div className="timetable-col-header-text">
+                                  {hourLabel}
+                                </div>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Trục Y: Việc 1 .. Việc 5 */}
+                        {COLUMNS_5.map((colIdx) => (
+                          <tr key={colIdx} className="timetable-row">
+                            <td className="timetable-td timetable-td-time">
+                              <span className="timetable-time-text">
+                                Việc {colIdx + 1}
+                              </span>
+                            </td>
+                            {HOURS_24.map((hour) => {
+                              const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+                              const task = taskGridMap.get(`${hour}_${colIdx}`);
+
+                              if (task) {
+                                const isTaskChecked =
+                                  (tasksMap[task.id] || 'NONE') !== 'NONE';
+                                const isBoosted = isTaskBoostedByProfile(
+                                  task,
+                                  userProfile
+                                );
+
+                                return (
+                                  <td
+                                    key={hour}
+                                    className={`timetable-td timetable-td-task-cell ${
+                                      isTaskChecked
+                                        ? 'cell-has-task-checked'
+                                        : 'cell-has-task'
+                                    }`}
+                                  >
+                                    <div
+                                      className={`grid-task-card ${
+                                        isTaskChecked
+                                          ? 'grid-task-card-checked'
+                                          : ''
+                                      }`}
+                                      onClick={() => handleEditTaskClick(task)}
+                                      title="Nhấp để chỉnh sửa hoặc xoá đầu việc này"
+                                    >
+                                      <div className="grid-task-top">
+                                        <div className="grid-task-left">
+                                          <div className="grid-task-badge-row">
+                                            <span className="grid-task-badge">
+                                              {task.category || 'Mục tiêu'}
+                                            </span>
+                                            {isBoosted && (
+                                              <span className="grid-task-boost">
+                                                ★ ×1.25
+                                              </span>
+                                            )}
+                                          </div>
+                                          <h4 className="grid-task-title">
+                                            {task.title}
+                                          </h4>
+                                          <div className="grid-task-meta">
+                                            <span>
+                                              {task.timeHint || hourLabel}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div
+                                          className="grid-task-right"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleTask(task.id);
+                                          }}
+                                          title={
+                                            isTaskChecked
+                                              ? 'Bỏ tích hoàn thành'
+                                              : 'Tích hoàn thành việc này'
+                                          }
+                                        >
+                                          <button
+                                            type="button"
+                                            className={`timetable-checkbox ${
+                                              isTaskChecked ? 'checked' : ''
+                                            }`}
+                                          >
+                                            {isTaskChecked && (
+                                              <Check
+                                                size={14}
+                                                strokeWidth={3}
+                                              />
+                                            )}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                );
+                              }
+
+                              return (
+                                <td
+                                  key={hour}
+                                  className="timetable-td timetable-td-empty-cell"
+                                  onClick={() =>
+                                    handleEmptyCellClick(hour, colIdx)
+                                  }
+                                  title={`Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`}
+                                >
+                                  <div className="grid-empty-target">
+                                    <Plus
+                                      size={14}
+                                      className="grid-empty-plus-icon"
+                                    />
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="day-calories-pane">
+              <CaloriesTracker
+                dateKey={activeDateKey}
+                initialMeals={caloriesMeals}
+                initialSummary={caloriesSummary}
+                onSaveCalories={handleSaveCalories}
+                isSaving={isSavingCalories}
+              />
+            </div>
+          )}
+        </section>
       </div>
-      ) : (
-        <CaloriesTracker
-          dateKey={activeDateKey}
-          initialMeals={caloriesMeals}
-          initialSummary={caloriesSummary}
-          onSaveCalories={handleSaveCalories}
-          isSaving={isSavingCalories}
-        />
-      )}
-    </section>
+    </div>
   );
 };
 
