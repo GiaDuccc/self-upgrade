@@ -8,7 +8,6 @@ import {
   Edit2,
   Plus,
   UserCheck,
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   CheckSquare,
@@ -442,17 +441,8 @@ export const DayDetail: React.FC = () => {
       <div className="day-split-container">
         {/* KHUNG 1 (BÊN TRÁI): ĐIỀU HƯỚNG, NỘI DUNG, ĐIỂM SỐ, VÀ GHI CHÚ NGÀY BÊN DƯỚI */}
         <section className="day-detail-section day-split-left-col">
-          {/* Thanh điều hướng nhanh giữa bảng Tổng quan & chuyển ngày */}
+          {/* Thanh điều hướng nhanh chuyển ngày */}
           <div className="day-page-topbar">
-            <button
-              type="button"
-              className="btn-minimal"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft size={15} />
-              <span>Quay lại Tổng quan tháng</span>
-            </button>
-
             <div className="day-stepper-btns">
               <button
                 type="button"
@@ -480,7 +470,7 @@ export const DayDetail: React.FC = () => {
               {isToday && <span className="today-indicator-pill">Hôm nay</span>}
             </div>
             <h2 className="section-heading">
-              Chi tiết & Tích việc — Ngày {day}/{month}
+              Chi tiết & Tích việc
             </h2>
             <p className="day-rank-desc">{dayStats.rank.description}</p>
           </div>

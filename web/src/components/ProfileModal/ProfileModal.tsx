@@ -35,12 +35,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.documentElement.classList.add('modal-open');
+      document.body.classList.add('modal-open');
     } else {
-      document.body.style.overflow = '';
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
     }
     return () => {
-      document.body.style.overflow = '';
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
     };
   }, [isOpen]);
 
@@ -92,6 +95,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     <div
       className="modal-backdrop"
       onClick={isFirstTimeSetup ? undefined : onClose}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+        }
+      }}
       role="dialog"
       aria-modal="true"
     >

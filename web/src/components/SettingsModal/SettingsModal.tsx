@@ -1,5 +1,15 @@
-import React from 'react';
-import { Settings, Sun, Moon, Flame, X, Check } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import {
+  Settings,
+  Sun,
+  Moon,
+  Flame,
+  X,
+  Check,
+  Download,
+  Upload,
+  LogOut,
+} from 'lucide-react';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -8,6 +18,10 @@ export interface SettingsModalProps {
   onToggleTheme: (theme: 'light' | 'dark') => void;
   isCaloriesEnabled: boolean;
   onToggleCalories: (enabled: boolean) => void;
+  onExportJson?: () => void;
+  onImportJson?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onLogout?: () => void;
+  userEmail?: string;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -17,13 +31,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleTheme,
   isCaloriesEnabled,
   onToggleCalories,
+  onExportJson,
+  onImportJson,
+  onLogout,
+  userEmail,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Khóa cuộn trang nền khi mở modal
+  useEffect(() => {
+    if (isOpen) {
+      document.documentElement.classList.add('modal-open');
+      document.body.classList.add('modal-open');
+    } else {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div
       className="modal-backdrop"
       onClick={onClose}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+        }
+      }}
       role="dialog"
       aria-modal="true"
     >
@@ -40,7 +80,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div>
               <h3 className="modal-title">CÀI ĐẶT HỆ THỐNG</h3>
               <p className="modal-subtitle">
-                Tùy chỉnh giao diện hiển thị và các tính năng bổ trợ của ứng dụng
+                Tùy chỉnh giao diện, tính năng, sao lưu dữ liệu và tài khoản
               </p>
             </div>
           </div>
@@ -156,6 +196,72 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="toggle-switch-thumb" />
               </button>
             </div>
+          </div>
+
+          {/* 3. DỮ LIỆU & SAO LƯU (BACKUP) */}
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <span className="settings-section-tag">DỮ LIỆU & SAO LƯU</span>
+              <h4 className="settings-section-title">Sao lưu và khôi phục dữ liệu</h4>
+              <p className="settings-section-desc">
+                Xuất file JSON sao lưu toàn bộ quá trình hoặc khôi phục dữ liệu từ máy tính khác
+              </p>
+            </div>
+
+            <div className="settings-action-grid">
+              <button
+                type="button"
+                className="settings-action-btn"
+                onClick={onExportJson}
+                title="Tải file sao lưu dữ liệu (.json)"
+              >
+                <Download size={15} />
+                <span>Lưu file (Xuất JSON)</span>
+              </button>
+
+              <button
+                type="button"
+                className="settings-action-btn"
+                onClick={() => fileInputRef.current?.click()}
+                title="Nhập file sao lưu (.json) vào hệ thống"
+              >
+                <Upload size={15} />
+                <span>Nhập file (Khôi phục)</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                style={{ display: 'none' }}
+                onChange={onImportJson}
+              />
+            </div>
+          </div>
+
+          {/* 4. TÀI KHOẢN & PHIÊN ĐĂNG NHẬP */}
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <span className="settings-section-tag">TÀI KHOẢN</span>
+              <h4 className="settings-section-title">Phiên đăng nhập</h4>
+              <p className="settings-section-desc">
+                {userEmail
+                  ? `Đang đăng nhập với tài khoản: ${userEmail}`
+                  : 'Đăng xuất tài khoản khỏi trình duyệt này'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="settings-logout-btn"
+              onClick={() => {
+                onClose();
+                onLogout?.();
+              }}
+              title="Đăng xuất tài khoản"
+            >
+              <LogOut size={15} />
+              <span>Đăng xuất tài khoản</span>
+            </button>
           </div>
         </div>
 

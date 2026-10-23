@@ -74,6 +74,11 @@ html {
   scrollbar-gutter: stable; /* Chuẩn CSS hiện đại giữ chỗ cố định cho scrollbar */
 }
 
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -2111,6 +2116,7 @@ input {
   justify-content: center;
   padding: 20px;
   animation: modalFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overscroll-behavior: contain;
 }
 
 @keyframes modalFadeIn {
@@ -3787,6 +3793,65 @@ input {
 .btn-close-settings {
   padding: 6px 18px;
   font-weight: 600;
+}
+
+/* Nút Setting chỉ icon trên Header */
+.btn-settings-header {
+  padding: 7px 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grid hành động sao lưu & nhập file trong Cài đặt */
+.settings-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.settings-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.settings-action-btn:hover {
+  background-color: var(--bg-mixed);
+  border-color: var(--text-primary);
+}
+
+/* Nút đăng xuất trong modal Cài đặt */
+.settings-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background-color: rgba(220, 38, 38, 0.04);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: fit-content;
+}
+
+.settings-logout-btn:hover {
+  background-color: #DC2626;
+  color: #FFFFFF;
+  border-color: #DC2626;
 }
 
 

@@ -334,6 +334,22 @@ export const ClientPage: React.FC = () => {
     setIsProfileModalOpen(true);
   }, []);
 
+  // Khóa cuộn trang nền khi có bất kỳ modal nào mở
+  const isAnyModalOpen = isTaskModalOpen || isProfileModalOpen || isSettingsModalOpen;
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.documentElement.classList.add('modal-open');
+      document.body.classList.add('modal-open');
+    } else {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+    };
+  }, [isAnyModalOpen]);
+
   const outletContext: ClientOutletContext = {
     currentYear,
     currentMonth,
@@ -367,9 +383,6 @@ export const ClientPage: React.FC = () => {
         onOpenAddTaskModal={handleOpenAddTaskModal}
         onOpenProfileModal={handleOpenProfileModal}
         onOpenSettingsModal={handleOpenSettingsModal}
-        onExportJson={handleExportJson}
-        onImportJson={handleImportJson}
-        onLogout={handleLogout}
       />
 
       <main className="main-container">
@@ -404,6 +417,10 @@ export const ClientPage: React.FC = () => {
         onToggleTheme={handleToggleTheme}
         isCaloriesEnabled={settings.enableCalories}
         onToggleCalories={handleToggleCalories}
+        onExportJson={handleExportJson}
+        onImportJson={handleImportJson}
+        onLogout={handleLogout}
+        userEmail={storedUser?.email}
       />
 
       <AiCoachWidget

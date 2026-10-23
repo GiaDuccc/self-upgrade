@@ -1,16 +1,13 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  Download,
-  Upload,
   Plus,
   UserCheck,
   LayoutDashboard,
   CheckSquare,
-  LogOut,
   Settings,
 } from 'lucide-react';
 import { UserProfile } from '~/interface/user.interface';
@@ -28,9 +25,6 @@ interface HeaderProps {
   onOpenAddTaskModal: () => void;
   onOpenProfileModal: () => void;
   onOpenSettingsModal: () => void;
-  onExportJson: () => void;
-  onImportJson: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = React.memo(({
@@ -45,11 +39,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   onOpenAddTaskModal,
   onOpenProfileModal,
   onOpenSettingsModal,
-  onExportJson,
-  onImportJson,
-  onLogout,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -148,42 +138,15 @@ export const Header: React.FC<HeaderProps> = React.memo(({
 
         <button
           type="button"
-          className="btn-minimal"
-          onClick={onExportJson}
-          title="Tải file sao lưu dữ liệu (JSON)"
-        >
-          <Download size={14} />
-          <span>Lưu file</span>
-        </button>
-
-        <button
-          type="button"
-          className="btn-minimal"
-          onClick={() => fileInputRef.current?.click()}
-          title="Khôi phục dữ liệu từ file JSON"
-        >
-          <Upload size={14} />
-          <span>Nhập file</span>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={onImportJson}
-        />
-
-        <button
-          type="button"
           className="btn-minimal btn-profile-header"
           onClick={onOpenProfileModal}
-          title="Nhập thông tin cá nhân, Thể chất, Tinh thần & Cảm xúc để tối ưu chấm điểm và lời khuyên"
+          title="Thông tin cá nhân, Thể chất, Tinh thần & Cảm xúc"
         >
           <UserCheck size={15} />
           <span>
             {userProfile.name?.trim()
-              ? `${userProfile.name.trim()} • Cá nhân hóa`
-              : 'Thông tin cá nhân'}
+              ? userProfile.name.trim()
+              : 'Hồ sơ'}
           </span>
         </button>
 
@@ -191,20 +154,10 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           type="button"
           className="btn-minimal btn-settings-header"
           onClick={onOpenSettingsModal}
-          title="Cài đặt hệ thống: Giao diện sáng/tối, bật/tắt calories..."
+          title="Cài đặt hệ thống: Giao diện sáng/tối, bật/tắt calories, sao lưu dữ liệu, đăng xuất..."
+          aria-label="Cài đặt hệ thống"
         >
-          <Settings size={15} />
-          <span>Cài đặt</span>
-        </button>
-
-        <button
-          type="button"
-          className="btn-minimal btn-logout-header"
-          onClick={onLogout}
-          title="Đăng xuất tài khoản"
-        >
-          <LogOut size={14} />
-          <span>Đăng xuất</span>
+          <Settings size={16} />
         </button>
       </div>
     </div>
