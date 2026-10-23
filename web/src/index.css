@@ -4289,110 +4289,187 @@ input {
 }
 
 /* ============================================================================
-   BẢNG PHÍM TẮT NHANH (KEYBOARD SHORTCUTS MODAL)
+   BẢNG PHÍM TẮT NHANH (KEYBOARD SHORTCUTS MODAL) - ĐỒNG BỘ DESIGN SYSTEM
    ============================================================================ */
-.modal-shortcuts-card {
-  width: 100%;
-  max-width: 580px;
-  max-height: 85vh;
-  overflow-y: auto;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+.modal-shortcuts-container {
+  max-width: 760px;
+  width: 94%;
 }
 
 .shortcuts-modal-body {
-  padding: 20px 24px;
+  padding: 18px 22px;
+  background-color: var(--bg-surface);
+  overflow-y: auto;
+}
+
+.shortcuts-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+@media (max-width: 640px) {
+  .shortcuts-two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shortcuts-col {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  min-width: 0;
 }
 
-.shortcuts-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.shortcuts-group-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease;
 }
 
-.shortcuts-group-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.shortcuts-group-card:hover {
+  border-color: var(--text-secondary);
 }
 
-.shortcuts-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.shortcut-item {
+.shortcuts-group-header {
+  padding: 9px 14px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  transition: background-color 0.15s ease;
 }
 
-.shortcut-item:hover {
+.shortcuts-group-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.shortcuts-group-icon {
+  color: var(--text-secondary);
+}
+
+.shortcuts-group-tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.shortcuts-group-count {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background-color: var(--bg-mixed);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.12s ease;
+}
+
+.shortcut-row:last-child {
+  border-bottom: none;
+}
+
+.shortcut-row:hover {
   background-color: var(--bg-mixed);
 }
 
-.shortcut-desc {
-  font-size: 0.82rem;
+.shortcut-label {
+  font-size: 0.81rem;
   font-weight: 500;
   color: var(--text-primary);
 }
 
 .shortcut-keys {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .shortcut-kbd {
-  display: inline-block;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  height: 23px;
+  padding: 0 7px;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-primary);
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-bottom-width: 2px;
+  border-bottom: 2px solid var(--border-color);
   border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  min-width: 24px;
-  text-align: center;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  line-height: 1;
 }
 
 [data-theme='dark'] .shortcut-kbd {
   background-color: #242933;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.16);
+  border-bottom-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.shortcut-plus,
-.shortcut-or {
-  font-size: 0.72rem;
+.kbd-sep {
+  font-size: 0.68rem;
   color: var(--text-secondary);
   font-weight: 500;
+  padding: 0 1px;
 }
 
-.shortcuts-hint-box {
-  padding: 10px 14px;
-  background-color: var(--bg-mixed);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 0.76rem;
+.shortcuts-modal-footer {
+  padding: 12px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.shortcuts-hint-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.75rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.35;
+}
+
+.shortcuts-hint-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.btn-close-shortcuts {
+  padding: 6px 16px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .btn-shortcuts-header {
