@@ -773,73 +773,6 @@ export const DayDetail: React.FC = () => {
               </button>
             </div>
           </div>
-
-          {/* GHI CHÚ NGÀY (BÊN DƯỚI ĐIỂM SỐ Ở CỘT TRÁI) */}
-          <div className="day-note-box">
-            <div className="day-note-header">
-              <label htmlFor="daily-note-input" className="day-note-label">
-                {isEn
-                  ? `DAILY NOTE / SELF-REFLECTION (${day}/${month})`
-                  : `GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY ${day}/${month}`}
-              </label>
-              <span className="day-note-hint">
-                {isEn
-                  ? 'AI Coach observes your note to provide personalized advice'
-                  : 'AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa'}
-              </span>
-            </div>
-            <textarea
-              id="daily-note-input"
-              rows={4}
-              className="day-note-input day-note-textarea"
-              placeholder={
-                isEn
-                  ? 'Write down what went well today or what needs improvement (click Save to let AI analyze and give feedback)...'
-                  : 'Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)...'
-              }
-              value={noteInput}
-              onChange={(e) => handleNoteInputChange(e.target.value)}
-            />
-
-            <div className="day-note-actions">
-              <button
-                type="button"
-                className="btn-minimal btn-sm btn-note-cancel"
-                onClick={handleCancelNote}
-                disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
-                title={
-                  isEn
-                    ? 'Discard changes and restore previous note'
-                    : 'Hủy các thay đổi và khôi phục nội dung cũ'
-                }
-              >
-                <RotateCcw size={13} />
-                <span>{isEn ? 'Cancel' : 'Hủy thay đổi'}</span>
-              </button>
-              <button
-                type="button"
-                className="btn-minimal btn-sm btn-save-task btn-note-save"
-                onClick={handleSaveNote}
-                disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
-                title={
-                  isEn
-                    ? 'Save note and trigger AI Coach feedback'
-                    : 'Lưu ghi chú và kích hoạt AI Coach nhận xét'
-                }
-              >
-                <Check size={14} />
-                <span>
-                  {isSavingNote
-                    ? isEn
-                      ? 'Saving...'
-                      : 'Đang lưu...'
-                    : isEn
-                    ? 'Save Note'
-                    : 'Lưu ghi chú'}
-                </span>
-              </button>
-            </div>
-          </div>
         </section>
 
         {/* KHUNG 2 (BÊN PHẢI): 2 NÚT TO-DO LIST VÀ CALORIES + BẢNG (TRỤC Y: VIỆC X, TRỤC X: THỜI GIAN) */}
@@ -1071,6 +1004,73 @@ export const DayDetail: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* GHI CHÚ NGÀY (NẰM Ở MỤC TODOLIST DƯỚI BẢNG) */}
+              <div className="day-note-box">
+                <div className="day-note-header">
+                  <label htmlFor="daily-note-input" className="day-note-label">
+                    {isEn
+                      ? `DAILY NOTE / SELF-REFLECTION (${day}/${month})`
+                      : `GHI CHÚ / TỰ KIỂM ĐIỂM NGÀY ${day}/${month}`}
+                  </label>
+                  <span className="day-note-hint">
+                    {isEn
+                      ? 'AI Coach observes your note to provide personalized advice'
+                      : 'AI Coach sẽ tự động quan sát ghi chú để đưa ra lời khuyên cá nhân hóa'}
+                  </span>
+                </div>
+                <textarea
+                  id="daily-note-input"
+                  rows={3}
+                  className="day-note-input day-note-textarea"
+                  placeholder={
+                    isEn
+                      ? 'Write down what went well today or what needs improvement (click Save to let AI analyze and give feedback)...'
+                      : 'Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)...'
+                  }
+                  value={noteInput}
+                  onChange={(e) => handleNoteInputChange(e.target.value)}
+                />
+
+                <div className="day-note-actions">
+                  <button
+                    type="button"
+                    className="btn-minimal btn-sm btn-note-cancel"
+                    onClick={handleCancelNote}
+                    disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
+                    title={
+                      isEn
+                        ? 'Discard changes and restore previous note'
+                        : 'Hủy các thay đổi và khôi phục nội dung cũ'
+                    }
+                  >
+                    <RotateCcw size={13} />
+                    <span>{isEn ? 'Cancel' : 'Hủy thay đổi'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-minimal btn-sm btn-save-task btn-note-save"
+                    onClick={handleSaveNote}
+                    disabled={isSavingNote || noteInput === (dayData?.dayRecord?.note || '')}
+                    title={
+                      isEn
+                        ? 'Save note and trigger AI Coach feedback'
+                        : 'Lưu ghi chú và kích hoạt AI Coach nhận xét'
+                    }
+                  >
+                    <Check size={14} />
+                    <span>
+                      {isSavingNote
+                        ? isEn
+                          ? 'Saving...'
+                          : 'Đang lưu...'
+                        : isEn
+                        ? 'Save Note'
+                        : 'Lưu ghi chú'}
+                    </span>
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="day-calories-pane">

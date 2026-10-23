@@ -1134,7 +1134,7 @@ input {
   flex: none;
 }
 
-.day-split-left-col .day-note-box {
+.day-table-pane .day-note-box {
   width: 100%;
   margin-top: 0;
 }
@@ -1158,6 +1158,9 @@ input {
 .day-table-pane {
   width: 100%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .day-calories-pane {
