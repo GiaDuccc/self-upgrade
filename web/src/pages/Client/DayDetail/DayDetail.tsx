@@ -677,6 +677,22 @@ export const DayDetail: React.FC = () => {
                     {emoObj.label.split('/')[0].trim()}
                   </strong>
                 </span>
+                {dayData?.dayRecord?.sleepData && (
+                  <span
+                    className="state-chip"
+                    title={
+                      isEn
+                        ? `Sleep: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Source: ${dayData.dayRecord.sleepData.source}` : ''}`
+                        : `Giấc ngủ: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Nguồn: ${dayData.dayRecord.sleepData.source}` : ''}`
+                    }
+                  >
+                    🌙 {isEn ? 'Sleep:' : 'Giấc ngủ:'}{' '}
+                    <strong className="state-text-val state-text-good">
+                      {Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h{dayData.dayRecord.sleepData.durationMinutes % 60 > 0 ? ` ${dayData.dayRecord.sleepData.durationMinutes % 60}m` : ''}
+                      {dayData.dayRecord.sleepData.sleepScore ? ` (${dayData.dayRecord.sleepData.sleepScore}đ)` : ''}
+                    </strong>
+                  </span>
+                )}
               </div>
 
               <button

@@ -805,6 +805,7 @@ TỔNG QUAN BẢNG VIỆC (${dateCtx.relativeDayLabel.toUpperCase()} — ${targe
 - Việc CHƯA LÀM (${pendingTasks.length} việc): ${pendingTasks.length > 0 ? pendingTasks.slice(0, 6).join(', ') : 'Đã hoàn thành toàn bộ mục tiêu'}
 ${noteText ? `- Ghi chú trong ngày: "${noteText}"` : ''}
 ${dayRecord.waterData ? `- Nước uống hôm nay: ${dayRecord.waterData.currentMl || 0}ml / ${dayRecord.waterData.targetMl || 2000}ml (${Math.round(((dayRecord.waterData.currentMl || 0) / (dayRecord.waterData.targetMl || 2000)) * 100)}%)` : ''}
+${dayRecord.sleepData ? `- Dữ liệu giấc ngủ: Ngủ từ ${dayRecord.sleepData.bedTime} đến ${dayRecord.sleepData.wakeTime} (${Math.floor((dayRecord.sleepData.durationMinutes || 0) / 60)}h${(dayRecord.sleepData.durationMinutes || 0) % 60}p)${dayRecord.sleepData.sleepScore ? `, điểm chất lượng: ${dayRecord.sleepData.sleepScore}/100` : ''}` : ''}
 
 PHONG CÁCH DIỄN ĐẠT LẦN NÀY: "${randomVibe}"
 RANDOM SEED: ${randomSeed}

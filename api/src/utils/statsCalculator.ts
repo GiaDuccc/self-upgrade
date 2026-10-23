@@ -201,6 +201,7 @@ export function calculateDayStats(
     rank,
     note: dayRecord?.note || '',
     waterData: dayRecord?.waterData,
+    sleepData: dayRecord?.sleepData,
     tasksList,
     tasksMap,
     taskHours: dayRecord?.taskHours || {},

@@ -80,12 +80,24 @@ export interface WaterData {
   logs: WaterLog[];
 }
 
+export interface SleepData {
+  bedTime: string;
+  wakeTime: string;
+  durationMinutes: number;
+  deepSleepMinutes?: number;
+  remMinutes?: number;
+  sleepScore?: number;
+  source?: 'manual' | 'apple_health' | 'google_health' | 'xiaomi_band';
+  updatedAt?: string;
+}
+
 export interface DayRecord {
   tasks?: Record<string, TaskLevelKey>;
   taskHours?: Record<string, number[]>;
   note?: string;
   caloriesData?: CaloriesData;
   waterData?: WaterData;
+  sleepData?: SleepData;
   updatedAt?: string;
 }
 
@@ -110,6 +122,7 @@ export interface DayStats {
   rank: DailyRank;
   note: string;
   waterData?: WaterData;
+  sleepData?: SleepData;
   tasksList: TaskItem[];
   tasksMap: Record<string, TaskLevelKey>;
   taskHours?: Record<string, number[]>;

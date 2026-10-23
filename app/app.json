@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Self Upgrade",
+    "slug": "self-upgrade-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.selfupgrade.mobile",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Self Upgrade needs access to read your sleep and step count data from Apple Health to automatically track discipline.",
+        "NSHealthUpdateUsageDescription": "Self Upgrade may sync your hydration and physical activity data."
+      }
+    },
+    "android": {
+      "package": "com.selfupgrade.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#18181b",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

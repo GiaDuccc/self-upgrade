@@ -29,6 +29,8 @@ Router.route('/day/calories').put(disciplineController.saveDayCalories);
 
 Router.route('/day/water').put(disciplineController.saveDayWater);
 
+Router.route('/day/sleep').put(disciplineController.saveDaySleep);
+
 Router.route('/task').post(disciplineController.saveTask);
 
 Router.route('/task/delete').post(disciplineController.deleteTask);
