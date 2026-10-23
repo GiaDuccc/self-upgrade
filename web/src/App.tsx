@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { ClientPage } from '~/pages/Client/ClientPage';
 import { Dashboard } from '~/pages/Client/Dashboard/Dashboard';
 import { DayDetail } from '~/pages/Client/DayDetail/DayDetail';
@@ -12,6 +15,13 @@ import { ProtectedRoute } from '~/routes/ProtectedRoute';
 import { PublicRoute } from '~/routes/PublicRoute';
 
 export default function App() {
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      SplashScreen.hide().catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

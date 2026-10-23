@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Self Upgrade</string>
+    <string name="title_activity_main">Self Upgrade</string>
+    <string name="package_name">com.selfupgrade.app</string>
+    <string name="custom_url_scheme">com.selfupgrade.app</string>
+</resources>

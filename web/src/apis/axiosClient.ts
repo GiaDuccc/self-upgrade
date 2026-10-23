@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_ROOT } from '~/utils/constants';
+import { API_ROOT, getApiRoot } from '~/utils/constants';
 
 export const axiosClient = axios.create({
   baseURL: `${API_ROOT}/v1`,
@@ -11,6 +11,7 @@ export const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
   (config) => {
+    config.baseURL = `${getApiRoot()}/v1`;
     const token = localStorage.getItem('accessTokenClient');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;

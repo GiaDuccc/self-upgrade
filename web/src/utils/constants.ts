@@ -1,7 +1,27 @@
 import { PersonalizationOptions, UserProfile } from '~/interface/user.interface';
 import { ScoreLevelDef, TaskItem, TaskLevelKey } from '~/interface/discipline.interface';
+import { Capacitor } from '@capacitor/core';
 
-export const API_ROOT = 'http://localhost:2004';
+export const getApiRoot = (): string => {
+  try {
+    const custom = localStorage.getItem('custom_api_root');
+    if (custom && custom.trim()) return custom.trim();
+    if (Capacitor.isNativePlatform()) {
+      return 'http://192.168.31.134:2004';
+    }
+    if (
+      typeof window !== 'undefined' &&
+      window.location.hostname &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1'
+    ) {
+      return `http://${window.location.hostname}:2004`;
+    }
+  } catch {}
+  return 'http://localhost:2004';
+};
+
+export const API_ROOT = getApiRoot();
 
 export const THEME = {
   bgPrimary: '#FAF7F2',
