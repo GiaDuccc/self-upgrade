@@ -20,9 +20,11 @@ import {
   setTaskLevelAPI,
   updateNoteAPI,
   saveDayCaloriesAPI,
+  saveDayWaterAPI,
 } from '~/apis/clientAPI/disciplineApi';
-import { DayDataResponse, FoodItem, TaskItem, TaskLevelKey } from '~/interface/discipline.interface';
+import { DayDataResponse, FoodItem, TaskItem, TaskLevelKey, WaterData } from '~/interface/discipline.interface';
 import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
+import { WaterTracker } from '~/components/WaterTracker/WaterTracker';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import {
   formatDateKey,
@@ -205,6 +207,97 @@ export const DayDetail: React.FC = () => {
       setIsSavingCalories(false);
     }
   };
+
+  const [isSavingWater, setIsSavingWater] = useState(false);
+
+  const handleSaveWater = useCallback(async (newWaterData: WaterData) => {
+    setDayData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        dayRecord: {
+          ...prev.dayRecord,
+          waterData: newWaterData,
+        },
+        dayStats: {
+          ...prev.dayStats,
+          waterData: newWaterData,
+        },
+      };
+    });
+    setIsSavingWater(true);
+    try {
+      await saveDayWaterAPI({
+        dateKey: activeDateKey,
+        waterData: newWaterData,
+      });
+      refreshMonthStats();
+      notifyAiCoach(`${activeDateKey}|WATER|${newWaterData.currentMl}|${Date.now()}`);
+    } catch {
+      toast.error(isEn ? 'Failed to save water intake!' : 'Không thể lưu lượng nước!');
+    } finally {
+      setIsSavingWater(false);
+    }
+  }, [activeDateKey, refreshMonthStats, notifyAiCoach, isEn]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (e.target as HTMLElement)?.isContentEditable) {
+        return;
+      }
+      if (e.key === '1') {
+        setActiveDayTab('todolist');
+      } else if (e.key === '2' && isCaloriesEnabled) {
+        setActiveDayTab('calories');
+      } else if (e.key.toLowerCase() === 'w' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        const currentData = dayData?.dayRecord?.waterData;
+        const currentMl = currentData?.currentMl || 0;
+        const targetMl =
+          currentData?.targetMl ||
+          (userProfile?.weightKg
+            ? Math.round((parseFloat(userProfile.weightKg) * 40) / 50) * 50
+            : 2000);
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        if (e.shiftKey) {
+          if (currentMl > 0) {
+            const nextMl = Math.max(0, currentMl - 250);
+            const newLog = {
+              id: `w_${Date.now()}_undo`,
+              amount: -Math.min(currentMl, 250),
+              time: timeStr,
+            };
+            const nextLogs = [newLog, ...(currentData?.logs || [])].slice(0, 30);
+            handleSaveWater({
+              targetMl,
+              currentMl: nextMl,
+              logs: nextLogs,
+            });
+            toast.info(isEn ? '💧 -250 ml water' : '💧 Đã trừ bớt 250 ml nước');
+          }
+        } else {
+          const nextMl = currentMl + 250;
+          const newLog = {
+            id: `w_${Date.now()}_quick`,
+            amount: 250,
+            time: timeStr,
+          };
+          const nextLogs = [newLog, ...(currentData?.logs || [])].slice(0, 30);
+          handleSaveWater({
+            targetMl,
+            currentMl: nextMl,
+            logs: nextLogs,
+          });
+          toast.success(isEn ? '💧 +250 ml water logged!' : '💧 +250 ml nước đã nạp!');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dayData, isCaloriesEnabled, isEn, userProfile?.weightKg, handleSaveWater]);
 
   useEffect(() => {
     setSelectedDateKey(activeDateKey);
@@ -680,6 +773,15 @@ export const DayDetail: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* BỘ THEO DÕI NƯỚC UỐNG 1 CHẠM */}
+          <WaterTracker
+            dateKey={activeDateKey}
+            initialWaterData={dayData?.dayRecord?.waterData}
+            userWeightKg={userProfile?.weightKg}
+            onSaveWater={handleSaveWater}
+            isSaving={isSavingWater}
+          />
 
           {/* GHI CHÚ NGÀY (BÊN DƯỚI ĐIỂM SỐ Ở CỘT TRÁI) */}
           <div className="day-note-box">

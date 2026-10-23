@@ -346,7 +346,7 @@ function classifyPendingTasksByTime(
 interface RecentChangeInfo {
   detail: string;
   short: string;
-  kind: 'PROFILE' | 'ALL' | 'CLEAR' | 'NOTE' | 'TASK';
+  kind: 'PROFILE' | 'ALL' | 'CLEAR' | 'NOTE' | 'TASK' | 'WATER';
   task?: TaskItem;
   levelKey?: string;
   isSleepTask?: boolean;
@@ -538,6 +538,15 @@ function describeRecentChange(
         ? `Người dùng vừa lưu ghi chú tự kiểm điểm${dayContextNote}: "${noteText.slice(0, 400)}".`
         : `Người dùng vừa xóa trống ghi chú${dayContextNote}.`,
       short: `Đọc ghi chú ${dateCtx.relativeDayLabel} vừa viết rồi nhé,`,
+    };
+  }
+
+  if (kind === 'WATER') {
+    const ml = parts[2] || '0';
+    return {
+      kind: 'WATER',
+      detail: `Người dùng vừa cập nhật nạp nước: ${ml}ml${dayContextNote}.`,
+      short: `Thấy bạn vừa nạp thêm nước (${ml}ml),`,
     };
   }
 
@@ -795,6 +804,7 @@ TỔNG QUAN BẢNG VIỆC (${dateCtx.relativeDayLabel.toUpperCase()} — ${targe
 - Việc ĐÃ LÀM (${completedTasks.length} việc): ${completedTasks.length > 0 ? completedTasks.join(', ') : 'Chưa tích việc nào'}
 - Việc CHƯA LÀM (${pendingTasks.length} việc): ${pendingTasks.length > 0 ? pendingTasks.slice(0, 6).join(', ') : 'Đã hoàn thành toàn bộ mục tiêu'}
 ${noteText ? `- Ghi chú trong ngày: "${noteText}"` : ''}
+${dayRecord.waterData ? `- Nước uống hôm nay: ${dayRecord.waterData.currentMl || 0}ml / ${dayRecord.waterData.targetMl || 2000}ml (${Math.round(((dayRecord.waterData.currentMl || 0) / (dayRecord.waterData.targetMl || 2000)) * 100)}%)` : ''}
 
 PHONG CÁCH DIỄN ĐẠT LẦN NÀY: "${randomVibe}"
 RANDOM SEED: ${randomSeed}

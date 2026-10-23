@@ -200,6 +200,7 @@ export function calculateDayStats(
     counts,
     rank,
     note: dayRecord?.note || '',
+    waterData: dayRecord?.waterData,
     tasksList,
     tasksMap,
     taskHours: dayRecord?.taskHours || {},

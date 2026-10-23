@@ -16,6 +16,7 @@ import { Header } from '~/components/Header/Header';
 import { ProfileModal } from '~/components/ProfileModal/ProfileModal';
 import { SettingsModal } from '~/components/SettingsModal/SettingsModal';
 import { TaskModal } from '~/components/TaskModal/TaskModal';
+import { KeyboardShortcutsModal } from '~/components/KeyboardShortcutsModal/KeyboardShortcutsModal';
 import { MonthStats, TaskItem, TaskScope } from '~/interface/discipline.interface';
 import { UserProfile } from '~/interface/user.interface';
 import {
@@ -90,6 +91,7 @@ export const ClientPage: React.FC = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [settings, setSettings] = useState<AppSettings>(getStoredSettings);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme);
@@ -350,8 +352,17 @@ export const ClientPage: React.FC = () => {
     setIsProfileModalOpen(true);
   }, []);
 
+  const handleOpenShortcutsModal = useCallback(() => {
+    setIsShortcutsModalOpen(true);
+  }, []);
+
   // Khóa cuộn trang nền khi có bất kỳ modal nào mở
-  const isAnyModalOpen = isTaskModalOpen || isProfileModalOpen || isSettingsModalOpen;
+  const isAnyModalOpen =
+    isTaskModalOpen ||
+    isProfileModalOpen ||
+    isSettingsModalOpen ||
+    isShortcutsModalOpen;
+
   useEffect(() => {
     if (isAnyModalOpen) {
       document.documentElement.classList.add('modal-open');
@@ -365,6 +376,155 @@ export const ClientPage: React.FC = () => {
       document.body.classList.remove('modal-open');
     };
   }, [isAnyModalOpen]);
+
+  // Lắng nghe phím tắt toàn hệ thống (Global Keyboard Shortcuts)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Phím Escape: đóng modal đang mở
+      if (e.key === 'Escape') {
+        if (isShortcutsModalOpen) {
+          setIsShortcutsModalOpen(false);
+          return;
+        }
+        if (isSettingsModalOpen) {
+          setIsSettingsModalOpen(false);
+          return;
+        }
+        if (isProfileModalOpen && isProfileSetup) {
+          setIsProfileModalOpen(false);
+          return;
+        }
+        if (isTaskModalOpen) {
+          setIsTaskModalOpen(false);
+          return;
+        }
+      }
+
+      // 2. Không can thiệp nếu người dùng đang nhập liệu trong input, textarea, select hoặc contentEditable
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag || '') ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      // 3. Phím ? hoặc Shift + /: Mở bảng tra cứu phím tắt
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        setIsShortcutsModalOpen((prev) => !prev);
+        return;
+      }
+
+      // Nếu đang có modal mở phía trên thì chặn các thao tác chuyển trang/mở modal khác
+      if (isTaskModalOpen || isProfileModalOpen || isSettingsModalOpen || isShortcutsModalOpen) {
+        return;
+      }
+
+      // Bỏ qua nếu đang giữ Ctrl, Alt hoặc Meta (Cmd) để không tranh chấp với phím tắt hệ thống
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      // Phím T: Về hôm nay
+      if (key === 't') {
+        e.preventDefault();
+        handleJumpToday();
+        return;
+      }
+
+      // Phím M: Về tổng quan tháng
+      if (key === 'm') {
+        e.preventDefault();
+        navigate('/');
+        return;
+      }
+
+      // Phím A: Mở modal thêm việc mới
+      if (key === 'a') {
+        e.preventDefault();
+        handleOpenAddTaskModal();
+        return;
+      }
+
+      // Phím P: Mở hồ sơ & trạng thái
+      if (key === 'p') {
+        e.preventDefault();
+        handleOpenProfileModal();
+        return;
+      }
+
+      // Phím S: Mở cài đặt hệ thống
+      if (key === 's') {
+        e.preventDefault();
+        handleOpenSettingsModal();
+        return;
+      }
+
+      // Phím [ hoặc ArrowLeft: Lùi 1 ngày (khi ở Day Detail) hoặc Lùi 1 tháng (khi ở Dashboard)
+      if (e.key === 'ArrowLeft' || e.key === '[') {
+        e.preventDefault();
+        if (location.pathname.startsWith('/day')) {
+          const match = location.pathname.match(/^\/day\/(\d{4}-\d{2}-\d{2})/);
+          const cur = match ? match[1] : selectedDateKey;
+          const [y, m, d] = cur.split('-').map(Number);
+          const dt = new Date(y, m - 1, d - 1);
+          const nextKey = formatDateKey(
+            dt.getFullYear(),
+            dt.getMonth() + 1,
+            dt.getDate()
+          );
+          setSelectedDateKey(nextKey);
+          navigate(`/day/${nextKey}`);
+        } else {
+          handlePrevMonth();
+        }
+        return;
+      }
+
+      // Phím ] hoặc ArrowRight: Tiến 1 ngày (khi ở Day Detail) hoặc Tiến 1 tháng (khi ở Dashboard)
+      if (e.key === 'ArrowRight' || e.key === ']') {
+        e.preventDefault();
+        if (location.pathname.startsWith('/day')) {
+          const match = location.pathname.match(/^\/day\/(\d{4}-\d{2}-\d{2})/);
+          const cur = match ? match[1] : selectedDateKey;
+          const [y, m, d] = cur.split('-').map(Number);
+          const dt = new Date(y, m - 1, d + 1);
+          const nextKey = formatDateKey(
+            dt.getFullYear(),
+            dt.getMonth() + 1,
+            dt.getDate()
+          );
+          setSelectedDateKey(nextKey);
+          navigate(`/day/${nextKey}`);
+        } else {
+          handleNextMonth();
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isShortcutsModalOpen,
+    isSettingsModalOpen,
+    isProfileModalOpen,
+    isProfileSetup,
+    isTaskModalOpen,
+    handleJumpToday,
+    handleOpenAddTaskModal,
+    handleOpenProfileModal,
+    handleOpenSettingsModal,
+    location.pathname,
+    selectedDateKey,
+    handlePrevMonth,
+    handleNextMonth,
+    navigate,
+  ]);
 
   const outletContext: ClientOutletContext = {
     currentYear,
@@ -410,6 +570,7 @@ export const ClientPage: React.FC = () => {
           onOpenAddTaskModal={handleOpenAddTaskModal}
           onOpenProfileModal={handleOpenProfileModal}
           onOpenSettingsModal={handleOpenSettingsModal}
+          onOpenShortcutsModal={handleOpenShortcutsModal}
         />
 
         <main className="main-container">
@@ -446,10 +607,16 @@ export const ClientPage: React.FC = () => {
           onToggleLanguage={handleToggleLanguage}
           isCaloriesEnabled={settings.enableCalories}
           onToggleCalories={handleToggleCalories}
+          onOpenShortcutsModal={handleOpenShortcutsModal}
           onExportJson={handleExportJson}
           onImportJson={handleImportJson}
           onLogout={handleLogout}
           userEmail={storedUser?.email}
+        />
+
+        <KeyboardShortcutsModal
+          isOpen={isShortcutsModalOpen}
+          onClose={() => setIsShortcutsModalOpen(false)}
         />
 
         <AiCoachWidget

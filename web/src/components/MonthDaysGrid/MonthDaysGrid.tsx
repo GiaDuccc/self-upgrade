@@ -82,6 +82,22 @@ export const MonthDaysGrid: React.FC<MonthDaysGridProps> = ({
                     {isEn ? 'Today' : 'Hôm nay'}
                   </span>
                 )}
+                {item.waterData && item.waterData.currentMl > 0 && (
+                  <span
+                    className={`day-cell-water-tag ${
+                      item.waterData.currentMl >= item.waterData.targetMl
+                        ? 'reached'
+                        : ''
+                    }`}
+                    title={
+                      isEn
+                        ? `Water: ${item.waterData.currentMl.toLocaleString()} / ${item.waterData.targetMl.toLocaleString()} ml`
+                        : `Nước uống: ${item.waterData.currentMl.toLocaleString()} / ${item.waterData.targetMl.toLocaleString()} ml`
+                    }
+                  >
+                    💧 {(item.waterData.currentMl / 1000).toFixed(1)}L
+                  </span>
+                )}
               </div>
 
               <div className="day-cell-middle">

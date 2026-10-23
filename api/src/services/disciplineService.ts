@@ -10,7 +10,7 @@ import {
 } from '~/config/settings';
 import { disciplineModel } from '~/models/disciplineModel';
 import { userModel } from '~/models/userModel';
-import { CustomTaskItem, DayRecord, FoodItem, TaskConfig, TaskLevelKey } from '~/types';
+import { CustomTaskItem, DayRecord, FoodItem, TaskConfig, TaskLevelKey, WaterData } from '~/types';
 import { aiCoachService } from '~/services/aiCoachService';
 import ApiError from '~/utils/ApiError';
 import {
@@ -255,6 +255,25 @@ const saveDayCalories = async (
   return await getDayData(userId, dateKey);
 };
 
+const saveDayWater = async (
+  userId: string,
+  payload: { dateKey: string; waterData: WaterData }
+) => {
+  const { dateKey, waterData } = payload;
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
+  const records = { ...(disciplineDoc.records || {}) };
+  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+
+  records[dateKey] = {
+    ...currentDay,
+    waterData,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await disciplineModel.updateByUserId(userId, { records });
+  return await getDayData(userId, dateKey);
+};
+
 const getTargetDatesByScope = (
   scope: 'day' | 'week' | 'month' | 'all',
   selectedDateKey: string
@@ -444,6 +463,7 @@ export const disciplineService = {
   clearDay,
   updateNote,
   saveDayCalories,
+  saveDayWater,
   saveTask,
   deleteTask,
   exportData,

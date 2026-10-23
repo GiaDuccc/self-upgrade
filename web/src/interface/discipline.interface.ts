@@ -56,11 +56,24 @@ export interface CaloriesData {
   summary?: CaloriesSummary;
 }
 
+export interface WaterLog {
+  id: string;
+  amount: number;
+  time: string;
+}
+
+export interface WaterData {
+  targetMl: number;
+  currentMl: number;
+  logs: WaterLog[];
+}
+
 export interface DayRecord {
   tasks?: Record<string, TaskLevelKey>;
   taskHours?: Record<string, number[]>;
   note?: string;
   caloriesData?: CaloriesData;
+  waterData?: WaterData;
   updatedAt?: string;
 }
 
@@ -88,6 +101,7 @@ export interface DayStats {
   counts: ScoreCounts;
   rank: DailyRank;
   note: string;
+  waterData?: WaterData;
   tasksList: TaskItem[];
   tasksMap: Record<string, TaskLevelKey>;
   taskHours?: Record<string, number[]>;

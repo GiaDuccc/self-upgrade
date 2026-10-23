@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   CheckSquare,
   Settings,
+  Keyboard,
 } from 'lucide-react';
 import { UserProfile } from '~/interface/user.interface';
 import { getTodayInfo } from '~/utils/constants';
@@ -26,6 +27,7 @@ interface HeaderProps {
   onOpenAddTaskModal: () => void;
   onOpenProfileModal: () => void;
   onOpenSettingsModal: () => void;
+  onOpenShortcutsModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = React.memo(({
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   onOpenAddTaskModal,
   onOpenProfileModal,
   onOpenSettingsModal,
+  onOpenShortcutsModal,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -161,6 +164,20 @@ export const Header: React.FC<HeaderProps> = React.memo(({
                 ? 'Profile'
                 : 'Hồ sơ'}
             </span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-minimal btn-shortcuts-header"
+            onClick={onOpenShortcutsModal}
+            title={
+              isEn
+                ? 'Keyboard Shortcuts (?)'
+                : 'Phím tắt nhanh (?)'
+            }
+            aria-label={isEn ? 'Keyboard Shortcuts' : 'Phím tắt nhanh'}
+          >
+            <Keyboard size={16} />
           </button>
 
           <button

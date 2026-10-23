@@ -10,6 +10,7 @@ import {
   Upload,
   LogOut,
   Globe,
+  Keyboard,
 } from 'lucide-react';
 import { AppLanguage } from '~/utils/i18n';
 
@@ -22,6 +23,7 @@ export interface SettingsModalProps {
   onToggleLanguage: (lang: AppLanguage) => void;
   isCaloriesEnabled: boolean;
   onToggleCalories: (enabled: boolean) => void;
+  onOpenShortcutsModal?: () => void;
   onExportJson?: () => void;
   onImportJson?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onLogout?: () => void;
@@ -37,6 +39,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleLanguage,
   isCaloriesEnabled,
   onToggleCalories,
+  onOpenShortcutsModal,
   onExportJson,
   onImportJson,
   onLogout,
@@ -318,7 +321,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 4. DỮ LIỆU & SAO LƯU (BACKUP) */}
+          {/* 4. PHÍM TẮT NHANH (SHORTCUTS) */}
+          {onOpenShortcutsModal && (
+            <div className="settings-section">
+              <div className="settings-section-header">
+                <span className="settings-section-tag">
+                  {isEn ? 'PRODUCTIVITY' : 'NĂNG SUẤT'}
+                </span>
+                <h4 className="settings-section-title">
+                  {isEn ? 'Keyboard Shortcuts Guide' : 'Bảng tra cứu phím tắt nhanh'}
+                </h4>
+                <p className="settings-section-desc">
+                  {isEn
+                    ? 'Boost your workflow efficiency with instant hotkeys for navigation, habits, and water tracking'
+                    : 'Tăng tốc thao tác quản lý kỷ luật với các phím tắt nhanh chuyển ngày, tích việc và nạp nước'}
+                </p>
+              </div>
+
+              <div className="settings-action-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <button
+                  type="button"
+                  className="settings-action-btn"
+                  onClick={() => {
+                    onClose();
+                    onOpenShortcutsModal();
+                  }}
+                  title={isEn ? 'View all keyboard shortcuts' : 'Xem danh sách toàn bộ phím tắt'}
+                >
+                  <Keyboard size={15} />
+                  <span>
+                    {isEn ? 'View All Keyboard Shortcuts (?)' : 'Xem bảng toàn bộ phím tắt nhanh (?)'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 5. DỮ LIỆU & SAO LƯU (BACKUP) */}
           <div className="settings-section">
             <div className="settings-section-header">
               <span className="settings-section-tag">
