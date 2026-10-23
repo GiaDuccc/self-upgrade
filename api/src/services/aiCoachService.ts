@@ -11,13 +11,9 @@ import {
 
 import { CaloriesSummary, FoodItem, TaskItem, UserProfile } from '~/types';
 
-const CANDIDATE_MODELS = [
-  'gemini-flash-lite-latest',
-  'gemini-3.1-flash-lite',
-  'gemini-3.5-flash-lite',
-  'gemini-flash-latest',
-  'gemini-3.8-flash',
-];
+// Sử dụng duy nhất 1 model chính, không xoay vòng đổi model khi lỗi/timeout
+const AI_COACH_MODEL = 'gemini-3.5-flash';
+const AI_TIMEOUT_MS = 6000;
 
 // Lưu lịch sử các câu đã nói theo từng userId để chống lặp lại cấu trúc câu
 const userRecentMessagesMap = new Map<string, string[]>();
@@ -44,82 +40,159 @@ const OPENING_SUGGESTIONS = [
 async function callGeminiCascade(
   promptContext: string,
   signal?: AbortSignal
-): Promise<string | null> {
-  if (!env.GEMINI_API_KEY) return null;
-
-  for (const model of CANDIDATE_MODELS) {
-    if (signal?.aborted) return null;
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptContext }] }],
-            generationConfig: {
-              temperature: 1.0,
-              maxOutputTokens: 2500,
-            },
-          }),
-          signal,
-        }
-      );
-
-      if (!response.ok) {
-        continue;
-      }
-
-      const data = (await response.json()) as {
-        candidates?: Array<{
-          content?: {
-            parts?: Array<{ text?: string; thought?: boolean }>;
-          };
-        }>;
-      };
-
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      const textPart = parts.find((p) => p.text && !p.thought) || parts[0];
-      let text = textPart?.text?.trim() || '';
-
-      if (text) {
-        text = text.replace(/^#+\s*/gm, '');
-        text = text.replace(/\*\*/g, '');
-        text = text.replace(/^[-*•]\s*/gm, '');
-        text = text.replace(/^["'“]+|["'”]+$/g, '').trim();
-
-        const lines = text
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean);
-        const filteredLines = lines.filter((l) => {
-          const lower = l.toLowerCase();
-          if (lower.endsWith(':')) return false;
-          if (
-            /^(lời khuyên|lời chào|nhận xét|động viên|chê|gợi ý|ai coach)\s*:/i.test(
-              l
-            )
-          )
-            return false;
-          return true;
-        });
-        const cleanSentence = filteredLines
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        if (cleanSentence && cleanSentence.length >= 10) {
-          return cleanSentence;
-        }
-      }
-    } catch {
-      // Thử model kế tiếp
-    }
+): Promise<{ text: string | null; isTimeout?: boolean; isRateLimited?: boolean; lastError?: string }> {
+  if (!env.GEMINI_API_KEY) {
+    return { text: null, lastError: 'Thiếu GEMINI_API_KEY trong cấu hình hệ thống' };
   }
 
-  return null;
+  // Giới hạn thời gian chờ đúng 6.0 giây, quá 6s lập tức ngắt và trả về lỗi timeout luôn (không đổi model khác)
+  const timeoutCtrl = new AbortController();
+  const timeoutTimer = setTimeout(() => {
+    timeoutCtrl.abort(new Error('TIMEOUT_6S'));
+  }, AI_TIMEOUT_MS);
+
+  const stepSignal = signal
+    ? AbortSignal.any([signal, timeoutCtrl.signal])
+    : timeoutCtrl.signal;
+
+  const tStart = Date.now();
+  console.log(`   [AI Coach] Đang gọi model ${AI_COACH_MODEL} (timeout ${AI_TIMEOUT_MS / 1000}s)...`);
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${AI_COACH_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptContext }] }],
+          generationConfig: {
+            temperature: 1.0,
+            maxOutputTokens: 350,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
+          },
+        }),
+        signal: stepSignal,
+      }
+    );
+
+    const elapsed = Date.now() - tStart;
+
+    if (!response.ok) {
+      clearTimeout(timeoutTimer);
+      if (response.status === 429) {
+        console.warn(`   [AI Coach] ⚠️ Model ${AI_COACH_MODEL} bị giới hạn tần suất (HTTP 429 - Rate limit). Kích hoạt Smart Fallback!`);
+        return {
+          text: null,
+          isTimeout: false,
+          isRateLimited: true,
+          lastError: 'Chạm giới hạn tần suất (HTTP 429)',
+        };
+      }
+      const lastErrorMessage = `Máy chủ AI phản hồi mã lỗi HTTP ${response.status}`;
+      console.warn(`   [AI Coach] ⚠️ Model ${AI_COACH_MODEL} trả về HTTP ${response.status} (${elapsed}ms)`);
+      return { text: null, isTimeout: false, lastError: lastErrorMessage };
+    }
+
+    const data = (await response.json()) as {
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{ text?: string; thought?: boolean }>;
+        };
+      }>;
+    };
+
+    clearTimeout(timeoutTimer);
+
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const textPart = parts.find((p) => p.text && !p.thought) || parts[0];
+    let text = textPart?.text?.trim() || '';
+
+    if (text) {
+      text = text.replace(/^#+\s*/gm, '');
+      text = text.replace(/\*\*/g, '');
+      text = text.replace(/^[-*•]\s*/gm, '');
+      text = text.replace(/^["'“]+|["'”]+$/g, '').trim();
+
+      const lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      const filteredLines = lines.filter((l) => {
+        const lower = l.toLowerCase();
+        if (lower.endsWith(':')) return false;
+        if (
+          /^(lời khuyên|lời chào|nhận xét|động viên|chê|gợi ý|ai coach)\s*:/i.test(
+            l
+          )
+        )
+          return false;
+        return true;
+      });
+      const cleanSentence = filteredLines
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (cleanSentence && cleanSentence.length >= 10) {
+        console.log(`   [AI Coach] ✅ Model ${AI_COACH_MODEL} thành công trong ${elapsed}ms!`);
+        return { text: cleanSentence };
+      }
+    }
+
+    console.warn(`   [AI Coach] ⚠️ Model ${AI_COACH_MODEL} trả về nội dung rỗng (${elapsed}ms)`);
+    return {
+      text: null,
+      isTimeout: false,
+      lastError: 'AI không trả về nội dung hợp lệ',
+    };
+  } catch (err: any) {
+    clearTimeout(timeoutTimer);
+    const elapsed = Date.now() - tStart;
+
+    // Nếu bị hủy bởi request mới của chính user thì thoát êm
+    if (signal?.aborted && !timeoutCtrl.signal.aborted) {
+      return { text: null };
+    }
+
+    if (
+      timeoutCtrl.signal.aborted ||
+      err?.name === 'TimeoutError' ||
+      err?.code === 23 ||
+      err?.message?.includes('TIMEOUT_6S') ||
+      err?.message?.toLowerCase().includes('timeout') ||
+      err?.message?.toLowerCase().includes('aborted')
+    ) {
+      console.warn(`   [AI Coach] ⏱️ Model ${AI_COACH_MODEL} TIMEOUT sau ${elapsed}ms (quá 6s)!`);
+      return {
+        text: null,
+        isTimeout: true,
+        lastError: 'Hết thời gian chờ phản hồi từ AI (Timeout quá 6s)',
+      };
+    }
+
+    if (err?.message?.includes('429') || err?.status === 429) {
+      console.warn(`   [AI Coach] ⚠️ Gặp lỗi 429 (Rate limit). Kích hoạt Smart Fallback!`);
+      return {
+        text: null,
+        isTimeout: false,
+        isRateLimited: true,
+        lastError: 'Chạm giới hạn tần suất (HTTP 429)',
+      };
+    }
+
+    const lastErrorMessage = err?.message || 'Lỗi kết nối tới máy chủ AI';
+    console.warn(`   [AI Coach] ❌ Model ${AI_COACH_MODEL} gặp lỗi (${elapsed}ms):`, lastErrorMessage);
+    return {
+      text: null,
+      isTimeout: false,
+      lastError: lastErrorMessage,
+    };
+  }
 }
 
 interface DateTemporalContext {
@@ -736,14 +809,23 @@ ${specificContextAndRules}
     return { message: '' };
   }
 
-  let message = await callGeminiCascade(promptContext, signal);
+  const cascadeResult = await callGeminiCascade(promptContext, signal);
 
   if (signal?.aborted) {
     return { message: '' };
   }
 
-  if (!message) {
-    message = generateDiverseFallback({
+  if (cascadeResult.text) {
+    const message = cascadeResult.text;
+    const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
+    userRecentMessagesMap.set(userId, updatedHistory);
+    return { message };
+  }
+
+  // Nếu bị 429 (Rate limit / Quota): Tự động dùng Smart Fallback cá nhân hóa thay vì báo lỗi
+  if (cascadeResult.isRateLimited) {
+    console.log(`   [AI Coach] 🎯 Tự động kích hoạt câu nhận xét thông minh (Smart Fallback) cho user ${userId}...`);
+    let message = generateDiverseFallback({
       mode,
       callName,
       percentage: dayStats.percentage,
@@ -756,7 +838,6 @@ ${specificContextAndRules}
       dateCtx,
       recentChange,
     });
-    // Fallback: nếu là ngày hôm nay và chưa phải trường hợp đặc biệt đã ghép sẵn prefix
     if (
       mode === 'feedback' &&
       recentChange &&
@@ -765,79 +846,127 @@ ${specificContextAndRules}
     ) {
       message = `${recentChange.short} ${message.charAt(0).toLowerCase()}${message.slice(1)}`;
     }
+    const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
+    userRecentMessagesMap.set(userId, updatedHistory);
+    return { message, isFallback: true };
   }
 
-  const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
-  userRecentMessagesMap.set(userId, updatedHistory);
+  // Nếu bị timeout: trả về trực tiếp thông tin lỗi trong payload dữ liệu để hiển thị ra bong bóng chat
+  if (cascadeResult.isTimeout) {
+    const errorDesc = 'Hết thời gian chờ phản hồi từ AI (Timeout sau 6s). Máy chủ AI phản hồi quá lâu.';
+    return {
+      message: '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!',
+      error: errorDesc,
+      isTimeout: true,
+    };
+  }
 
-  return { message };
+  // Nếu gặp lỗi kết nối server hoặc AI trả về lỗi: hiển thị lỗi ra bong bóng chat luôn
+  const fallbackErr = cascadeResult.lastError || 'AI không trả về dữ liệu phản hồi';
+  return {
+    message: `⚠️ Không thể nhận phản hồi từ AI (${fallbackErr}). Vui lòng thử lại!`,
+    error: fallbackErr,
+    isTimeout: false,
+  };
 };
 
-async function callGeminiJson<T>(prompt: string): Promise<T | null> {
+async function callGeminiJson<T>(
+  prompt: string
+): Promise<{ data: T | null; isTimeout?: boolean; error?: string }> {
   if (!env.GEMINI_API_KEY) {
     console.warn('[Gemini AI Calories] Không có GEMINI_API_KEY');
-    return null;
+    return { data: null, error: 'Thiếu GEMINI_API_KEY' };
   }
 
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      console.log(`[Gemini AI Calories] Đang phân tích bằng model ${model}...`);
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: AbortSignal.timeout(12000),
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.4,
-              responseMimeType: 'application/json',
+  const timeoutCtrl = new AbortController();
+  const timeoutTimer = setTimeout(() => {
+    timeoutCtrl.abort(new Error('TIMEOUT_6S'));
+  }, AI_TIMEOUT_MS);
+
+  try {
+    console.log(`[Gemini AI Calories] Đang phân tích bằng model ${AI_COACH_MODEL} (timeout 6s)...`);
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${AI_COACH_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: timeoutCtrl.signal,
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.4,
+            responseMimeType: 'application/json',
+            thinkingConfig: {
+              thinkingBudget: 0,
             },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        console.warn(`[Gemini AI Calories] Model ${model} trả về mã lỗi: ${response.status}`);
-        continue;
+          },
+        }),
       }
+    );
 
-      const data = (await response.json()) as {
-        candidates?: Array<{
-          content?: {
-            parts?: Array<{ text?: string; thought?: boolean }>;
-          };
-        }>;
-      };
+    clearTimeout(timeoutTimer);
 
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      const textPart = parts.find((p) => p.text && !p.thought) || parts[0];
-      const rawText = textPart?.text?.trim() || '';
-
-      if (rawText) {
-        try {
-          const parsed = JSON.parse(rawText) as T;
-          console.log(`[Gemini AI Calories] Thành công với model ${model}`);
-          return parsed;
-        } catch {
-          const match = rawText.match(/\{[\s\S]*\}/);
-          if (match) {
-            const parsed = JSON.parse(match[0]) as T;
-            console.log(`[Gemini AI Calories] Thành công (regex parse) với model ${model}`);
-            return parsed;
-          }
-        }
+    if (!response.ok) {
+      if (response.status === 429) {
+        console.warn(`[Gemini AI Calories] Model ${AI_COACH_MODEL} chạm giới hạn tần suất (HTTP 429)`);
+        return { data: null, isTimeout: false, error: 'Chạm giới hạn tần suất (HTTP 429)' };
       }
-    } catch (err: any) {
-      console.warn(`[Gemini AI Calories] Lỗi khi gọi model ${model}:`, err?.message || err);
-      continue;
+      const lastError = `HTTP ${response.status}`;
+      console.warn(`[Gemini AI Calories] Model ${AI_COACH_MODEL} trả về mã lỗi: ${response.status}`);
+      return { data: null, isTimeout: false, error: lastError };
     }
-  }
 
-  return null;
+    const data = (await response.json()) as {
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{ text?: string; thought?: boolean }>;
+        };
+      }>;
+    };
+
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const textPart = parts.find((p) => p.text && !p.thought) || parts[0];
+    const rawText = textPart?.text?.trim() || '';
+
+    if (rawText) {
+      try {
+        const parsed = JSON.parse(rawText) as T;
+        console.log(`[Gemini AI Calories] Thành công với model ${AI_COACH_MODEL}`);
+        return { data: parsed };
+      } catch {
+        const match = rawText.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]) as T;
+          console.log(`[Gemini AI Calories] Thành công (regex parse) với model ${AI_COACH_MODEL}`);
+          return { data: parsed };
+        }
+      }
+    }
+
+    return { data: null, isTimeout: false, error: 'AI không trả về dữ liệu JSON hợp lệ' };
+  } catch (err: any) {
+    clearTimeout(timeoutTimer);
+    if (
+      timeoutCtrl.signal.aborted ||
+      err?.name === 'TimeoutError' ||
+      err?.code === 23 ||
+      err?.message?.includes('TIMEOUT_6S') ||
+      err?.message?.toLowerCase().includes('timeout') ||
+      err?.message?.toLowerCase().includes('aborted')
+    ) {
+      console.warn(`[Gemini AI Calories] ⏱️ Model ${AI_COACH_MODEL} timeout quá 6s`);
+      return { data: null, isTimeout: true, error: 'Timeout quá 6s' };
+    }
+    if (err?.message?.includes('429') || err?.status === 429) {
+      console.warn(`[Gemini AI Calories] ⚠️ Gặp lỗi 429 (Rate limit)`);
+      return { data: null, isTimeout: false, error: 'Chạm giới hạn tần suất (HTTP 429)' };
+    }
+    const lastError = err?.message || 'Lỗi mạng khi phân tích dinh dưỡng';
+    console.warn(`[Gemini AI Calories] ❌ Lỗi khi gọi model ${AI_COACH_MODEL}:`, lastError);
+    return { data: null, isTimeout: false, error: lastError };
+  }
 }
 
 const analyzeNutrition = async (
@@ -953,24 +1082,30 @@ YÊU CẦU BẮT BUỘC:
       .trim();
   };
 
-  if (result && typeof result.totalCalories === 'number') {
+  if (result.data && typeof result.data.totalCalories === 'number') {
     return {
-      totalCalories: Math.round(result.totalCalories) || 0,
-      protein: Math.round(Number(result.protein) * 10) / 10 || 0,
-      carb: Math.round(Number(result.carb) * 10) / 10 || 0,
-      fat: Math.round(Number(result.fat) * 10) / 10 || 0,
-      fiber: Math.round(Number(result.fiber) * 10) / 10 || 0,
-      aiFeedback: cleanFeedbackText(result.aiFeedback),
+      totalCalories: Math.round(result.data.totalCalories) || 0,
+      protein: Math.round(Number(result.data.protein) * 10) / 10 || 0,
+      carb: Math.round(Number(result.data.carb) * 10) / 10 || 0,
+      fat: Math.round(Number(result.data.fat) * 10) / 10 || 0,
+      fiber: Math.round(Number(result.data.fiber) * 10) / 10 || 0,
+      aiFeedback: cleanFeedbackText(result.data.aiFeedback),
       updatedAt: new Date().toISOString(),
     };
   }
 
-  // Fallback calculation nếu Gemini offline hoặc lỗi mạng
+  // Fallback calculation nếu Gemini timeout hoặc lỗi mạng
   const estCalories = meals.length * 220;
   const estProtein = Math.round(meals.length * 12);
   const estCarb = Math.round(meals.length * 28);
   const estFat = Math.round(meals.length * 7);
   const estFiber = Math.round(meals.length * 4);
+
+  const timeoutNote = result.isTimeout
+    ? '⚠️ Hết thời gian chờ AI phân tích (Timeout). Đã lưu thực đơn và ước tính dinh dưỡng cơ bản.'
+    : result.error?.includes('429')
+    ? '⚠️ Hệ thống AI đang bận (429 Rate Limit). Đã lưu thực đơn và tính nhanh dinh dưỡng ước tính.'
+    : `Đã lưu thực đơn gồm ${meals.length} món ăn. Tỷ lệ dinh dưỡng ước tính cơ bản đã sẵn sàng!`;
 
   return {
     totalCalories: estCalories,
@@ -978,7 +1113,10 @@ YÊU CẦU BẮT BUỘC:
     carb: estCarb,
     fat: estFat,
     fiber: estFiber,
-    aiFeedback: `Đã lưu thực đơn gồm ${meals.length} món ăn. Tỷ lệ dinh dưỡng ước tính cơ bản đã sẵn sàng, hãy đảm bảo uống đủ nước và ăn thêm rau củ cho các bữa tiếp theo!`,
+    aiFeedback: timeoutNote,
+    error: result.isTimeout
+      ? 'Hết thời gian chờ phản hồi từ AI (Timeout sau 6.5s).'
+      : (result.error || undefined),
     updatedAt: new Date().toISOString(),
   };
 };

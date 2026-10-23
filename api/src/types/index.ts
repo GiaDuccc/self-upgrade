@@ -60,6 +60,7 @@ export interface CaloriesSummary {
   fiber: number;
   aiFeedback: string;
   updatedAt?: string;
+  error?: string;
 }
 
 export interface CaloriesData {

@@ -21,14 +21,15 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isInitialMountRef = useRef(true);
   const lastSignalRef = useRef('');
+  const dateKeyRef = useRef(dateKey);
+  dateKeyRef.current = dateKey;
 
   // Lưu controller hủy request đang chạy & ID của request mới nhất
   const abortControllerRef = useRef<AbortController | null>(null);
   const latestRequestIdRef = useRef<number>(0);
 
-  const openWithAutoClose = (seconds = 5) => {
+  const openWithAutoClose = (seconds = 6) => {
     setIsOpen(true);
     if (autoCloseTimerRef.current) {
       clearTimeout(autoCloseTimerRef.current);
@@ -36,6 +37,18 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     autoCloseTimerRef.current = setTimeout(() => {
       setIsOpen(false);
     }, seconds * 1000);
+  };
+
+  const resolveErrorBubbleMessage = (error: any): string => {
+    const serverMsg = error?.response?.data?.message || error?.response?.data?.error;
+    if (serverMsg) return String(serverMsg);
+    if (
+      error?.code === 'ECONNABORTED' ||
+      error?.message?.toLowerCase().includes('timeout')
+    ) {
+      return '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
+    }
+    return `⚠️ Lỗi phản hồi từ AI (${error?.message || 'Không thể kết nối máy chủ'}). Vui lòng thử lại!`;
   };
 
   // Hủy mọi request & timer khi unmount
@@ -53,50 +66,87 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     };
   }, []);
 
-  // 1. KHI VÀO DỰ ÁN: Gọi BE lấy câu lời chào + lời nhắc, khi CÓ DỮ LIỆU TRẢ VỀ thì MỚI mở đoạn chat
+  // 1. KHI VÀO DỰ ÁN: Gọi BE lấy câu lời chào + lời nhắc, khi CÓ DỮ LIỆU TRẢ VỀ (hoặc lỗi timeout) thì mở đoạn chat
   useEffect(() => {
-    let isCancelled = false;
-    setIsAiLoading(true);
+    const cacheKey = `ai_coach_greeting_${dateKeyRef.current}`;
+    const cachedGreeting = sessionStorage.getItem(cacheKey);
 
-    getAiCoachingMessageAPI({
-      dateKey,
-      mode: 'greeting',
-    })
+    // Nếu trong phiên làm việc đã có lời chào của ngày này, tái sử dụng ngay lập tức (không gọi lại API)
+    if (cachedGreeting) {
+      console.log(`⚡ [AI Coach FE] Lấy lời chào từ Session Cache: "${cachedGreeting.slice(0, 60)}..."`);
+      setAiMessage(cachedGreeting);
+      setIsAiLoading(false);
+      openWithAutoClose(5);
+      return;
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const requestId = ++latestRequestIdRef.current;
+
+    setIsAiLoading(true);
+    console.log(`🤖 [AI Coach FE] Đang gửi request lấy lời chào khởi đầu (#${requestId})...`);
+
+    getAiCoachingMessageAPI(
+      {
+        dateKey: dateKeyRef.current,
+        mode: 'greeting',
+      },
+      controller.signal
+    )
       .then((msg) => {
-        if (!isCancelled && msg) {
-          setAiMessage(msg);
-          setIsAiLoading(false);
-          openWithAutoClose(5);
+        if (requestId !== latestRequestIdRef.current || controller.signal.aborted) {
+          return;
+        }
+        const finalMsg =
+          msg ||
+          '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
+        console.log(`✅ [AI Coach FE] Nhận phản hồi khởi đầu (#${requestId}):`, finalMsg);
+        setAiMessage(finalMsg);
+        setIsAiLoading(false);
+        openWithAutoClose(6);
+
+        // Lưu vào cache nếu phản hồi hợp lệ (không phải câu thông báo lỗi)
+        if (finalMsg && !finalMsg.startsWith('⚠️')) {
+          try {
+            sessionStorage.setItem(cacheKey, finalMsg);
+          } catch {}
         }
       })
-      .catch(() => {
-        if (!isCancelled) {
+      .catch((error: any) => {
+        if (
+          controller.signal.aborted ||
+          axios.isCancel(error) ||
+          error?.name === 'CanceledError' ||
+          error?.name === 'AbortError' ||
+          error?.code === 'ERR_CANCELED'
+        ) {
+          return;
+        }
+        if (requestId === latestRequestIdRef.current) {
+          const errMsg = resolveErrorBubbleMessage(error);
+          console.warn(`⚠️ [AI Coach FE] Lỗi lấy lời chào ban đầu (#${requestId}):`, errMsg);
+          setAiMessage(errMsg);
           setIsAiLoading(false);
+          openWithAutoClose(6);
         }
       });
 
     return () => {
-      isCancelled = true;
-      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+      controller.abort();
     };
   }, []);
 
   // 2. KHI CÓ THAY ĐỔI (tích việc, lưu ghi chú, đổi trạng thái cá nhân):
   // Nếu có lượt tích mới, HỦY NGAY request cũ đang chờ và thay bằng dữ liệu của lượt tích mới
   useEffect(() => {
-    if (isInitialMountRef.current) {
-      isInitialMountRef.current = false;
-      lastSignalRef.current = triggerSignal;
-      return;
-    }
-
     if (!triggerSignal || triggerSignal === lastSignalRef.current) {
       return;
     }
-    lastSignalRef.current = triggerSignal;
 
     // 1. Hủy ngay request AI Coach đang chạy dở trước đó
     if (abortControllerRef.current) {
+      console.log('⚡ [AI Coach FE] Hủy request AI đang chạy do có lượt thao tác mới!');
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -116,15 +166,17 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     setIsOpen(true);
     setIsAiLoading(true);
 
-    // 5. Debounce 400ms: gom nhóm các lượt tích liên tiếp trong thời gian ngắn
+    // 5. Debounce 800ms: gom nhóm toàn bộ các lượt tích liên tiếp trong thời gian thao tác
     debounceTimerRef.current = setTimeout(async () => {
+      lastSignalRef.current = triggerSignal;
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      console.log(`🤖 [AI Coach FE] Gửi request phân tích (#${requestId}) | Signal: "${triggerSignal}"`);
 
       try {
         const msg = await getAiCoachingMessageAPI(
           {
-            dateKey,
+            dateKey: dateKeyRef.current,
             mode: 'feedback',
             changeSignal: triggerSignal,
           },
@@ -132,38 +184,47 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         );
 
         // Chỉ cập nhật nội dung nếu đây vẫn là request mới nhất
-        if (requestId === latestRequestIdRef.current && msg) {
-          setAiMessage(msg);
+        if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
+          const finalMsg =
+            msg ||
+            '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
+          console.log(`✅ [AI Coach FE] Nhận phản hồi (#${requestId}):`, finalMsg);
+          setAiMessage(finalMsg);
           setIsAiLoading(false);
           openWithAutoClose(6);
         }
       } catch (error: any) {
         // Nếu bị hủy bởi lượt tích mới tiếp theo, bỏ qua an toàn
         if (
+          controller.signal.aborted ||
           axios.isCancel(error) ||
           error?.name === 'CanceledError' ||
           error?.name === 'AbortError' ||
           error?.code === 'ERR_CANCELED'
         ) {
+          console.log(`🛑 [AI Coach FE] Request #${requestId} đã bị hủy bởi lượt thao tác mới.`);
           return;
         }
+        const errMsg = resolveErrorBubbleMessage(error);
+        console.error(`❌ [AI Coach FE] Lỗi request #${requestId}:`, errMsg);
         if (requestId === latestRequestIdRef.current) {
+          setAiMessage(errMsg);
           setIsAiLoading(false);
-          openWithAutoClose(4);
+          openWithAutoClose(6);
         }
       } finally {
         if (abortControllerRef.current === controller) {
           abortControllerRef.current = null;
         }
       }
-    }, 400);
+    }, 800);
 
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [triggerSignal, dateKey, userProfile]);
+  }, [triggerSignal]);
 
   const handleToggleBubble = () => {
     if (isOpen) {
@@ -189,33 +250,49 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    console.log(`🔄 [AI Coach FE] Làm mới thủ công (#${requestId})...`);
 
     try {
       const msg = await getAiCoachingMessageAPI(
         {
-          dateKey,
+          dateKey: dateKeyRef.current,
           mode: 'feedback',
           changeSignal: lastSignalRef.current,
         },
         controller.signal
       );
-      if (requestId === latestRequestIdRef.current && msg) {
-        setAiMessage(msg);
+      if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
+        const finalMsg =
+          msg ||
+          '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
+        console.log(`✅ [AI Coach FE] Nhận phản hồi làm mới (#${requestId}):`, finalMsg);
+        setAiMessage(finalMsg);
         setIsAiLoading(false);
         openWithAutoClose(6);
+
+        if (finalMsg && !finalMsg.startsWith('⚠️')) {
+          try {
+            sessionStorage.setItem(`ai_coach_greeting_${dateKeyRef.current}`, finalMsg);
+          } catch {}
+        }
       }
     } catch (error: any) {
       if (
+        controller.signal.aborted ||
         axios.isCancel(error) ||
         error?.name === 'CanceledError' ||
         error?.name === 'AbortError' ||
         error?.code === 'ERR_CANCELED'
       ) {
+        console.log(`🛑 [AI Coach FE] Request làm mới #${requestId} đã bị hủy.`);
         return;
       }
+      const errMsg = resolveErrorBubbleMessage(error);
+      console.error(`❌ [AI Coach FE] Lỗi làm mới #${requestId}:`, errMsg);
       if (requestId === latestRequestIdRef.current) {
+        setAiMessage(errMsg);
         setIsAiLoading(false);
-        openWithAutoClose(3);
+        openWithAutoClose(6);
       }
     } finally {
       if (abortControllerRef.current === controller) {

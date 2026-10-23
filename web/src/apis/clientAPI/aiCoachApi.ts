@@ -8,7 +8,11 @@ export const getAiCoachingMessageAPI = async (
   },
   signal?: AbortSignal
 ): Promise<string> => {
-  const res = await axiosClient.post('/ai-coach/message', payload, { signal });
-  return res.data.message;
+  const res = await axiosClient.post('/ai-coach/message', payload, {
+    signal,
+    timeout: 6800,
+  });
+  return res.data?.message || res.data?.error || '';
 };
+
 
