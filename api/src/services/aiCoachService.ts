@@ -117,22 +117,58 @@ async function callGeminiCascade(
       let messageVi = '';
       let messageEn = '';
 
+      const extractFields = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return;
+        const vi =
+          obj.message ||
+          obj.coach_message ||
+          obj.coachMessage ||
+          obj.greeting ||
+          obj.feedback ||
+          obj.text ||
+          obj.content ||
+          obj.vietnamese ||
+          obj.vi;
+        const en =
+          obj.messageEn ||
+          obj.message_en ||
+          obj.coach_message_en ||
+          obj.coachMessageEn ||
+          obj.greeting_en ||
+          obj.feedback_en ||
+          obj.english ||
+          obj.en;
+
+        if (vi) messageVi = String(vi).trim();
+        if (en) messageEn = String(en).trim();
+
+        if (!messageVi) {
+          const stringVals = Object.entries(obj)
+            .filter(([_, v]) => typeof v === 'string' && (v as string).trim().length > 0)
+            .map(([k, v]) => ({ key: k.toLowerCase(), val: (v as string).trim() }));
+          const enItem = stringVals.find((x) => x.key.includes('en'));
+          const viItem = stringVals.find((x) => !x.key.includes('en')) || stringVals[0];
+          if (viItem) messageVi = viItem.val;
+          if (enItem && enItem !== viItem) messageEn = enItem.val;
+        }
+      };
+
       try {
         const parsed = JSON.parse(rawText);
-        if (parsed.message) messageVi = String(parsed.message).trim();
-        if (parsed.messageEn) messageEn = String(parsed.messageEn).trim();
+        extractFields(parsed);
       } catch {
         const match = rawText.match(/\{[\s\S]*\}/);
         if (match) {
           try {
             const parsed = JSON.parse(match[0]);
-            if (parsed.message) messageVi = String(parsed.message).trim();
-            if (parsed.messageEn) messageEn = String(parsed.messageEn).trim();
+            extractFields(parsed);
           } catch {}
         }
       }
 
-      if (!messageVi) {
+      // Nếu rawText là dạng JSON ({ ... }) nhưng không bóc tách được chuỗi hợp lệ thì TUYỆT ĐỐI KHÔNG dùng rawText nguyên bản
+      const isJsonLike = rawText.startsWith('{') || rawText.startsWith('[');
+      if (!messageVi && !isJsonLike) {
         messageVi = rawText;
       }
 
@@ -834,9 +870,16 @@ RANDOM SEED: ${randomSeed}
 ${historyPromptBlock}
 
 QUY TẮC BẮT BUỘC:
-1. ĐÚNG 1 CÂU DUY NHẤT (khoảng 18–35 từ), liền mạch, tự nhiên, sinh động.
+1. ĐÚNG 1 CÂU DUY NHẤT (khoảng 18–35 từ), liền mạch, tự nhiên, sinh động, tôn trọng người dùng.
 2. TUYỆT ĐỐI KHÔNG mở đầu một màu theo kiểu "Chào ${callName}, ...". Hãy sáng tạo cách chào ngẫu nhiên (dùng thán từ, đặt tên ở giữa câu hoặc cuối câu).
-3. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG thêm dấu ngoặc kép bọc ngoài.
+3. TUYỆT ĐỐI KHÔNG body-shaming, không miệt thị thể trạng/ngoại hình (tuyệt đối KHÔNG nhắc "bụng mỡ", "béo", "mập", "thừa cân"...). Luôn truyền cảm hứng tích cực, nâng cao ý chí và thúc đẩy kỷ luật mạnh mẽ.
+4. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG thêm dấu ngoặc kép bọc ngoài.
+
+ĐỊNH DẠNG JSON BẮT BUỘC TRẢ VỀ:
+{
+  "message": "câu lời chào bằng tiếng Việt chuẩn",
+  "messageEn": "the exact same coaching greeting translated into natural, motivating English"
+}
 `.trim();
   } else {
     const recentChangeBlock = recentChange

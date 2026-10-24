@@ -11,6 +11,51 @@ interface AiCoachWidgetProps {
   userProfile: UserProfile;
 }
 
+const sanitizeAiMessage = (msg: unknown): string => {
+  if (!msg) return '';
+  if (typeof msg !== 'string') return String(msg);
+  const trimmed = msg.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const obj = JSON.parse(trimmed);
+      const extracted =
+        obj.message ||
+        obj.coach_message ||
+        obj.coachMessage ||
+        obj.greeting ||
+        obj.feedback ||
+        obj.text ||
+        obj.content ||
+        obj.vietnamese ||
+        obj.vi ||
+        Object.values(obj).find((v) => typeof v === 'string') ||
+        '';
+      return typeof extracted === 'string' ? extracted.trim() : '';
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+};
+
+const normalizeMessagePair = (rawVi?: string, rawEn?: string): { vi: string; en: string } => {
+  let vi = sanitizeAiMessage(rawVi);
+  let en = sanitizeAiMessage(rawEn);
+
+  if (!vi && !en) {
+    vi = '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
+    en = '⚠️ AI response timed out (6s). Server is responding slowly, please try again!';
+  } else if (!vi && en) {
+    vi = en;
+  } else if (vi && !en) {
+    en = vi.startsWith('⚠️')
+      ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
+      : vi;
+  }
+
+  return { vi, en };
+};
+
 export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
   dateKey,
   triggerSignal,
@@ -78,13 +123,22 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       try {
         const parsed = JSON.parse(cachedGreeting);
         if (parsed.vi || parsed.en) {
-          setAiMessages(parsed);
+          const normalized = normalizeMessagePair(parsed.vi, parsed.en);
+          setAiMessages(normalized);
+          // Ghi đè lại cache sạch để xóa bỏ hoàn toàn chuỗi raw JSON cũ nếu có
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
+          } catch {}
           setIsAiLoading(false);
           openWithAutoClose(5);
           return;
         }
       } catch {
-        setAiMessages({ vi: cachedGreeting, en: cachedGreeting });
+        const normalized = normalizeMessagePair(cachedGreeting, cachedGreeting);
+        setAiMessages(normalized);
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
+        } catch {}
         setIsAiLoading(false);
         openWithAutoClose(5);
         return;
@@ -109,23 +163,14 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         if (requestId !== latestRequestIdRef.current || controller.signal.aborted) {
           return;
         }
-        const finalMsgVi =
-          res.message ||
-          '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
-        const finalMsgEn =
-          res.messageEn ||
-          (finalMsgVi.startsWith('⚠️')
-            ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
-            : finalMsgVi);
-
-        const newMessages = { vi: finalMsgVi, en: finalMsgEn };
+        const newMessages = normalizeMessagePair(res.message, res.messageEn);
         console.log(`✅ [AI Coach FE] Nhận phản hồi khởi đầu (#${requestId}):`, newMessages);
         setAiMessages(newMessages);
         setIsAiLoading(false);
         openWithAutoClose(6);
 
         // Lưu vào cache nếu phản hồi hợp lệ (không phải câu thông báo lỗi)
-        if (finalMsgVi && !finalMsgVi.startsWith('⚠️')) {
+        if (newMessages.vi && !newMessages.vi.startsWith('⚠️')) {
           try {
             sessionStorage.setItem(cacheKey, JSON.stringify(newMessages));
           } catch {}
@@ -203,16 +248,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
         // Chỉ cập nhật nội dung nếu đây vẫn là request mới nhất
         if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
-          const finalMsgVi =
-            res.message ||
-            '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
-          const finalMsgEn =
-            res.messageEn ||
-            (finalMsgVi.startsWith('⚠️')
-              ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
-              : finalMsgVi);
-
-          const newMessages = { vi: finalMsgVi, en: finalMsgEn };
+          const newMessages = normalizeMessagePair(res.message, res.messageEn);
           console.log(`✅ [AI Coach FE] Nhận phản hồi (#${requestId}):`, newMessages);
           setAiMessages(newMessages);
           setIsAiLoading(false);
@@ -287,22 +323,13 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         controller.signal
       );
       if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
-        const finalMsgVi =
-          res.message ||
-          '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
-        const finalMsgEn =
-          res.messageEn ||
-          (finalMsgVi.startsWith('⚠️')
-            ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
-            : finalMsgVi);
-
-        const newMessages = { vi: finalMsgVi, en: finalMsgEn };
+        const newMessages = normalizeMessagePair(res.message, res.messageEn);
         console.log(`✅ [AI Coach FE] Nhận phản hồi làm mới (#${requestId}):`, newMessages);
         setAiMessages(newMessages);
         setIsAiLoading(false);
         openWithAutoClose(6);
 
-        if (finalMsgVi && !finalMsgVi.startsWith('⚠️')) {
+        if (newMessages.vi && !newMessages.vi.startsWith('⚠️')) {
           try {
             sessionStorage.setItem(`ai_coach_greeting_${dateKeyRef.current}`, JSON.stringify(newMessages));
           } catch {}
@@ -393,7 +420,11 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
             </div>
           ) : (
             <p className="ai-bubble-message">
-              {(isEn ? (aiMessages.en || aiMessages.vi) : (aiMessages.vi || aiMessages.en)) ||
+              {sanitizeAiMessage(
+                isEn
+                  ? aiMessages.en || aiMessages.vi
+                  : aiMessages.vi || aiMessages.en
+              ) ||
                 (isEn
                   ? 'Check off your daily tasks to let AI coach you.'
                   : 'Hãy tích các việc trong ngày để AI đồng hành cùng bạn.')}
