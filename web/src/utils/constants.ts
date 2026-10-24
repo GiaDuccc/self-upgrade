@@ -12,6 +12,13 @@ export const getApiRoot = (): string => {
     if (
       typeof window !== 'undefined' &&
       window.location.hostname &&
+      window.location.hostname.endsWith('.trycloudflare.com')
+    ) {
+      return window.location.origin;
+    }
+    if (
+      typeof window !== 'undefined' &&
+      window.location.hostname &&
       window.location.hostname !== 'localhost' &&
       window.location.hostname !== '127.0.0.1'
     ) {

@@ -10,7 +10,13 @@ export const corsOptions: CorsOptions = {
       return callback(null, true);
     }
 
-    if (!origin || WHITELIST_DOMAINS.includes(origin)) {
+    if (
+      !origin ||
+      WHITELIST_DOMAINS.includes(origin) ||
+      origin.endsWith('.trycloudflare.com') ||
+      origin.startsWith('capacitor://') ||
+      origin.startsWith('ionic://')
+    ) {
       return callback(null, true);
     }
 

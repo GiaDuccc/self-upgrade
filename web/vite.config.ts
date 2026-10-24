@@ -11,7 +11,14 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: true,
     open: false,
+    proxy: {
+      '/v1': {
+        target: 'http://localhost:2004',
+        changeOrigin: true,
+      },
+    },
   },
 });
 
