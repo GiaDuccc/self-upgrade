@@ -175,11 +175,15 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     setIsAiLoading(true);
     console.log(`🤖 [AI Coach FE] Đang gửi request lấy lời chào khởi đầu (#${requestId})...`);
 
+    const now = new Date();
     getAiCoachingMessageAPI(
       {
         dateKey: dateKeyRef.current,
         mode: 'greeting',
         language: isEn ? 'en' : 'vi',
+        clientHour: now.getHours(),
+        clientMinute: now.getMinutes(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh',
       },
       controller.signal
     )
@@ -261,12 +265,16 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       console.log(`🤖 [AI Coach FE] Gửi request phân tích (#${requestId}) | Signal: "${triggerSignal}"`);
 
       try {
+        const now = new Date();
         const res = await getAiCoachingMessageAPI(
           {
             dateKey: dateKeyRef.current,
             mode: 'feedback',
             changeSignal: triggerSignal,
             language: isEn ? 'en' : 'vi',
+            clientHour: now.getHours(),
+            clientMinute: now.getMinutes(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh',
           },
           controller.signal
         );

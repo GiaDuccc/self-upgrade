@@ -19,12 +19,24 @@ export interface DateTemporalContext {
   relativeDayLabelEn: string;
 }
 
+export type DayPeriodKey =
+  | 'EARLY_MORNING'   // 05:00 - 08:29
+  | 'MID_MORNING'     // 08:30 - 11:29
+  | 'NOON'            // 11:30 - 13:59
+  | 'AFTERNOON'       // 14:00 - 16:59
+  | 'LATE_AFTERNOON'  // 17:00 - 18:59
+  | 'EVENING'         // 19:00 - 21:59
+  | 'LATE_NIGHT';     // 22:00 - 04:59
+
 export interface TimeOfDayContext {
   hour: number;
   minute: number;
   timeStr: string;
+  periodKey: DayPeriodKey;
   periodLabel: string;
   periodLabelEn: string;
+  naturalGreetingTimeVi: string;
+  naturalGreetingTimeEn: string;
 }
 
 export interface RecentChangeContext {
@@ -190,7 +202,8 @@ export function runDisciplineCoachAgent(params: {
   }
 
   // --------------------------------------------------------------------------
-  // BƯỚC 2: CHẾ ĐỘ GREETING (KHI MỚI VÀO APP / RELOAD TRANG)
+  // --------------------------------------------------------------------------
+  // BƯỚC 2: CHẾ ĐỘ GREETING (KHI MỚI VÀO APP / RELOAD TRANG) — BÁM SÁT 100% THEO KHUNG GIỜ THỰC TẾ
   // --------------------------------------------------------------------------
   if (mode === 'greeting') {
     const streakNoteVi =
@@ -202,45 +215,118 @@ export function runDisciplineCoachAgent(params: {
         ? ` (riding a ${memory.streakDays}-day streak)`
         : '';
 
-    const greetingCandidates: Array<{ vi: string; en: string }> = [
-      {
-        vi: `Ơ kìa ${callName}, ${timeCtx.periodLabel.toLowerCase()} với thể chất ${physLabel.toLowerCase()} và tinh thần ${mentLabel.toLowerCase()}${streakNoteVi} chính là thời điểm vàng để bạn bứt phá mục tiêu "${nextTaskVi}" ngay đấy!`,
-        en: `Hey ${nameEn}, this ${timeCtx.periodLabelEn.toLowerCase()} with your ${physLabelEn.toLowerCase()} body and ${mentLabelEn.toLowerCase()} mind${streakNoteEn} is the golden window to crush "${nextTaskEn}"!`,
-      },
-      {
-        vi: `Nhìn xem ai vừa mở bảng kỷ luật lúc ${timeCtx.timeStr} này, ${callName} đang ở mức ${pct}% hôm nay—hãy giữ trọn sự tập trung để nâng cấp bản thân hướng tới mục tiêu ${goalLabel.toLowerCase()} nhé!`,
-        en: `Look who just opened the discipline board at ${timeCtx.timeStr}! You’re at ${pct}% today, ${nameEn}—stay locked in on your ${goalLabelEn.toLowerCase()} goal!`,
-      },
-      {
-        vi: `Chà chà ${callName}, tinh thần đang ${mentLabel.toLowerCase()} thế này mà để sự trì hoãn thắng thế thì tiếc lắm, bắt tay xử gọn "${nextTaskVi}" trong ${timeCtx.periodLabel.toLowerCase()} nay thôi!`,
-        en: `With your mind feeling ${mentLabelEn.toLowerCase()} right now, ${nameEn}, letting procrastination win would be a waste—dive straight into "${nextTaskEn}" this ${timeCtx.periodLabelEn.toLowerCase()}!`,
-      },
-      {
-        vi: `Thẳng thắn nhé ${callName}: kỷ luật thép không tự nhiên sinh ra, hãy biến năng lượng ${physLabel.toLowerCase()} lúc ${timeCtx.timeStr} này thành điểm số thực tế trên bảng việc ngay nào!`,
-        en: `Let’s be real, ${nameEn}: iron discipline isn't built by chance—channel your ${physLabelEn.toLowerCase()} energy at ${timeCtx.timeStr} into real progress on the board right now!`,
-      },
-      {
-        vi: `Khởi động nhịp độ chiến binh thôi ${callName}${streakNoteVi}, hoàn thành dứt khoát "${nextTaskVi}" sẽ giúp ${timeCtx.periodLabel.toLowerCase()} của bạn tràn đầy khí thế!`,
-        en: `Time to activate warrior mode, ${nameEn}${streakNoteEn}—knocking out "${nextTaskEn}" decisively will set your ${timeCtx.periodLabelEn.toLowerCase()} on fire!`,
-      },
-      {
-        vi: `Một ${timeCtx.periodLabel.toLowerCase()} tỉnh táo đang chờ ${callName} ghi dấu ấn, hãy giữ vững tâm thế ${mentLabel.toLowerCase()} và chinh phục trọn vẹn lịch trình hôm nay nhé!`,
-        en: `A productive ${timeCtx.periodLabelEn.toLowerCase()} awaits your mark, ${nameEn}—keep that ${mentLabelEn.toLowerCase()} mindset and dominate today’s schedule!`,
-      },
-      {
-        vi: `Ủa alo ${callName}, đồng hồ đã điểm ${timeCtx.timeStr} rồi đấy, đừng chỉ ngắm bảng việc nữa mà hãy mở màn cú hích kỷ luật bằng "${nextTaskVi}" ngay đi!`,
-        en: `Clock’s ticking at ${timeCtx.timeStr}, ${nameEn}—don’t just stare at the dashboard, ignite your discipline momentum with "${nextTaskEn}" right now!`,
-      },
-    ];
+    let periodCandidates: Array<{ vi: string; en: string }> = [];
 
-    if (pct >= 80) {
-      greetingCandidates.unshift({
+    switch (timeCtx.periodKey) {
+      case 'EARLY_MORNING':
+        periodCandidates = [
+          {
+            vi: `Chào buổi sáng ${callName} lúc ${timeCtx.timeStr}! Khởi động ngày mới với tinh thần ${mentLabel.toLowerCase()}${streakNoteVi} và mở màn bằng "${nextTaskVi}" để tạo đà chiến thắng cho cả ngày nào!`,
+            en: `Good early morning, ${nameEn} (${timeCtx.timeStr})! Ignite your day with a ${mentLabelEn.toLowerCase()} mindset${streakNoteEn} and knock out "${nextTaskEn}" to build winning momentum!`,
+          },
+          {
+            vi: `Mới ${timeCtx.timeStr} sáng sớm mà ${callName} đã mở bảng kỷ luật rồi, năng lượng ${physLabel.toLowerCase()} này chắc chắn sẽ giúp bạn hoàn thành xuất sắc mục tiêu "${nextTaskVi}"!`,
+            en: `Up early at ${timeCtx.timeStr}, ${nameEn}! This ${physLabelEn.toLowerCase()} energy will surely power you through "${nextTaskEn}" with flying colors!`,
+          },
+          {
+            vi: `Bắt đầu ngày mới thật kỷ luật nhé ${callName}! Lúc ${timeCtx.timeStr} sáng này là thời điểm vàng để làm chủ bản thân với "${nextTaskVi}".`,
+            en: `Kick off the day with iron discipline, ${nameEn}! This ${timeCtx.timeStr} early hour is your prime window to master "${nextTaskEn}".`,
+          },
+        ];
+        break;
+
+      case 'MID_MORNING':
+        periodCandidates = [
+          {
+            vi: `Đang là khung giờ vàng buổi sáng (${timeCtx.timeStr}) đấy ${callName}! Dồn trọn sự tập trung ${mentLabel.toLowerCase()}${streakNoteVi} vào "${nextTaskVi}" để bứt phá điểm số kỷ luật nào!`,
+            en: `Peak morning focus hour right now (${timeCtx.timeStr}), ${nameEn}! Channel that ${mentLabelEn.toLowerCase()} mindset${streakNoteEn} into "${nextTaskEn}" to drive your discipline score up!`,
+          },
+          {
+            vi: `Chào ${callName}, buổi sáng (${timeCtx.timeStr}) với thể chất ${physLabel.toLowerCase()} là thời cơ tốt nhất để giải quyết dứt điểm "${nextTaskVi}" trước giờ trưa!`,
+            en: `Morning check-in at ${timeCtx.timeStr}, ${nameEn}! With your body feeling ${physLabelEn.toLowerCase()}, knock out "${nextTaskEn}" cleanly before lunchtime!`,
+          },
+        ];
+        break;
+
+      case 'NOON':
+        periodCandidates = [
+          {
+            vi: `Đã ${timeCtx.timeStr} trưa rồi đấy ${callName}! Hãy ăn trưa đủ chất và nghỉ ngơi chừng 15-20 phút để nạp lại 100% năng lượng cho buổi chiều nhé.`,
+            en: `It’s already ${timeCtx.timeStr} noon, ${nameEn}! Enjoy a nutritious lunch and recharge with a 15–20 min break to restore 100% energy for the afternoon!`,
+          },
+          {
+            vi: `Chào buổi trưa ${callName} (${timeCtx.timeStr})! Tiến độ hôm nay đang đạt ${pct}%${streakNoteVi}, giờ trưa này hãy chợp mắt một chút hoặc hoàn thành nhẹ "${nextTaskVi}" để chiều tiếp tục bùng nổ nhé!`,
+            en: `Good midday, ${nameEn} (${timeCtx.timeStr})! Progress stands at ${pct}%${streakNoteEn}—take a quick power nap or gently handle "${nextTaskEn}" to power up for the afternoon!`,
+          },
+          {
+            vi: `Ủa alo ${callName}, đồng hồ đã điểm ${timeCtx.timeStr} trưa rồi! Nghỉ ngơi dưỡng sức hoặc xử lý êm gọn "${nextTaskVi}" để buổi chiều thảnh thơi nào.`,
+            en: `Clock struck ${timeCtx.timeStr} noon, ${nameEn}! Rest up or smoothly take care of "${nextTaskEn}" so your afternoon runs effortlessly.`,
+          },
+        ];
+        break;
+
+      case 'AFTERNOON':
+        periodCandidates = [
+          {
+            vi: `Đầu giờ chiều (${timeCtx.timeStr}) rồi ${callName}! Uống một ly nước lọc để lấy lại sự tỉnh táo và cùng dứt điểm mục tiêu "${nextTaskVi}" nhé.`,
+            en: `Afternoon session underway (${timeCtx.timeStr}), ${nameEn}! Grab a glass of water to refresh your focus and knock out "${nextTaskEn}".`,
+          },
+          {
+            vi: `Chào ${callName}, buổi chiều (${timeCtx.timeStr}) đang diễn ra với tiến độ ${pct}%, giữ vững tinh thần ${mentLabel.toLowerCase()} để chinh phục "${nextTaskVi}" nào!`,
+            en: `Good afternoon, ${nameEn} (${timeCtx.timeStr})! Sitting at ${pct}% today—maintain that ${mentLabelEn.toLowerCase()} tempo and conquer "${nextTaskEn}"!`,
+          },
+        ];
+        break;
+
+      case 'LATE_AFTERNOON':
+        periodCandidates = [
+          {
+            vi: `Đã ${timeCtx.timeStr} chiều rồi đấy ${callName}! Sau một ngày dài làm việc thì giải phóng năng lượng bằng "${nextTaskVi}" là lựa chọn số một để xả stress!`,
+            en: `It’s ${timeCtx.timeStr} late afternoon, ${nameEn}! After a focused day, releasing energy through "${nextTaskEn}" is the ultimate stress buster!`,
+          },
+          {
+            vi: `Khung giờ ${timeCtx.timeStr} chiều muộn rồi ${callName}, bảng kỷ luật đang ở mức ${pct}%, đẩy nốt "${nextTaskVi}" là ngày hôm nay cực kỳ mỹ mãn!`,
+            en: `Late afternoon at ${timeCtx.timeStr}, ${nameEn}! Board is at ${pct}%—finishing "${nextTaskEn}" now will make today a resounding victory!`,
+          },
+        ];
+        break;
+
+      case 'EVENING':
+        periodCandidates = [
+          {
+            vi: `Buổi tối (${timeCtx.timeStr}) rồi ${callName}, nhớ giữ kỷ luật "${nextTaskVi}" và nhìn lại những thành quả kỷ luật xuất sắc bạn đã đạt được hôm nay nhé!`,
+            en: `Good evening (${timeCtx.timeStr}), ${nameEn}! Keep up your "${nextTaskEn}" discipline and reflect on today’s solid achievements!`,
+          },
+          {
+            vi: `Chào ${callName}, ${timeCtx.timeStr} tối rồi mà bảng việc đã cán mốc ${pct}%${streakNoteVi}, thư giãn nhẹ nhàng và chuẩn bị khép lại ngày thật trọn vẹn nào!`,
+            en: `Evening check-in at ${timeCtx.timeStr}, ${nameEn}! At ${pct}%${streakNoteEn}, enjoy a peaceful evening and prepare to wrap up a great day!`,
+          },
+        ];
+        break;
+
+      case 'LATE_NIGHT':
+      default:
+        periodCandidates = [
+          {
+            vi: `Đã ${timeCtx.timeStr} đêm muộn rồi đấy ${callName}, hãy rời xa các màn hình và chuẩn bị đi ngủ trước 11h để sáng mai thức dậy tràn đầy năng lượng nhé!`,
+            en: `It’s already ${timeCtx.timeStr} late night, ${nameEn}! Step away from screens and get ready to sleep before 11 PM to wake up fully energized tomorrow!`,
+          },
+          {
+            vi: `Khuya rồi ${callName} (${timeCtx.timeStr})! Khép lại ngày hôm nay ở mức ${pct}%${streakNoteVi} là rất đáng khen rồi, giờ là lúc ngủ thật sâu để cơ thể phục hồi 100%!`,
+            en: `It’s late (${timeCtx.timeStr}), ${nameEn}! Wrapping up today at ${pct}%${streakNoteEn} is truly commendable—now get deep sleep to recharge 100%!`,
+          },
+        ];
+        break;
+    }
+
+    if (pct >= 85) {
+      periodCandidates.unshift({
         vi: `Đỉnh cao đấy ${callName}, mới ${timeCtx.timeStr} mà bảng kỷ luật đã cán mốc ${pct}%${streakNoteVi}—giữ vững phong độ hủy diệt này đến cuối ngày nhé!`,
         en: `Outstanding work, ${nameEn}! Reaching ${pct}% by ${timeCtx.timeStr}${streakNoteEn} is elite execution—carry this unstoppable momentum through the rest of the day!`,
       });
     }
 
-    const chosen = pickNonRepeating(greetingCandidates, history);
+    const chosen = pickNonRepeating(periodCandidates, history);
     recordEpisodicMemory(userId, chosen.vi);
     return { message: chosen.vi, messageEn: chosen.en };
   }
@@ -434,20 +520,28 @@ export function runDisciplineCoachAgent(params: {
   const hourSuffixVi = recentChange?.hourPart ? ` lúc ${recentChange.hourPart}` : '';
   const hourSuffixEn = recentChange?.hourPart ? ` at ${recentChange.hourPart}` : '';
 
-  const isLateNight = timeCtx.hour >= 22;
-  const nextStepAdviceVi =
-    pendingTasks.length === 0
-      ? 'Toàn bộ mục tiêu hôm nay đã hoàn tất mỹ mãn, hãy tận hưởng buổi tối thư giãn xứng đáng nhé!'
-      : isLateNight
-      ? `Hiện đã là ${timeCtx.timeStr} đêm muộn, hãy khép lại công việc để chuẩn bị ngủ trước 11h nhé!`
-      : `Tiếp tục giữ nhịp độ này và xử lý gọn "${nextTaskVi}" trong ${timeCtx.periodLabel.toLowerCase()} nay nào!`;
+  let nextStepAdviceVi = '';
+  let nextStepAdviceEn = '';
 
-  const nextStepAdviceEn =
-    pendingTasks.length === 0
-      ? 'Every single goal for today is complete—enjoy your well-deserved rest tonight!'
-      : isLateNight
-      ? `It’s already ${timeCtx.timeStr} late at night—wrap up your work and get ready for sleep before 11 PM!`
-      : `Keep this momentum rolling and tackle "${nextTaskEn}" next this ${timeCtx.periodLabelEn.toLowerCase()}!`;
+  if (pendingTasks.length === 0) {
+    nextStepAdviceVi = 'Toàn bộ mục tiêu hôm nay đã hoàn tất mỹ mãn, hãy tận hưởng buổi tối thư giãn xứng đáng nhé!';
+    nextStepAdviceEn = 'Every single goal for today is complete—enjoy your well-deserved rest tonight!';
+  } else if (timeCtx.periodKey === 'LATE_NIGHT') {
+    nextStepAdviceVi = `Hiện đã là ${timeCtx.timeStr} đêm muộn, hãy khép lại công việc để chuẩn bị ngủ trước 11h nhé!`;
+    nextStepAdviceEn = `It’s already ${timeCtx.timeStr} late at night—wrap up your work and get ready for sleep before 11 PM!`;
+  } else if (timeCtx.periodKey === 'NOON') {
+    nextStepAdviceVi = `Giờ trưa (${timeCtx.timeStr}) này hãy nghỉ ngơi chừng 15-20 phút dưỡng sức để chiều tiếp tục bùng nổ với "${nextTaskVi}" nhé!`;
+    nextStepAdviceEn = `This midday (${timeCtx.timeStr}), rest up or take a 15–20 min power nap before tackling "${nextTaskEn}"!`;
+  } else if (timeCtx.periodKey === 'LATE_AFTERNOON') {
+    nextStepAdviceVi = `Đã ${timeCtx.timeStr} chiều muộn rồi, chuẩn bị đến giờ giải phóng năng lượng với "${nextTaskVi}" rồi đấy!`;
+    nextStepAdviceEn = `It’s ${timeCtx.timeStr} late afternoon—get ready to unleash your energy with "${nextTaskEn}"!`;
+  } else if (timeCtx.periodKey === 'EVENING') {
+    nextStepAdviceVi = `Tối nay (${timeCtx.timeStr}) tiếp tục giữ vững kỷ luật "${nextTaskVi}" để bảo toàn điểm số hôm nay nhé!`;
+    nextStepAdviceEn = `This evening (${timeCtx.timeStr}), stay consistent with "${nextTaskEn}" to lock in today’s progress!`;
+  } else {
+    nextStepAdviceVi = `Tiếp tục giữ nhịp độ này và xử lý gọn "${nextTaskVi}" trong ${timeCtx.periodLabel.toLowerCase()} nay nào!`;
+    nextStepAdviceEn = `Keep this momentum rolling and tackle "${nextTaskEn}" next this ${timeCtx.periodLabelEn.toLowerCase()}!`;
+  }
 
   const memClause =
     memoryInsights.length > 0

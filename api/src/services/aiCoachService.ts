@@ -11,6 +11,7 @@ import { CaloriesSummary, FoodItem, TaskItem, UserProfile } from '~/types';
 import { buildUserMemorySnapshot } from '~/agents/memory/agentMemoryEngine';
 import {
   DateTemporalContext,
+  DayPeriodKey,
   RecentChangeContext,
   TimeOfDayContext,
   runDisciplineCoachAgent,
@@ -94,33 +95,113 @@ function getDateTemporalContext(
   };
 }
 
-function getCurrentTimeContext(): TimeOfDayContext {
-  const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
-  const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+function getCurrentTimeContext(
+  clientHour?: number,
+  clientMinute?: number
+): TimeOfDayContext {
+  let hour: number;
+  let minute: number;
 
-  let periodLabel = 'Buổi sáng';
-  let periodLabelEn = 'morning';
-
-  if (hour >= 5 && hour < 11) {
-    periodLabel = 'Buổi sáng';
-    periodLabelEn = 'morning';
-  } else if (hour >= 11 && hour < 14) {
-    periodLabel = 'Buổi trưa';
-    periodLabelEn = 'midday';
-  } else if (hour >= 14 && hour < 18) {
-    periodLabel = 'Buổi chiều';
-    periodLabelEn = 'afternoon';
-  } else if (hour >= 18 && hour < 22) {
-    periodLabel = 'Buổi tối';
-    periodLabelEn = 'evening';
+  if (
+    typeof clientHour === 'number' &&
+    !isNaN(clientHour) &&
+    clientHour >= 0 &&
+    clientHour <= 23
+  ) {
+    hour = clientHour;
+    minute =
+      typeof clientMinute === 'number' &&
+      !isNaN(clientMinute) &&
+      clientMinute >= 0 &&
+      clientMinute <= 59
+        ? clientMinute
+        : 0;
   } else {
-    periodLabel = 'Đêm muộn';
-    periodLabelEn = 'late night';
+    // Luôn fallback chuẩn theo múi giờ Việt Nam GMT+7 (Asia/Ho_Chi_Minh)
+    // để khi deploy lên Render (mặc định UTC) không bao giờ bị lệch múi giờ
+    try {
+      const vnDate = new Date(
+        new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })
+      );
+      hour = vnDate.getHours();
+      minute = vnDate.getMinutes();
+    } catch {
+      const now = new Date();
+      hour = now.getHours();
+      minute = now.getMinutes();
+    }
   }
 
-  return { hour, minute, timeStr, periodLabel, periodLabelEn };
+  const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const totalMins = hour * 60 + minute;
+
+  let periodKey: DayPeriodKey = 'MID_MORNING';
+  let periodLabel = 'Buổi sáng';
+  let periodLabelEn = 'morning';
+  let naturalGreetingTimeVi = `buổi sáng (${timeStr})`;
+  let naturalGreetingTimeEn = `this morning (${timeStr})`;
+
+  if (totalMins >= 5 * 60 && totalMins < 8 * 60 + 30) {
+    // 05:00 - 08:29
+    periodKey = 'EARLY_MORNING';
+    periodLabel = 'Buổi sáng sớm';
+    periodLabelEn = 'early morning';
+    naturalGreetingTimeVi = `sáng sớm (${timeStr})`;
+    naturalGreetingTimeEn = `early morning (${timeStr})`;
+  } else if (totalMins >= 8 * 60 + 30 && totalMins < 11 * 60 + 30) {
+    // 08:30 - 11:29
+    periodKey = 'MID_MORNING';
+    periodLabel = 'Buổi sáng';
+    periodLabelEn = 'morning';
+    naturalGreetingTimeVi = `buổi sáng (${timeStr})`;
+    naturalGreetingTimeEn = `this morning (${timeStr})`;
+  } else if (totalMins >= 11 * 60 + 30 && totalMins < 14 * 60) {
+    // 11:30 - 13:59
+    periodKey = 'NOON';
+    periodLabel = 'Buổi trưa';
+    periodLabelEn = 'midday';
+    naturalGreetingTimeVi = `đã ${timeStr} trưa rồi`;
+    naturalGreetingTimeEn = `it’s already ${timeStr} noon`;
+  } else if (totalMins >= 14 * 60 && totalMins < 17 * 60) {
+    // 14:00 - 16:59
+    periodKey = 'AFTERNOON';
+    periodLabel = 'Buổi chiều';
+    periodLabelEn = 'afternoon';
+    naturalGreetingTimeVi = `buổi chiều (${timeStr})`;
+    naturalGreetingTimeEn = `this afternoon (${timeStr})`;
+  } else if (totalMins >= 17 * 60 && totalMins < 19 * 60) {
+    // 17:00 - 18:59
+    periodKey = 'LATE_AFTERNOON';
+    periodLabel = 'Chiều muộn / Giờ tan sở';
+    periodLabelEn = 'late afternoon';
+    naturalGreetingTimeVi = `đã ${timeStr} chiều rồi`;
+    naturalGreetingTimeEn = `it’s ${timeStr} late afternoon`;
+  } else if (totalMins >= 19 * 60 && totalMins < 22 * 60) {
+    // 19:00 - 21:59
+    periodKey = 'EVENING';
+    periodLabel = 'Buổi tối';
+    periodLabelEn = 'evening';
+    naturalGreetingTimeVi = `buổi tối (${timeStr})`;
+    naturalGreetingTimeEn = `this evening (${timeStr})`;
+  } else {
+    // 22:00 - 04:59
+    periodKey = 'LATE_NIGHT';
+    periodLabel = 'Đêm muộn';
+    periodLabelEn = 'late night';
+    naturalGreetingTimeVi = `đã ${timeStr} đêm muộn rồi`;
+    naturalGreetingTimeEn = `it’s already ${timeStr} late night`;
+  }
+
+  return {
+    hour,
+    minute,
+    timeStr,
+    periodKey,
+    periodLabel,
+    periodLabelEn,
+    naturalGreetingTimeVi,
+    naturalGreetingTimeEn,
+  };
 }
 
 function isNightSleepTask(
@@ -146,56 +227,90 @@ function classifyPendingTasksByTime(
   pendingTaskObjects: TaskItem[],
   currentHour: number
 ): { actionableNow: string[]; passedTimeWindow: string[] } {
-  const actionableNow: string[] = [];
-  const passedTimeWindow: string[] = [];
-
-  for (const t of pendingTaskObjects) {
-    const titleLower = (t.title || '').toLowerCase();
-    const hintLower = (t.timeHint || '').toLowerCase();
-
-    const isMorningOnly =
-      t.id === 'wake_5am' ||
-      t.id === 'morning_exercise' ||
-      titleLower.includes('thức dậy') ||
-      titleLower.includes('buổi sáng') ||
-      hintLower.includes('05:00') ||
-      hintLower.includes('buổi sáng');
-
-    const isMiddayNap =
-      t.id === 'nap' ||
-      titleLower.includes('ngủ trưa') ||
-      hintLower.includes('buổi trưa');
-
-    const isHeavyWorkout =
-      t.id === 'gym' ||
-      titleLower.includes('tập gym') ||
-      titleLower.includes('thể dục');
-
-    const isNightSleep = isNightSleepTask(t);
-
-    if (isMorningOnly && currentHour >= 11) {
-      passedTimeWindow.push(t.title);
-      continue;
-    }
-
-    if (isMiddayNap && (currentHour < 11 || currentHour >= 15)) {
-      if (currentHour >= 15) {
-        passedTimeWindow.push(t.title);
+  // 1. Phân loại từng task theo giờ đã lên lịch (scheduledHour)
+  const scheduledTasks = pendingTaskObjects.map((t) => {
+    let hour = t.hour;
+    if (typeof hour !== 'number' || isNaN(hour)) {
+      if (t.timeHint) {
+        const m = t.timeHint.match(/(\d{1,2}):(\d{2})/);
+        if (m) hour = parseInt(m[1], 10);
+        const m2 = t.timeHint.match(/(\d{1,2})h/i);
+        if (m2) hour = parseInt(m2[1], 10);
       }
+    }
+    if (typeof hour !== 'number' || isNaN(hour)) {
+      const id = (t.id || '').toLowerCase();
+      const titleLower = (t.title || '').toLowerCase();
+      if (id.includes('wake') || titleLower.includes('dậy')) hour = 5;
+      else if (id.includes('english') || titleLower.includes('tiếng anh')) hour = 7;
+      else if (id.includes('work') || titleLower.includes('làm việc')) hour = 8;
+      else if (id.includes('code') || titleLower.includes('code')) hour = 9;
+      else if (id.includes('game') || titleLower.includes('game')) hour = 11;
+      else if (id.includes('nap') || titleLower.includes('ngủ trưa')) hour = 13;
+      else if (id.includes('water') || titleLower.includes('nước')) hour = 15;
+      else if (id.includes('gym') || titleLower.includes('thể dục')) hour = 17;
+      else if (id.includes('junk_food') || titleLower.includes('ăn vặt')) hour = 19;
+      else if (id.includes('sleep') || titleLower.includes('ngủ trước')) hour = 22;
+      else hour = 12;
+    }
+    return { task: t, hour };
+  });
+
+  const passedTimeWindow: string[] = [];
+  const currentWindowTasks: string[] = [];
+  const upcomingTodayTasks: string[] = [];
+  const generalTasks: string[] = [];
+
+  for (const { task, hour } of scheduledTasks) {
+    const title = task.title;
+    const titleLower = title.toLowerCase();
+
+    // Các việc chỉ có ý nghĩa vào một khung giờ cụ thể và đã trôi qua
+    const isStrictMorning =
+      task.id === 'wake_5am' ||
+      titleLower.includes('thức dậy') ||
+      titleLower.includes('dậy 5h');
+    const isStrictNap = task.id === 'nap' || titleLower.includes('ngủ trưa');
+    const isNightSleep = isNightSleepTask(task);
+
+    if (isStrictMorning && currentHour >= 11) {
+      passedTimeWindow.push(title);
       continue;
     }
 
-    if (currentHour >= 22 && isHeavyWorkout) {
-      passedTimeWindow.push(t.title);
+    if (isStrictNap && (currentHour < 11 || currentHour >= 15)) {
+      if (currentHour >= 15) passedTimeWindow.push(title);
       continue;
     }
 
-    if (isNightSleep && currentHour < 20) {
+    if (isNightSleep) {
+      if (currentHour >= 21) {
+        currentWindowTasks.push(title);
+      }
+      // Ban ngày không giục đi ngủ trước 11h
       continue;
     }
 
-    actionableNow.push(t.title);
+    // Task thuộc khung giờ hiện tại (chênh lệch trong khoảng -1 đến +2 tiếng)
+    if (hour >= currentHour - 1 && hour <= currentHour + 2) {
+      currentWindowTasks.push(title);
+    } else if (hour > currentHour + 2 && hour < 22) {
+      upcomingTodayTasks.push(title);
+    } else if (currentHour - hour > 3) {
+      // Đã quá giờ dự kiến hơn 3 tiếng (ví dụ việc 7h sáng khi đang 13h chiều)
+      passedTimeWindow.push(title);
+      generalTasks.push(title);
+    } else {
+      generalTasks.push(title);
+    }
   }
+
+  // Sắp xếp ưu tiên: Việc của khung giờ hiện tại -> Việc sắp tới hôm nay -> Việc tồn đọng
+  const actionableNow = [
+    ...currentWindowTasks,
+    ...upcomingTodayTasks,
+    ...generalTasks,
+  ];
 
   return { actionableNow, passedTimeWindow };
 }
@@ -300,6 +415,9 @@ const getCoachingMessage = async (
     dateKey?: string;
     mode?: 'greeting' | 'feedback';
     changeSignal?: string;
+    clientHour?: number;
+    clientMinute?: number;
+    timezone?: string;
   },
   signal?: AbortSignal
 ): Promise<{
@@ -319,7 +437,7 @@ const getCoachingMessage = async (
     signalDateMatch?.[1] || payload.dateKey || todayInfo.dateKey;
 
   const dateCtx = getDateTemporalContext(targetDateKey, todayInfo.dateKey);
-  const timeCtx = getCurrentTimeContext();
+  const timeCtx = getCurrentTimeContext(payload.clientHour, payload.clientMinute);
 
   const [user, disciplineDoc] = await Promise.all([
     userModel.findOneById(userId),
