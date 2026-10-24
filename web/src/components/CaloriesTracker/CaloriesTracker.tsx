@@ -8,7 +8,6 @@ import {
   Sun,
   Sunset,
   Moon,
-  UtensilsCrossed,
   RotateCcw,
   CheckCircle2,
   AlertCircle,
@@ -260,115 +259,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
 
   return (
     <div className="calories-tracker-container">
-      {/* Thanh tiêu đề & hướng dẫn */}
-      <div className="calories-header-bar">
-        <div>
-          <div className="calories-header-tag">
-            <UtensilsCrossed size={15} />
-            <span>
-              {isEn
-                ? 'DAILY NUTRITION & MEAL JOURNAL'
-                : 'NHẬT KÝ DINH DƯỠNG & BỮA ĂN HẰNG NGÀY'}
-            </span>
-          </div>
-          <h3 className="calories-heading">
-            {isEn
-              ? `Calories & Nutrition Tracker — ${dateKey}`
-              : `Theo dõi Calories & Dinh dưỡng — ${dateKey}`}
-          </h3>
-          <p className="calories-subtext">
-            {isEn ? (
-              <>
-                Logging window from <strong>06:00 AM to 09:00 PM</strong>. Enter
-                food items with portion sizes, choose Raw or Cooked with cooking
-                method, then click Save for AI to calculate 5 macro metrics and
-                provide in-depth feedback.
-              </>
-            ) : (
-              <>
-                Khung giờ ghi nhận từ <strong>06:00 sáng đến 21:00 tối</strong>.
-                Nhập các món ăn cùng định lượng (gram / khẩu phần), chọn trạng
-                thái Sống hoặc Chín kèm cách chế biến, sau đó nhấn Lưu để AI tự
-                động tính toán 5 chỉ số và nhận xét chuyên sâu.
-              </>
-            )}
-          </p>
-        </div>
+      {/* Khung hợp nhất: Các bữa ăn & Phân tích AI */}
+      <div className="calories-unified-card">
+        {/* 3 Khoảng thời gian: Sáng, Chiều, Tối */}
+        <div className="meal-sessions-grid">
+          {(['morning', 'afternoon', 'evening'] as MealSession[]).map((session) => {
+            const meta = SESSION_METADATA[session];
+            const sessionLabel = isEn ? meta.labelEn : meta.label;
+            const sessionMeals = getMealsBySession(session);
+            const isAdding = activeSessionAdd === session;
 
-        <div className="calories-actions-row">
-          {hasMenuChanged && !isSaving && (
-            <span
-              className="unsaved-badge"
-              title={
-                isEn
-                  ? 'You have unsaved and unanalyzed meal items'
-                  : 'Bạn có món ăn mới chưa được lưu và phân tích'
-              }
-            >
-              <AlertCircle size={13} />
-              <span>{isEn ? 'Unsaved changes' : 'Chưa lưu thay đổi'}</span>
-            </span>
-          )}
-
-          {meals.length > 0 && (
-            <button
-              type="button"
-              className="btn-minimal btn-sm btn-calories-reset"
-              onClick={handleResetMeals}
-              disabled={isSaving}
-              title={
-                isEn
-                  ? 'Clear all food items for this day'
-                  : 'Xóa trắng danh sách món ăn trong ngày'
-              }
-            >
-              <RotateCcw size={13} />
-              <span>{isEn ? 'Reset' : 'Đặt lại'}</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="btn-minimal btn-save-calories"
-            onClick={handleSave}
-            disabled={!canSaveAndAnalyze}
-            title={
-              isSaving
-                ? isEn
-                  ? 'AI is analyzing meals...'
-                  : 'AI đang phân tích thực đơn...'
-                : canSaveAndAnalyze
-                ? isEn
-                  ? 'Save meals and run Nutrition AI to calculate 5 metrics'
-                  : 'Lưu thực đơn và chạy AI Dinh dưỡng để tổng hợp 5 chỉ số'
-                : isEn
-                ? 'No new meal changes to analyze'
-                : 'Thực đơn chưa có thay đổi mới để phân tích'
-            }
-          >
-            <Sparkles size={15} className={isSaving ? 'spin-anim' : ''} />
-            <span>
-              {isSaving
-                ? isEn
-                  ? 'AI Analyzing...'
-                  : 'AI đang phân tích...'
-                : isEn
-                ? 'Save & AI Analyze'
-                : 'Lưu & Phân tích AI'}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3 Khoảng thời gian: Sáng, Chiều, Tối */}
-      <div className="meal-sessions-grid">
-        {(['morning', 'afternoon', 'evening'] as MealSession[]).map((session) => {
-          const meta = SESSION_METADATA[session];
-          const sessionLabel = isEn ? meta.labelEn : meta.label;
-          const sessionMeals = getMealsBySession(session);
-          const isAdding = activeSessionAdd === session;
-
-          return (
+            return (
             <div key={session} className={`meal-session-card session-${session}`}>
               <div className="meal-session-card-header">
                 <div className="session-title-group">
@@ -560,27 +461,96 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         })}
       </div>
 
-      {/* AI DINH DƯỠNG NHỎ (MINI NUTRITIONIST AI COACH) */}
-      <div className="nutrition-ai-widget">
-        <div className="nutrition-ai-header">
-          <div className="nutrition-ai-badge">
-            <Sparkles size={15} />
-            <span>
-              {isEn
-                ? 'MINI NUTRITIONIST AI'
-                : 'AI DINH DƯỠNG (MINI NUTRITIONIST AI)'}
-            </span>
-          </div>
-          {initialSummary?.updatedAt && (
-            <span className="nutrition-ai-updated">
-              {isEn ? 'Last analyzed:' : 'Phân tích lần cuối:'}{' '}
-              {new Date(initialSummary.updatedAt).toLocaleTimeString(
-                isEn ? 'en-US' : 'vi-VN',
-                { hour: '2-digit', minute: '2-digit' }
+      {/* Đường kẻ phân cách giữa Bữa ăn và AI */}
+        <div className="calories-section-divider" />
+
+        {/* AI DINH DƯỠNG NHỎ (MINI NUTRITIONIST AI COACH) */}
+        <div className="nutrition-ai-section">
+          <div className="nutrition-ai-header">
+            <div className="nutrition-ai-header-left">
+              <div className="nutrition-ai-badge">
+                <Sparkles size={15} />
+                <span>
+                  {isEn
+                    ? 'MINI NUTRITIONIST AI'
+                    : 'AI DINH DƯỠNG (MINI NUTRITIONIST AI)'}
+                </span>
+              </div>
+              {initialSummary?.updatedAt && (
+                <span className="nutrition-ai-updated">
+                  {isEn ? 'Last analyzed:' : 'Phân tích lần cuối:'}{' '}
+                  {new Date(initialSummary.updatedAt).toLocaleTimeString(
+                    isEn ? 'en-US' : 'vi-VN',
+                    { hour: '2-digit', minute: '2-digit' }
+                  )}
+                </span>
               )}
-            </span>
-          )}
-        </div>
+            </div>
+
+            <div className="nutrition-ai-header-right">
+              {hasMenuChanged && !isSaving && (
+                <span
+                  className="unsaved-badge"
+                  title={
+                    isEn
+                      ? 'You have unsaved and unanalyzed meal items'
+                      : 'Bạn có món ăn mới chưa được lưu và phân tích'
+                  }
+                >
+                  <AlertCircle size={13} />
+                  <span>{isEn ? 'Unsaved changes' : 'Chưa lưu thay đổi'}</span>
+                </span>
+              )}
+
+              {meals.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-minimal btn-sm btn-calories-reset"
+                  onClick={handleResetMeals}
+                  disabled={isSaving}
+                  title={
+                    isEn
+                      ? 'Clear all food items for this day'
+                      : 'Xóa trắng danh sách món ăn trong ngày'
+                  }
+                >
+                  <RotateCcw size={13} />
+                  <span>{isEn ? 'Reset' : 'Đặt lại'}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="btn-minimal btn-save-calories"
+                onClick={handleSave}
+                disabled={!canSaveAndAnalyze}
+                title={
+                  isSaving
+                    ? isEn
+                      ? 'AI is analyzing meals...'
+                      : 'AI đang phân tích thực đơn...'
+                    : canSaveAndAnalyze
+                    ? isEn
+                      ? 'Save meals and run Nutrition AI to calculate 5 metrics'
+                      : 'Lưu thực đơn và chạy AI Dinh dưỡng để tổng hợp 5 chỉ số'
+                    : isEn
+                    ? 'No new meal changes to analyze'
+                    : 'Thực đơn chưa có thay đổi mới để phân tích'
+                }
+              >
+                <Sparkles size={15} className={isSaving ? 'spin-anim' : ''} />
+                <span>
+                  {isSaving
+                    ? isEn
+                      ? 'AI Analyzing...'
+                      : 'AI đang phân tích...'
+                    : isEn
+                    ? 'Save & AI Analyze'
+                    : 'Lưu & Phân tích AI'}
+                </span>
+              </button>
+            </div>
+          </div>
 
         {/* 5 Thẻ chỉ số dinh dưỡng: Calories, Protein, Carb, Fat, Chất xơ */}
         <div className="nutrition-macros-grid">
@@ -668,15 +638,14 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                     {isEn ? (
                       <>
                         No assessment yet. After logging your meals for the day,
-                        click <strong>“Save & AI Analyze”</strong> above to let
-                        AI calculate 5 macros and provide personalized advice!
+                        click <strong>“Save & AI Analyze”</strong> to let AI
+                        calculate 5 macros and provide personalized advice!
                       </>
                     ) : (
                       <>
                         Chưa có nhận xét. Sau khi nhập các món ăn trong ngày, bạn
-                        hãy nhấn nút <strong>“Lưu & Phân tích AI”</strong> ở phía
-                        trên để AI tổng hợp 5 chỉ số và đưa ra lời khuyên cá nhân
-                        hóa!
+                        hãy nhấn nút <strong>“Lưu & Phân tích AI”</strong> để AI
+                        tổng hợp 5 chỉ số và đưa ra lời khuyên cá nhân hóa!
                       </>
                     )}
                   </span>
@@ -687,6 +656,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
