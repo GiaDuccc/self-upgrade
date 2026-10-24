@@ -99,7 +99,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
   const [foodNameInput, setFoodNameInput] = useState('');
   const [foodWeightInput, setFoodWeightInput] = useState('');
   const [foodStateInput, setFoodStateInput] = useState<FoodState>('cooked');
-  const [cookingMethodInput, setCookingMethodInput] = useState<CookingMethod>('luoc');
+  const [cookingMethodInput, setCookingMethodInput] = useState<CookingMethod | undefined>(undefined);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const lastDateKeyRef = useRef(dateKey);
@@ -127,7 +127,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
     setFoodNameInput('');
     setFoodWeightInput('');
     setFoodStateInput('cooked');
-    setCookingMethodInput('luoc');
+    setCookingMethodInput(undefined);
   };
 
   const handleCloseAddForm = () => {
@@ -135,7 +135,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
     setFoodNameInput('');
     setFoodWeightInput('');
     setFoodStateInput('cooked');
-    setCookingMethodInput('luoc');
+    setCookingMethodInput(undefined);
   };
 
   const handleAddFoodItem = (session: MealSession) => {
@@ -150,7 +150,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
       weight: trimmedWeight || '1 phần',
       mealSession: session,
       foodState: foodStateInput,
-      cookingMethod: foodStateInput === 'cooked' ? cookingMethodInput : undefined,
+      cookingMethod: foodStateInput === 'cooked' && cookingMethodInput ? cookingMethodInput : undefined,
       time: DEFAULT_TIMES[session],
     };
 
@@ -183,7 +183,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         weight: foodWeightInput.trim() || '1 phần',
         mealSession: activeSessionAdd,
         foodState: foodStateInput,
-        cookingMethod: foodStateInput === 'cooked' ? cookingMethodInput : undefined,
+        cookingMethod: foodStateInput === 'cooked' && cookingMethodInput ? cookingMethodInput : undefined,
         time: DEFAULT_TIMES[activeSessionAdd],
       };
 
@@ -224,16 +224,19 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
     }
     if (item.foodState === 'cooked') {
       const method = item.cookingMethod;
-      const label = method
-        ? isEn
+      if (method) {
+        const label = isEn
           ? COOKING_METHOD_LABELS_EN[method] || 'Cooked'
-          : COOKING_METHOD_LABELS[method] || 'Chín'
-        : isEn
-        ? 'Cooked'
-        : 'Chín';
+          : COOKING_METHOD_LABELS[method] || 'Chín';
+        return (
+          <span className={`food-prep-badge badge-method-${method}`}>
+            {label}
+          </span>
+        );
+      }
       return (
-        <span className={`food-prep-badge badge-method-${method || 'cooked'}`}>
-          {label}
+        <span className="food-prep-badge badge-cooked">
+          {isEn ? 'Cooked' : 'Chín'}
         </span>
       );
     }
@@ -445,7 +448,9 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                                   key={m.key}
                                   type="button"
                                   className={`btn-method-pill ${cookingMethodInput === m.key ? 'active' : ''}`}
-                                  onClick={() => setCookingMethodInput(m.key)}
+                                  onClick={() =>
+                                    setCookingMethodInput((prev) => (prev === m.key ? undefined : m.key))
+                                  }
                                 >
                                   {m.label}
                                 </button>

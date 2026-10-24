@@ -171,6 +171,19 @@ export const DayDetail: React.FC = () => {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
+  const noteTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const adjustNoteTextareaHeight = useCallback(() => {
+    const textarea = noteTextareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    const newHeight = Math.max(72, textarea.scrollHeight);
+    textarea.style.height = `${newHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    adjustNoteTextareaHeight();
+  }, [noteInput, activeDateKey, adjustNoteTextareaHeight]);
 
   useEffect(() => {
     if (!isCaloriesEnabled && activeDayTab === 'calories') {
@@ -1036,6 +1049,7 @@ export const DayDetail: React.FC = () => {
                   </span>
                 </div>
                 <textarea
+                  ref={noteTextareaRef}
                   id="daily-note-input"
                   rows={3}
                   className="day-note-input day-note-textarea"
@@ -1045,7 +1059,10 @@ export const DayDetail: React.FC = () => {
                       : 'Ghi lại lý do hôm nay làm tốt hoặc viết điều cần chấn chỉnh (nhấn Lưu để AI phân tích và đưa ra nhận xét)...'
                   }
                   value={noteInput}
-                  onChange={(e) => handleNoteInputChange(e.target.value)}
+                  onChange={(e) => {
+                    handleNoteInputChange(e.target.value);
+                    adjustNoteTextareaHeight();
+                  }}
                 />
 
                 <div className="day-note-actions">

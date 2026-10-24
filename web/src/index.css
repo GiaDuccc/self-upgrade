@@ -1663,7 +1663,10 @@ input {
   font-size: 0.88rem;
   font-family: inherit;
   outline: none;
-  resize: vertical;
+  resize: none;
+  overflow-y: hidden;
+  field-sizing: content;
+  box-sizing: border-box;
   min-height: 72px;
   line-height: 1.5;
   transition: border-color 0.15s ease, background-color 0.15s ease;
