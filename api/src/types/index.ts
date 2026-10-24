@@ -97,6 +97,41 @@ export interface SleepData {
   updatedAt?: string;
 }
 
+export interface ExerciseSet {
+  setNumber: number;
+  weightKg: number;
+  reps: number;
+  rir: number;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  category: string;
+  sets: ExerciseSet[];
+}
+
+export interface WorkoutSummary {
+  totalVolumeKg: number;
+  totalSets: number;
+  totalReps: number;
+  avgRir: number;
+  comparedDateKey?: string;
+  volumeChangePct?: number;
+  volumeChangeKg?: number;
+  progressiveOverloadStatus: 'OVERLOAD_ACHIEVED' | 'MAINTAINED' | 'DELOAD_FATIGUED' | 'FIRST_SESSION';
+  aiFeedback: string;
+  aiFeedbackEn?: string;
+  updatedAt?: string;
+}
+
+export interface WorkoutData {
+  targetMuscles: string[];
+  exercises: WorkoutExercise[];
+  summary?: WorkoutSummary;
+  updatedAt?: string;
+}
+
 export interface DayRecord {
   tasks?: Record<string, TaskLevelKey>;
   taskHours?: Record<string, number[]>;
@@ -104,6 +139,7 @@ export interface DayRecord {
   caloriesData?: CaloriesData;
   waterData?: WaterData;
   sleepData?: SleepData;
+  workoutData?: WorkoutData;
   updatedAt?: string;
 }
 
@@ -169,6 +205,8 @@ export interface UserProfile {
   focusGoal: string;
   coachingStyle: string;
   personalMotto: string;
+  workoutGoal?: string;
+  workoutLevel?: string;
 }
 
 export interface UserDocument {

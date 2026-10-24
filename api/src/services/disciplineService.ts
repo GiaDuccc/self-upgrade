@@ -10,7 +10,7 @@ import {
 } from '~/config/settings';
 import { disciplineModel } from '~/models/disciplineModel';
 import { userModel } from '~/models/userModel';
-import { CustomTaskItem, DayRecord, FoodItem, TaskConfig, TaskLevelKey, WaterData, SleepData } from '~/types';
+import { CustomTaskItem, DayRecord, FoodItem, TaskConfig, TaskLevelKey, WaterData, SleepData, WorkoutExercise } from '~/types';
 import { aiCoachService } from '~/services/aiCoachService';
 import ApiError from '~/utils/ApiError';
 import {
@@ -296,6 +296,44 @@ const saveDaySleep = async (
   return await getDayData(userId, dateKey);
 };
 
+const saveDayWorkout = async (
+  userId: string,
+  payload: {
+    dateKey: string;
+    targetMuscles: string[];
+    exercises: WorkoutExercise[];
+  }
+) => {
+  const { dateKey, targetMuscles, exercises } = payload;
+  const user = await userModel.findOneById(userId);
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
+  const records = { ...(disciplineDoc.records || {}) };
+  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+
+  const profile = user?.profile || DEFAULT_USER_PROFILE;
+  const summary = await aiCoachService.analyzeWorkout({
+    profile,
+    dateKey,
+    targetMuscles: targetMuscles || [],
+    exercises: exercises || [],
+    allRecords: records,
+  });
+
+  records[dateKey] = {
+    ...currentDay,
+    workoutData: {
+      targetMuscles: targetMuscles || [],
+      exercises: exercises || [],
+      summary,
+      updatedAt: new Date().toISOString(),
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  await disciplineModel.updateByUserId(userId, { records });
+  return await getDayData(userId, dateKey);
+};
+
 const getTargetDatesByScope = (
   scope: 'day' | 'week' | 'month' | 'all',
   selectedDateKey: string
@@ -487,6 +525,7 @@ export const disciplineService = {
   saveDayCalories,
   saveDayWater,
   saveDaySleep,
+  saveDayWorkout,
   saveTask,
   deleteTask,
   exportData,

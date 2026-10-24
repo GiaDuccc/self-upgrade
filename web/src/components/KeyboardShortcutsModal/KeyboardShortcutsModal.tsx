@@ -228,6 +228,15 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
 
                   <div className="shortcut-row">
                     <span className="shortcut-label">
+                      {isEn ? 'Switch to Gym & Workout' : 'Chuyển sang Tập luyện (Gym)'}
+                    </span>
+                    <div className="shortcut-keys">
+                      <kbd className="shortcut-kbd">3</kbd>
+                    </div>
+                  </div>
+
+                  <div className="shortcut-row">
+                    <span className="shortcut-label">
                       {isEn ? 'Quick Log Water (+250 ml)' : 'Tích nhanh 1 ly nước (+250 ml)'}
                     </span>
                     <div className="shortcut-keys">

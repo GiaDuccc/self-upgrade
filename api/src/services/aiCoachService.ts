@@ -7,7 +7,7 @@ import {
   getTasksForDate,
   getTodayInfo,
 } from '~/utils/statsCalculator';
-import { CaloriesSummary, FoodItem, TaskItem, UserProfile } from '~/types';
+import { CaloriesSummary, DayRecord, FoodItem, TaskItem, UserProfile, WorkoutExercise, WorkoutSummary } from '~/types';
 import { buildUserMemorySnapshot } from '~/agents/memory/agentMemoryEngine';
 import {
   DateTemporalContext,
@@ -16,6 +16,7 @@ import {
   TimeOfDayContext,
   runDisciplineCoachAgent,
   runNutritionistAgent,
+  runWorkoutAgent,
 } from '~/agents/selfUpgradeAgent';
 
 const STATE_EN_LABELS: Record<string, string> = {
@@ -584,7 +585,25 @@ const analyzeNutrition = async (
   return result;
 };
 
+/**
+ * Điều phối Sub-Agent 3: Workout Training Agent (Progressive Overload + RIR Analysis)
+ */
+const analyzeWorkout = async (params: {
+  profile: UserProfile;
+  dateKey: string;
+  targetMuscles: string[];
+  exercises: WorkoutExercise[];
+  allRecords: Record<string, DayRecord>;
+}): Promise<WorkoutSummary> => {
+  const summary = runWorkoutAgent(params);
+  console.log(
+    `   [SelfUpgrade Agent] 🏋️ Workout Agent (${params.exercises.length} bài | Vol: ${summary.totalVolumeKg}kg | Status: ${summary.progressiveOverloadStatus})`
+  );
+  return summary;
+};
+
 export const aiCoachService = {
   getCoachingMessage,
   analyzeNutrition,
+  analyzeWorkout,
 };

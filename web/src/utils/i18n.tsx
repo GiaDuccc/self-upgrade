@@ -291,6 +291,55 @@ const PERSONALIZATION_EN: PersonalizationOptions = {
       desc: 'Gentle encouragement, prioritizing recovery when physical or mental state is low',
     },
   ],
+  workoutGoals: [
+    {
+      id: 'HYPERTROPHY',
+      label: 'Tăng cơ bắp tối đa (Hypertrophy)',
+      labelEn: 'Hypertrophy / Muscle Growth',
+      desc: 'Focus on volume, RIR 1-2, muscle hypertrophy and definition',
+    },
+    {
+      id: 'STRENGTH',
+      label: 'Tăng sức mạnh & Tải tạ nặng (Strength / Power)',
+      labelEn: 'Strength & Powerlifting',
+      desc: 'Focus on heavy progressive loads (1RM - 5RM) in compound lifts (Squat, Bench, Deadlift, OHP)',
+    },
+    {
+      id: 'FAT_LOSS',
+      label: 'Giảm mỡ & Săn chắc (Fat Loss / Recomp)',
+      labelEn: 'Fat Loss & Body Recomp',
+      desc: 'Maintain high training density, burn calories, preserve muscle mass in caloric deficit',
+    },
+    {
+      id: 'ENDURANCE',
+      label: 'Sức bền & Thể lực (Endurance / Conditioning)',
+      labelEn: 'Endurance & Conditioning',
+      desc: 'Higher reps (12-20 reps), shorter rest intervals, cardiovascular & muscular endurance',
+    },
+    {
+      id: 'GENERAL_FITNESS',
+      label: 'Duy trì & Thể chất khỏe mạnh (General Fitness)',
+      labelEn: 'General Health & Maintenance',
+      desc: 'Full-body functional health, injury prevention, and long-term athletic vitality',
+    },
+  ],
+  workoutLevels: [
+    {
+      id: 'BEGINNER',
+      label: 'Mới tập (< 1 năm)',
+      labelEn: 'Beginner (< 1 year)',
+    },
+    {
+      id: 'INTERMEDIATE',
+      label: 'Trung cấp (1 - 3 năm)',
+      labelEn: 'Intermediate (1 - 3 years)',
+    },
+    {
+      id: 'ADVANCED',
+      label: 'Nâng cao (> 3 năm)',
+      labelEn: 'Advanced (> 3 years)',
+    },
+  ],
 };
 
 export function getLocalizedPersonalization(lang: AppLanguage): PersonalizationOptions {

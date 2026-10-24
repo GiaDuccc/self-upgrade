@@ -6,6 +6,7 @@ import {
   Brain,
   Smile,
   Target,
+  Dumbbell,
   Check,
   RotateCcw,
 } from 'lucide-react';
@@ -476,6 +477,78 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         {isSelected ? <Check size={12} /> : null}
                       </span>
                       <span>{st.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 6. MỤC TIÊU TẬP LUYỆN GYM (WORKOUT GOAL & LEVEL) */}
+          <div className="profile-section-block">
+            <div className="profile-section-title">
+              <Dumbbell size={15} />
+              <span>
+                {isEn
+                  ? '6. GYM & WORKOUT GOALS (AI COACH CALIBRATION)'
+                  : '6. MỤC TIÊU TẬP LUYỆN GYM & TRÌNH ĐỘ (ĐỊNH HƯỚNG AI COACH)'}
+              </span>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '14px' }}>
+              <label className="form-label">
+                {isEn ? 'PRIMARY WORKOUT GOAL' : 'MỤC TIÊU TẬP LUYỆN CHÍNH'}
+              </label>
+              <div className="scope-cards-grid">
+                {(localizedOptions.workoutGoals || []).map((item) => {
+                  const isSelected = (formData.workoutGoal || 'HYPERTROPHY') === item.id;
+                  return (
+                    <label
+                      key={item.id}
+                      className={`scope-option-card ${
+                        isSelected ? 'scope-option-selected' : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="workoutGoal"
+                        checked={isSelected}
+                        onChange={() => handleChange('workoutGoal', item.id)}
+                        className="scope-radio"
+                      />
+                      <div className="scope-card-content">
+                        <div className="scope-card-header">
+                          <span className="scope-radio-indicator">
+                            {isSelected && <span className="scope-radio-dot" />}
+                          </span>
+                          <strong className="scope-title">{isEn ? item.labelEn || item.label : item.label}</strong>
+                        </div>
+                        {item.desc && <p className="scope-desc">{item.desc}</p>}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '10px' }}>
+              <label className="form-label">
+                {isEn ? 'TRAINING EXPERIENCE LEVEL' : 'TRÌNH ĐỘ & KINH NGHIỆM TẬP'}
+              </label>
+              <div className="category-pills-wrap">
+                {(localizedOptions.workoutLevels || []).map((lvl) => {
+                  const isSelected = (formData.workoutLevel || 'INTERMEDIATE') === lvl.id;
+                  return (
+                    <button
+                      key={lvl.id}
+                      type="button"
+                      className={`category-pill ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleChange('workoutLevel', lvl.id)}
+                    >
+                      <span className="pill-check-box">
+                        {isSelected ? <Check size={12} /> : null}
+                      </span>
+                      <span>{isEn ? lvl.labelEn || lvl.label : lvl.label}</span>
                     </button>
                   );
                 })}

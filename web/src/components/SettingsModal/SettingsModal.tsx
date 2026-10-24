@@ -4,6 +4,7 @@ import {
   Sun,
   Moon,
   Flame,
+  Dumbbell,
   X,
   Check,
   Download,
@@ -23,6 +24,8 @@ export interface SettingsModalProps {
   onToggleLanguage: (lang: AppLanguage) => void;
   isCaloriesEnabled: boolean;
   onToggleCalories: (enabled: boolean) => void;
+  isWorkoutEnabled?: boolean;
+  onToggleWorkout?: (enabled: boolean) => void;
   onOpenShortcutsModal?: () => void;
   onExportJson?: () => void;
   onImportJson?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -39,6 +42,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleLanguage,
   isCaloriesEnabled,
   onToggleCalories,
+  isWorkoutEnabled = true,
+  onToggleWorkout,
   onOpenShortcutsModal,
   onExportJson,
   onImportJson,
@@ -314,6 +319,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     : isEn
                     ? 'Click to enable Calories mode'
                     : 'Nhấn để bật chế độ Calories'
+                }
+              >
+                <span className="toggle-switch-thumb" />
+              </button>
+            </div>
+
+            {/* Gym & Workout Tracker Module */}
+            <div className="feature-item-row" style={{ marginTop: '12px' }}>
+              <div className="feature-item-icon-box">
+                <Dumbbell size={20} />
+              </div>
+              <div className="feature-item-text">
+                <div className="feature-item-title-row">
+                  <strong>
+                    {isEn
+                      ? 'Gym & Workout Tracker'
+                      : 'Theo dõi Tập luyện (Gym Tracker)'}
+                  </strong>
+                  <span
+                    className={`feature-status-tag ${
+                      isWorkoutEnabled ? 'status-enabled' : 'status-disabled'
+                    }`}
+                  >
+                    {isWorkoutEnabled
+                      ? isEn
+                        ? 'ENABLED'
+                        : 'ĐANG BẬT'
+                      : isEn
+                      ? 'DISABLED'
+                      : 'ĐÃ TẮT'}
+                  </span>
+                </div>
+                <p className="feature-item-desc">
+                  {isEn
+                    ? 'Log gym sessions, sets, reps, RIR and analyze Progressive Overload with AI Coach in Day Detail.'
+                    : 'Ghi chép buổi tập gym, set, rep, RIR và phân tích Progressive Overload cùng AI Huấn Luyện Viên trong Chi tiết ngày.'}
+                </p>
+              </div>
+
+              {/* Toggle switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isWorkoutEnabled}
+                className={`toggle-switch-btn ${isWorkoutEnabled ? 'is-active' : ''}`}
+                onClick={() => onToggleWorkout?.(!isWorkoutEnabled)}
+                title={
+                  isWorkoutEnabled
+                    ? isEn
+                      ? 'Click to disable Workout mode'
+                      : 'Nhấn để tắt chế độ Tập luyện'
+                    : isEn
+                    ? 'Click to enable Workout mode'
+                    : 'Nhấn để bật chế độ Tập luyện'
                 }
               >
                 <span className="toggle-switch-thumb" />

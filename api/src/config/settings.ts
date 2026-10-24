@@ -310,6 +310,57 @@ export const PERSONALIZATION_OPTIONS = {
       desc: 'Nhẹ nhàng khích lệ, ưu tiên phục hồi khi thể chất hoặc tinh thần xuống thấp',
     },
   ],
+
+  workoutGoals: [
+    {
+      id: 'HYPERTROPHY',
+      label: 'Tăng cơ bắp tối đa (Hypertrophy)',
+      labelEn: 'Hypertrophy / Muscle Growth',
+      desc: 'Tập trung vào Volume, RIR 1-2, phát triển kích thước cơ bắp và độ nét',
+    },
+    {
+      id: 'STRENGTH',
+      label: 'Tăng sức mạnh & Tải tạ nặng (Strength / Power)',
+      labelEn: 'Strength & Powerlifting',
+      desc: 'Tập trung tăng mức tạ 1RM - 5RM ở các bài compound chính (Squat, Bench, Deadlift, OHP)',
+    },
+    {
+      id: 'FAT_LOSS',
+      label: 'Giảm mỡ & Săn chắc (Fat Loss / Recomp)',
+      labelEn: 'Fat Loss & Body Recomp',
+      desc: 'Giữ cường độ cao, đốt calo, bảo toàn khối cơ trong giai đoạn thâm hụt calo',
+    },
+    {
+      id: 'ENDURANCE',
+      label: 'Sức bền & Thể lực (Endurance / Conditioning)',
+      labelEn: 'Endurance & Conditioning',
+      desc: 'Tăng số rep (12-20 reps), rút ngắn thời gian nghỉ, nâng cao sức bền tim mạch và cơ bắp',
+    },
+    {
+      id: 'GENERAL_FITNESS',
+      label: 'Duy trì & Thể chất khỏe mạnh (General Fitness)',
+      labelEn: 'General Health & Maintenance',
+      desc: 'Rèn luyện toàn thân đều đặn, phòng ngừa chấn thương, nâng cao sức khỏe dài hạn',
+    },
+  ],
+
+  workoutLevels: [
+    {
+      id: 'BEGINNER',
+      label: 'Mới tập (< 1 năm)',
+      labelEn: 'Beginner (< 1 year)',
+    },
+    {
+      id: 'INTERMEDIATE',
+      label: 'Trung cấp (1 - 3 năm)',
+      labelEn: 'Intermediate (1 - 3 years)',
+    },
+    {
+      id: 'ADVANCED',
+      label: 'Nâng cao (> 3 năm)',
+      labelEn: 'Advanced (> 3 years)',
+    },
+  ],
 };
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
@@ -324,6 +375,8 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   focusGoal: 'BALANCED',
   coachingStyle: 'BALANCED',
   personalMotto: '',
+  workoutGoal: 'HYPERTROPHY',
+  workoutLevel: 'INTERMEDIATE',
 };
 
 export function isTaskBoostedByProfile(

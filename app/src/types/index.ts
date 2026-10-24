@@ -76,4 +76,6 @@ export interface UserProfile {
   weightKg: string;
   heightCm: string;
   personalMotto: string;
+  workoutGoal?: string;
+  workoutLevel?: string;
 }

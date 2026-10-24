@@ -36,6 +36,8 @@ const USER_COLLECTION_SCHEMA = Joi.object({
     focusGoal: Joi.string().default(DEFAULT_USER_PROFILE.focusGoal),
     coachingStyle: Joi.string().default(DEFAULT_USER_PROFILE.coachingStyle),
     personalMotto: Joi.string().allow('').default(DEFAULT_USER_PROFILE.personalMotto),
+    workoutGoal: Joi.string().allow('').default(DEFAULT_USER_PROFILE.workoutGoal || 'HYPERTROPHY'),
+    workoutLevel: Joi.string().allow('').default(DEFAULT_USER_PROFILE.workoutLevel || 'INTERMEDIATE'),
   }).default(DEFAULT_USER_PROFILE),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').allow(null).default(null),

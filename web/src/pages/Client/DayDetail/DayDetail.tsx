@@ -12,6 +12,7 @@ import {
   ChevronRight,
   CheckSquare,
   Flame,
+  Dumbbell,
 } from 'lucide-react';
 import {
   clearDayAPI,
@@ -21,8 +22,10 @@ import {
   updateNoteAPI,
   saveDayCaloriesAPI,
   saveDayWaterAPI,
+  saveDayWorkoutAPI,
 } from '~/apis/clientAPI/disciplineApi';
-import { DayDataResponse, FoodItem, TaskItem, TaskLevelKey, WaterData } from '~/interface/discipline.interface';
+import { DayDataResponse, FoodItem, TaskItem, TaskLevelKey, WaterData, WorkoutExercise } from '~/interface/discipline.interface';
+import { WorkoutTracker } from '~/components/WorkoutTracker/WorkoutTracker';
 import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
 import { WaterTracker } from '~/components/WaterTracker/WaterTracker';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
@@ -113,6 +116,7 @@ export const DayDetail: React.FC = () => {
     notifyAiCoach,
     dayRefreshTrigger,
     isCaloriesEnabled,
+    isWorkoutEnabled,
   } = useOutletContext<ClientOutletContext>();
   const { language, isEn } = useLanguage();
 
@@ -166,7 +170,7 @@ export const DayDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(() => {
     return !buildInitialDayData(activeDateKey);
   });
-  const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories'>('todolist');
+  const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories' | 'workout'>('todolist');
   const [isSavingCalories, setIsSavingCalories] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,12 +193,46 @@ export const DayDetail: React.FC = () => {
     if (!isCaloriesEnabled && activeDayTab === 'calories') {
       setActiveDayTab('todolist');
     }
-  }, [isCaloriesEnabled, activeDayTab]);
+    if (!isWorkoutEnabled && activeDayTab === 'workout') {
+      setActiveDayTab('todolist');
+    }
+  }, [isCaloriesEnabled, isWorkoutEnabled, activeDayTab]);
 
   // Hooks phải được gọi trước mọi câu lệnh return sớm (Rules of Hooks)
   const rawCaloriesMeals = dayData?.dayRecord?.caloriesData?.meals;
   const caloriesMeals = useMemo(() => rawCaloriesMeals || [], [rawCaloriesMeals]);
   const caloriesSummary = dayData?.dayRecord?.caloriesData?.summary;
+  const workoutData = dayData?.dayRecord?.workoutData;
+
+  const [isSavingWorkout, setIsSavingWorkout] = useState(false);
+
+  const handleSaveWorkout = useCallback(
+    async (workout: { targetMuscles: string[]; exercises: WorkoutExercise[] }) => {
+      setIsSavingWorkout(true);
+      try {
+        const updated = await saveDayWorkoutAPI({
+          dateKey: activeDateKey,
+          targetMuscles: workout.targetMuscles,
+          exercises: workout.exercises,
+        });
+        setDayData(updated);
+        notifyAiCoach(`WORKOUT_SAVED_${Date.now()}`);
+        toast.success(
+          isEn
+            ? 'Workout saved and analyzed by AI Coach!'
+            : 'Đã lưu buổi tập và AI Huấn Luyện Viên đã phân tích!'
+        );
+      } catch (error: any) {
+        const msg =
+          error?.response?.data?.message ||
+          (isEn ? 'Failed to save workout session!' : 'Không thể lưu buổi tập! Vui lòng thử lại.');
+        toast.error(msg);
+      } finally {
+        setIsSavingWorkout(false);
+      }
+    },
+    [activeDateKey, notifyAiCoach, isEn]
+  );
 
   const currentTasksList = dayData?.dayStats?.tasksList || [];
   const taskGridMap = useMemo(
@@ -263,6 +301,8 @@ export const DayDetail: React.FC = () => {
         setActiveDayTab('todolist');
       } else if (e.key === '2' && isCaloriesEnabled) {
         setActiveDayTab('calories');
+      } else if (e.key === '3' && isWorkoutEnabled) {
+        setActiveDayTab('workout');
       } else if (e.key.toLowerCase() === 'w' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         const currentData = dayData?.dayRecord?.waterData;
@@ -806,8 +846,8 @@ export const DayDetail: React.FC = () => {
 
         {/* KHUNG 2 (BÊN PHẢI): 2 NÚT TO-DO LIST VÀ CALORIES + BẢNG (TRỤC Y: VIỆC X, TRỤC X: THỜI GIAN) */}
         <section className="day-detail-section day-split-right-col">
-          {/* 2 nút tab trên cùng: To-do List & Calories */}
-          {isCaloriesEnabled && (
+          {/* Tab Bar: To-do List, Calories & Workout */}
+          {(isCaloriesEnabled || isWorkoutEnabled) && (
             <div className="day-mode-tab-bar">
               <button
                 type="button"
@@ -817,20 +857,34 @@ export const DayDetail: React.FC = () => {
                 <CheckSquare size={15} />
                 <span>To-do List ({currentTasksList.length})</span>
               </button>
-              <button
-                type="button"
-                className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
-                onClick={() => setActiveDayTab('calories')}
-              >
-                <Flame size={15} />
-                <span>
-                  {isEn ? 'Calories & Nutrition' : 'Calories & Dinh dưỡng'}
-                </span>
-              </button>
+              {isCaloriesEnabled && (
+                <button
+                  type="button"
+                  className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
+                  onClick={() => setActiveDayTab('calories')}
+                >
+                  <Flame size={15} />
+                  <span>
+                    {isEn ? 'Calories & Nutrition' : 'Calories & Dinh dưỡng'}
+                  </span>
+                </button>
+              )}
+              {isWorkoutEnabled && (
+                <button
+                  type="button"
+                  className={`btn-minimal day-mode-btn ${activeDayTab === 'workout' ? 'active' : ''}`}
+                  onClick={() => setActiveDayTab('workout')}
+                >
+                  <Dumbbell size={15} />
+                  <span>
+                    {isEn ? 'Gym & Workout' : 'Tập Luyện (Gym)'}
+                  </span>
+                </button>
+              )}
             </div>
           )}
 
-          {(!isCaloriesEnabled || activeDayTab === 'todolist') ? (
+          {activeDayTab === 'todolist' ? (
             <div className="day-table-pane">
               {currentTasksList.length === 0 ? (
                 <div className="empty-tasks-placeholder">
@@ -1105,7 +1159,7 @@ export const DayDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeDayTab === 'calories' ? (
             <div className="day-calories-pane">
               <WaterTracker
                 dateKey={activeDateKey}
@@ -1120,6 +1174,16 @@ export const DayDetail: React.FC = () => {
                 initialSummary={caloriesSummary}
                 onSaveCalories={handleSaveCalories}
                 isSaving={isSavingCalories}
+              />
+            </div>
+          ) : (
+            <div className="day-workout-pane">
+              <WorkoutTracker
+                dateKey={activeDateKey}
+                initialWorkoutData={workoutData}
+                userProfile={userProfile}
+                onSaveWorkout={handleSaveWorkout}
+                isSaving={isSavingWorkout}
               />
             </div>
           )}

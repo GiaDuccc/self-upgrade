@@ -42,6 +42,7 @@ export interface ClientOutletContext {
   notifyAiCoach: (signal: string) => void;
   dayRefreshTrigger: number;
   isCaloriesEnabled: boolean;
+  isWorkoutEnabled: boolean;
   theme: 'light' | 'dark';
   language: AppLanguage;
 }
@@ -49,6 +50,7 @@ export interface ClientOutletContext {
 interface AppSettings {
   theme: 'light' | 'dark';
   enableCalories: boolean;
+  enableWorkout: boolean;
   language: AppLanguage;
 }
 
@@ -60,6 +62,7 @@ const getStoredSettings = (): AppSettings => {
       return {
         theme: parsed.theme === 'dark' ? 'dark' : 'light',
         enableCalories: parsed.enableCalories !== false,
+        enableWorkout: parsed.enableWorkout !== false,
         language: parsed.language === 'en' ? 'en' : 'vi',
       };
     }
@@ -67,6 +70,7 @@ const getStoredSettings = (): AppSettings => {
   return {
     theme: 'light',
     enableCalories: true,
+    enableWorkout: true,
     language: 'vi',
   };
 };
@@ -121,6 +125,22 @@ export const ClientPage: React.FC = () => {
           : 'Đã tắt chế độ Calories & Dinh dưỡng'
       );
       return { ...prev, enableCalories: enabled };
+    });
+  }, []);
+
+  const handleToggleWorkout = useCallback((enabled: boolean) => {
+    setSettings((prev) => {
+      const isEn = prev.language === 'en';
+      toast.info(
+        enabled
+          ? isEn
+            ? 'Enabled Gym & Workout Tracker'
+            : 'Đã bật chế độ Theo dõi Tập luyện (Gym)'
+          : isEn
+          ? 'Disabled Gym & Workout Tracker'
+          : 'Đã tắt chế độ Theo dõi Tập luyện (Gym)'
+      );
+      return { ...prev, enableWorkout: enabled };
     });
   }, []);
 
@@ -542,6 +562,7 @@ export const ClientPage: React.FC = () => {
     notifyAiCoach: (sig: string) => setAiTriggerSignal(sig),
     dayRefreshTrigger,
     isCaloriesEnabled: settings.enableCalories,
+    isWorkoutEnabled: settings.enableWorkout,
     theme: settings.theme,
     language: settings.language,
   };
@@ -607,6 +628,8 @@ export const ClientPage: React.FC = () => {
           onToggleLanguage={handleToggleLanguage}
           isCaloriesEnabled={settings.enableCalories}
           onToggleCalories={handleToggleCalories}
+          isWorkoutEnabled={settings.enableWorkout}
+          onToggleWorkout={handleToggleWorkout}
           onOpenShortcutsModal={handleOpenShortcutsModal}
           onExportJson={handleExportJson}
           onImportJson={handleImportJson}

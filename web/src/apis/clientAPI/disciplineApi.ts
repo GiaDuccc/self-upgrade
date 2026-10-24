@@ -66,6 +66,15 @@ export const saveDayCaloriesAPI = async (payload: {
   return res.data;
 };
 
+export const saveDayWorkoutAPI = async (payload: {
+  dateKey: string;
+  targetMuscles: string[];
+  exercises: import('~/interface/discipline.interface').WorkoutExercise[];
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.put('/disciplines/day/workout', payload);
+  return res.data;
+};
+
 export const saveDayWaterAPI = async (payload: {
   dateKey: string;
   waterData: import('~/interface/discipline.interface').WaterData;

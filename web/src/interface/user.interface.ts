@@ -10,6 +10,8 @@ export interface UserProfile {
   focusGoal: string;
   coachingStyle: string;
   personalMotto: string;
+  workoutGoal?: string;
+  workoutLevel?: string;
 }
 
 export interface IUser {
@@ -35,11 +37,28 @@ export interface StateOption {
   boostTaskIds?: string[];
 }
 
+export interface WorkoutGoalOption {
+  id: string;
+  label: string;
+  labelEn?: string;
+  desc?: string;
+}
+
+export interface WorkoutLevelOption {
+  id: string;
+  label: string;
+  labelEn?: string;
+  desc?: string;
+}
+
 export interface PersonalizationOptions {
   physicalStates: StateOption[];
   mentalStates: StateOption[];
   emotionalStates: StateOption[];
   focusGoals: StateOption[];
   coachingStyles: StateOption[];
+  workoutGoals?: WorkoutGoalOption[];
+  workoutLevels?: WorkoutLevelOption[];
 }
+
 

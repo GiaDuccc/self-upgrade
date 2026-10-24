@@ -120,6 +120,20 @@ const saveDayWater = async (
   }
 };
 
+const saveDayWorkout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.jwtDecoded!._id;
+    const result = await disciplineService.saveDayWorkout(userId, req.body);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const saveDaySleep = async (
   req: Request,
   res: Response,
@@ -200,6 +214,7 @@ export const disciplineController = {
   saveDayCalories,
   saveDayWater,
   saveDaySleep,
+  saveDayWorkout,
   saveTask,
   deleteTask,
   exportData,
