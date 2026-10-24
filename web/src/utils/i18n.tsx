@@ -62,24 +62,31 @@ export function translateWeekday(weekday: string | undefined, lang: AppLanguage)
 }
 
 const RANK_TITLE_EN_MAP: Record<string, string> = {
-  'Hoàn Hảo': 'Perfect',
-  'Hoàn hảo': 'Perfect',
-  'Xuất Sắc': 'Excellent',
-  'Tốt': 'Good',
-  'Khá': 'Fair',
-  'Trung Bình': 'Average',
-  'Trung bình': 'Average',
-  'Yếu': 'Weak',
-  'Tệ': 'Poor',
-  'Chưa Đánh Giá': 'Unrated',
-  'Chưa đánh giá': 'Unrated',
-  'Chưa chọn': 'Unselected',
+  'hoàn hảo': 'Perfect',
+  'xuất sắc': 'Excellent',
+  'tốt': 'Good',
+  'khá': 'Fair',
+  'trung bình': 'Average',
+  'yếu': 'Weak',
+  'tệ': 'Poor',
+  'chưa đánh giá': 'Unrated',
+  'chưa ghi nhận': 'Unrated',
+  'chưa chọn': 'Unselected',
+  'unrated': 'Unrated',
+  'unselected': 'Unselected',
+  'hoàn Hảo': 'Perfect',
+  'xuất Sắc': 'Excellent',
+  'trung Bình': 'Average',
+  'chưa Đánh Giá': 'Unrated',
+  'chưa Ghi Nhận': 'Unrated',
+  'chưa Chọn': 'Unselected',
 };
 
 export function translateRankTitle(title: string | undefined, lang: AppLanguage): string {
   if (!title) return '';
   if (lang === 'vi') return title;
-  return RANK_TITLE_EN_MAP[title] || title;
+  const key = title.trim().toLowerCase();
+  return RANK_TITLE_EN_MAP[key] || RANK_TITLE_EN_MAP[title] || title;
 }
 
 export function translateRankDesc(desc: string | undefined, lang: AppLanguage): string {
@@ -87,27 +94,37 @@ export function translateRankDesc(desc: string | undefined, lang: AppLanguage): 
   const map: Record<string, string> = {
     'Kỷ luật thép! Bạn đã hoàn thành xuất sắc hầu hết mục tiêu ngày hôm nay.':
       'Iron discipline! You excellently completed almost all goals today.',
+    'Kỷ luật thép! Một ngày nâng cấp bản thân xuất sắc.':
+      'Iron discipline! An excellent self-upgrade day.',
     'Phong độ tốt! Duy trì nhịp độ này để tiến tới mức Hoàn Hảo.':
       'Good performance! Keep up this pace to reach Perfect level.',
+    'Duy trì nhịp độ rất tốt, hoàn thành phần lớn mục tiêu.':
+      'Maintaining a great pace, completed most daily goals.',
     'Mức độ trung bình. Cần tập trung hơn vào các việc quan trọng.':
       'Average level. Need more focus on key tasks.',
+    'Đã có cố gắng nhưng cần tập trung đẩy lên mức Hoàn Hảo.':
+      'Good effort, but stay focused to reach Perfect level.',
     'Hiệu suất thấp. Hãy chấn chỉnh lại kỷ luật ngay ngày mai!':
       'Low performance. Realign your discipline tomorrow!',
+    'Ngày hôm nay hiệu suất còn thấp, cần chấn chỉnh lại kỷ luật.':
+      'Performance is low today, realign your discipline.',
     'Chưa có đầu việc nào được tích chọn trong ngày này.':
       'No tasks have been checked off on this day yet.',
+    'Hãy bắt đầu tích các việc đã làm trong ngày':
+      'Start checking off tasks you completed today.',
   };
   if (map[desc]) return map[desc];
   if (desc.includes('Hoàn Hảo') || desc.includes('xuất sắc')) {
     return 'Iron discipline! You excellently completed your goals today.';
   }
-  if (desc.includes('Phong độ tốt') || desc.includes('Tốt')) {
+  if (desc.includes('Phong độ tốt') || desc.includes('Tốt') || desc.includes('rất tốt')) {
     return 'Good performance! Keep maintaining your daily discipline.';
   }
-  if (desc.includes('trung bình') || desc.includes('Trung bình')) {
+  if (desc.includes('trung bình') || desc.includes('Trung bình') || desc.includes('cố gắng')) {
     return 'Average performance. Focus more on your key habits.';
   }
-  if (desc.includes('Chưa có') || desc.includes('chưa tích')) {
-    return 'No tasks have been recorded for this day yet.';
+  if (desc.includes('Chưa có') || desc.includes('chưa tích') || desc.includes('Hãy bắt đầu')) {
+    return 'Start checking off tasks you completed today.';
   }
   return 'Stay disciplined and complete your daily habits.';
 }
