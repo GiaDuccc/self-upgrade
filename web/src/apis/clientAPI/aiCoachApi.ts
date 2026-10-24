@@ -11,6 +11,7 @@ export const getAiCoachingMessageAPI = async (
     dateKey?: string;
     mode?: 'greeting' | 'feedback';
     changeSignal?: string;
+    language?: 'vi' | 'en';
   },
   signal?: AbortSignal
 ): Promise<AiCoachResponse> => {

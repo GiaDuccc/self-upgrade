@@ -38,9 +38,30 @@ const sanitizeAiMessage = (msg: unknown): string => {
   return trimmed;
 };
 
+const VIET_ACCENT_REGEX =
+  /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+
+const isRealEnglish = (text: unknown): boolean => {
+  if (!text || typeof text !== 'string') return false;
+  const trimmed = text.trim();
+  if (trimmed.length < 5) return false;
+  if (VIET_ACCENT_REGEX.test(trimmed)) return false;
+  return true;
+};
+
+const DEFAULT_EN_GREETINGS = [
+  'Welcome back! Use discipline as your launchpad to conquer every goal today!',
+  'Keep up that winning spirit and unleash your full potential today!',
+  'A great opportunity to push your limits today—let’s get right to work!',
+  'Today’s discipline shapes tomorrow’s excellence. Stay focused and consistent!',
+];
+
 const normalizeMessagePair = (rawVi?: string, rawEn?: string): { vi: string; en: string } => {
   let vi = sanitizeAiMessage(rawVi);
   let en = sanitizeAiMessage(rawEn);
+
+  const randomEnGreeting = () =>
+    DEFAULT_EN_GREETINGS[Math.floor(Math.random() * DEFAULT_EN_GREETINGS.length)];
 
   if (!vi && !en) {
     vi = '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
@@ -50,7 +71,12 @@ const normalizeMessagePair = (rawVi?: string, rawEn?: string): { vi: string; en:
   } else if (vi && !en) {
     en = vi.startsWith('⚠️')
       ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
-      : vi;
+      : randomEnGreeting();
+  }
+
+  // Nếu 'en' bị rỗng hoặc chứa dấu tiếng Việt hoặc giống hệt 'vi', thay bằng câu tiếng Anh chuẩn
+  if (en && (!isRealEnglish(en) || en === vi)) {
+    en = randomEnGreeting();
   }
 
   return { vi, en };
@@ -123,25 +149,22 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       try {
         const parsed = JSON.parse(cachedGreeting);
         if (parsed.vi || parsed.en) {
-          const normalized = normalizeMessagePair(parsed.vi, parsed.en);
-          setAiMessages(normalized);
-          // Ghi đè lại cache sạch để xóa bỏ hoàn toàn chuỗi raw JSON cũ nếu có
-          try {
-            sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
-          } catch {}
-          setIsAiLoading(false);
-          openWithAutoClose(5);
-          return;
+          // Nếu đang ở chế độ tiếng Anh nhưng cache cũ không có tiếng Anh hợp lệ -> xóa cache để gọi lại API
+          if (isEn && (!isRealEnglish(parsed.en) || parsed.en === parsed.vi)) {
+            sessionStorage.removeItem(cacheKey);
+          } else {
+            const normalized = normalizeMessagePair(parsed.vi, parsed.en);
+            setAiMessages(normalized);
+            try {
+              sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
+            } catch {}
+            setIsAiLoading(false);
+            openWithAutoClose(5);
+            return;
+          }
         }
       } catch {
-        const normalized = normalizeMessagePair(cachedGreeting, cachedGreeting);
-        setAiMessages(normalized);
-        try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
-        } catch {}
-        setIsAiLoading(false);
-        openWithAutoClose(5);
-        return;
+        sessionStorage.removeItem(cacheKey);
       }
     }
 
@@ -156,6 +179,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       {
         dateKey: dateKeyRef.current,
         mode: 'greeting',
+        language: isEn ? 'en' : 'vi',
       },
       controller.signal
     )
@@ -242,6 +266,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
             dateKey: dateKeyRef.current,
             mode: 'feedback',
             changeSignal: triggerSignal,
+            language: isEn ? 'en' : 'vi',
           },
           controller.signal
         );
@@ -319,6 +344,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
           dateKey: dateKeyRef.current,
           mode: 'feedback',
           changeSignal: lastSignalRef.current,
+          language: isEn ? 'en' : 'vi',
         },
         controller.signal
       );
@@ -422,8 +448,8 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
             <p className="ai-bubble-message">
               {sanitizeAiMessage(
                 isEn
-                  ? aiMessages.en || aiMessages.vi
-                  : aiMessages.vi || aiMessages.en
+                  ? (isRealEnglish(aiMessages.en) ? aiMessages.en : normalizeMessagePair(aiMessages.vi, aiMessages.en).en)
+                  : (aiMessages.vi || aiMessages.en)
               ) ||
                 (isEn
                   ? 'Check off your daily tasks to let AI coach you.'

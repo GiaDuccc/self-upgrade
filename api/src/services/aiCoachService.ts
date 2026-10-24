@@ -1014,7 +1014,26 @@ ${specificContextAndRules}
 
     if (cascadeResult.text) {
     const message = cascadeResult.text;
-    const messageEn = cascadeResult.textEn;
+    let messageEn = cascadeResult.textEn;
+
+    const VIET_ACCENT_REGEX = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+    if (!messageEn || messageEn.trim().length < 5 || VIET_ACCENT_REGEX.test(messageEn) || messageEn === message) {
+      const fallbackPair = generateDiverseFallback({
+        mode,
+        callName,
+        percentage: dayStats.percentage,
+        completedTasks,
+        actionablePendingTasks:
+          actionableNow.length > 0 ? actionableNow : pendingTasks,
+        physLabel: physObj.label,
+        mentLabel: mentObj.label,
+        recentHistory,
+        dateCtx,
+        recentChange,
+      });
+      messageEn = fallbackPair.en;
+    }
+
     const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
     userRecentMessagesMap.set(userId, updatedHistory);
     return { message, messageEn };
