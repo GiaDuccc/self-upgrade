@@ -1191,24 +1191,38 @@ async function callGeminiJson<T>(
   }
 }
 
+interface NutritionAnalysisResponse extends CaloriesSummary {
+  items?: Array<{
+    id?: string;
+    calories?: number;
+    protein?: number;
+    carb?: number;
+    fat?: number;
+    fiber?: number;
+  }>;
+}
+
 const analyzeNutrition = async (
   profile: UserProfile,
   dateKey: string,
   meals: FoodItem[],
   previousSummary?: CaloriesSummary
-): Promise<CaloriesSummary> => {
+): Promise<{ summary: CaloriesSummary; meals: FoodItem[] }> => {
   if (!meals || meals.length === 0) {
     return {
-      totalCalories: 0,
-      protein: 0,
-      carb: 0,
-      fat: 0,
-      fiber: 0,
-      aiFeedback:
-        'Chưa có món ăn nào được ghi lại cho ngày này. Hãy thêm các món bạn ăn từ 6h sáng đến 9h tối nhé!',
-      aiFeedbackEn:
-        'No meals logged yet for this day. Please add the meals you eat between 6:00 AM and 9:00 PM!',
-      updatedAt: new Date().toISOString(),
+      summary: {
+        totalCalories: 0,
+        protein: 0,
+        carb: 0,
+        fat: 0,
+        fiber: 0,
+        aiFeedback:
+          'Chưa có món ăn nào được ghi lại cho ngày này. Hãy thêm các món bạn ăn từ 6h sáng đến 9h tối nhé!',
+        aiFeedbackEn:
+          'No meals logged yet for this day. Please add the meals you eat between 6:00 AM and 9:00 PM!',
+        updatedAt: new Date().toISOString(),
+      },
+      meals: [],
     };
   }
 
@@ -1236,18 +1250,18 @@ const analyzeNutrition = async (
         const method = m.cookingMethod
           ? COOKING_METHOD_NAMES[m.cookingMethod] || m.cookingMethod
           : 'Đã nấu chín';
-        stateText = `Tình trạng: CÂN LÚC ĐÃ NẤU CHÍN (Cooked) — Cách chế biến: ${method}`;
+        stateText = 'Tình trạng: CÂN LÚC ĐÃ NẤU CHÍN (Cooked) — Cách chế biến: ' + method;
       } else {
         stateText = 'Đã chế biến';
       }
 
-      return `${idx + 1}. [${sessionLabel}]: ${m.name} — Định lượng: ${m.weight || '1 phần'} — ${stateText}`;
+      return '- Món #' + (idx + 1) + ' (id: "' + m.id + '"): [' + sessionLabel + '] ' + m.name + ' — Định lượng: ' + (m.weight || '1 phần') + ' — ' + stateText;
     })
     .join('\n');
 
   const prevText = previousSummary
-    ? `DỮ LIỆU LẦN LƯU TRƯỚC (CHỈ DÙNG ĐỂ SO SÁNH TRONG NHẬN XÉT aiFeedback, TUYỆT ĐỐI KHÔNG COPY HAY GIỮ LẠI CON SỐ NÀY NẾU MÓN ĂN ĐÃ THAY ĐỔI):
-- Lần trước: Tổng ${previousSummary.totalCalories} kcal, Protein: ${previousSummary.protein}g, Carb: ${previousSummary.carb}g, Fat: ${previousSummary.fat}g, Chất xơ: ${previousSummary.fiber}g.`
+    ? 'DỮ LIỆU LẦN LƯU TRƯỚC (CHỈ DÙNG ĐỂ SO SÁNH TRONG NHẬN XÉT aiFeedback, TUYỆT ĐỐI KHÔNG COPY HAY GIỮ LẠI CON SỐ NÀY NẾU MÓN ĂN ĐÃ THAY ĐỔI):\n' +
+      '- Lần trước: Tổng ' + previousSummary.totalCalories + ' kcal, Protein: ' + previousSummary.protein + 'g, Carb: ' + previousSummary.carb + 'g, Fat: ' + previousSummary.fat + 'g, Chất xơ: ' + previousSummary.fiber + 'g.'
     : 'Đây là lần lưu thực đơn đầu tiên trong ngày.';
 
   const prompt = `
@@ -1259,25 +1273,28 @@ Thông tin thể trạng người dùng:
 - Thể trạng hiện tại: ${profile.physicalState || 'Bình thường'}
 
 Ngày ghi nhận: ${dateKey}
-DANH SÁCH MÓN ĂN HIỆN TẠI (CHỈ TÍNH TOÁN 5 CHỈ SỐ DỰA TRÊN ${meals.length} MÓN ĐANG CÓ NÀY):
+DANH SÁCH MÓN ĂN HIỆN TẠI (CHỈ TÍNH TOÁN DỰA TRÊN ${meals.length} MÓN ĐANG CÓ NÀY):
 ${mealListText}
 
 ${prevText}
 
 YÊU CẦU BẮT BUỘC:
-1. QUY TẮC TÍNH TOÁN 5 CHỈ SỐ (BẮT BUỘC TÍNH ĐỘC LẬP TỪ DANH SÁCH MÓN HIỆN TẠI):
+1. TÍNH TOÁN 5 CHỈ SỐ MACRO CHO TỪNG MÓN ĂN VÀ TỔNG CẢ BẢNG (BẮT BUỘC TÍNH ĐỘC LẬP TỪ DANH SÁCH MÓN HIỆN TẠI):
    - ĐẶC BIỆT CHÚ Ý TÌNH TRẠNG SỐNG / CHÍN VÀ CÁCH CHẾ BIẾN:
      * CÂN LÚC CÒN SỐNG: Tính theo bảng thực phẩm sống (nhiều nước, mật độ calo/đạm trên 100g thấp hơn so với đồ chín).
      * CÂN LÚC ĐÃ NẤU CHÍN: Tính theo bảng thực phẩm chín (nước đã thoát bớt, mật độ calo/đạm trên 100g cao hơn, ví dụ: 100g ức gà chín ~165 kcal, ~31g protein; trong khi 100g ức gà sống ~120 kcal, ~23g protein).
      * CHIÊN / XÀO: Bắt buộc cộng thêm calo và chất béo (fat) tương ứng lượng dầu mỡ dùng để chiên/xào.
      * LUỘC / HẤP / NƯỚNG: Giữ calo nguyên bản sạch, ít béo.
-   - NẾU NGƯỜI DÙNG VỪA XÓA BỚT MÓN ĂN: Tổng calo và toàn bộ 4 chỉ số macro (protein, carb, fat, fiber) BẮT BUỘC PHẢI GIẢM TƯƠNG ỨNG với phần dinh dưỡng của món đã bị xóa đi. TUYỆT ĐỐI KHÔNG ĐƯỢC giữ nguyên con số của lần trước.
+   - Với MỖI món ăn (theo id tương ứng), hãy tính 5 chỉ số của riêng món đó:
+     * id: ID của món ăn (chính xác theo id được truyền vào).
+     * calories: calo của riêng món (kcal, số nguyên).
+     * protein: đạm của món (g, 1 chữ số thập phân).
+     * carb: tinh bột của món (g, 1 chữ số thập phân).
+     * fat: chất béo của món (g, 1 chữ số thập phân).
+     * fiber: chất xơ của món (g, 1 chữ số thập phân).
+   - Tổng cộng (totalCalories, protein, carb, fat, fiber) phải bằng tổng của các món ăn thành phần cộng lại.
+   - NẾU NGƯỜI DÙNG VỪA XÓA BỚT MÓN ĂN: Tổng calo và toàn bộ 4 chỉ số macro BẮT BUỘC PHẢI GIẢM TƯƠNG ỨNG với phần dinh dưỡng của món đã bị xóa đi.
    - NẾU NGƯỜI DÙNG THÊM MÓN ĂN: Các chỉ số macro BẮT BUỘC PHẢI TĂNG LÊN tương ứng.
-   - totalCalories: Tổng calories nạp vào (kcal, số nguyên) của các món hiện tại.
-   - protein: Tổng chất đạm (g) của các món hiện tại.
-   - carb: Tổng tinh bột (g) của các món hiện tại.
-   - fat: Tổng chất béo (g) của các món hiện tại.
-   - fiber: Tổng chất xơ (g) của các món hiện tại.
 2. aiFeedback: Viết một đoạn nhận xét sắc bén (2-3 câu, tối đa 80 từ) bằng tiếng Việt chuẩn:
    - Viết chuẩn chính tả tiếng Việt tuyệt đối, cách từ rõ ràng, không dính chữ, không nuốt chữ.
    - So sánh sự thay đổi so với lần trước (nêu rõ vừa xóa món hay thêm món làm calo và macro tăng/giảm từ bao nhiêu xuống/lên bao nhiêu, nhắc đến cách chế biến luộc/hấp/xào/chiên/nướng nếu có).
@@ -1293,11 +1310,21 @@ YÊU CẦU BẮT BUỘC:
   "fat": number,
   "fiber": number,
   "aiFeedback": "chuỗi nhận xét tiếng Việt",
-  "aiFeedbackEn": "English feedback string"
+  "aiFeedbackEn": "English feedback string",
+  "items": [
+    {
+      "id": "chuỗi id của món",
+      "calories": number,
+      "protein": number,
+      "carb": number,
+      "fat": number,
+      "fiber": number
+    }
+  ]
 }
 `.trim();
 
-  const result = await callGeminiJson<CaloriesSummary>(prompt);
+  const result = await callGeminiJson<NutritionAnalysisResponse>(prompt);
 
   const cleanFeedbackText = (text: string | undefined): string => {
     if (!text) return 'Đã tổng hợp dinh dưỡng các bữa ăn trong ngày thành công.';
@@ -1309,7 +1336,32 @@ YÊU CẦU BẮT BUỘC:
   };
 
   if (result.data && typeof result.data.totalCalories === 'number') {
-    return {
+    const itemMap = new Map<string, any>();
+    if (Array.isArray(result.data.items)) {
+      result.data.items.forEach((it, idx) => {
+        const key = it.id || (meals[idx] ? meals[idx].id : undefined);
+        if (key) {
+          itemMap.set(String(key), it);
+        }
+      });
+    }
+
+    const analyzedMeals = meals.map((m, idx) => {
+      const it = itemMap.get(m.id) || (Array.isArray(result.data?.items) ? result.data?.items[idx] : undefined);
+      if (it && typeof it.calories !== 'undefined') {
+        return {
+          ...m,
+          calories: Math.round(Number(it.calories) || 0),
+          protein: Math.round(Number(it.protein || 0) * 10) / 10,
+          carb: Math.round(Number(it.carb || 0) * 10) / 10,
+          fat: Math.round(Number(it.fat || 0) * 10) / 10,
+          fiber: Math.round(Number(it.fiber || 0) * 10) / 10,
+        };
+      }
+      return m;
+    });
+
+    const summary: CaloriesSummary = {
       totalCalories: Math.round(result.data.totalCalories) || 0,
       protein: Math.round(Number(result.data.protein) * 10) / 10 || 0,
       carb: Math.round(Number(result.data.carb) * 10) / 10 || 0,
@@ -1319,6 +1371,8 @@ YÊU CẦU BẮT BUỘC:
       aiFeedbackEn: result.data.aiFeedbackEn?.trim() || undefined,
       updatedAt: new Date().toISOString(),
     };
+
+    return { summary, meals: analyzedMeals };
   }
 
   // Fallback calculation nếu Gemini timeout hoặc lỗi mạng
@@ -1340,7 +1394,16 @@ YÊU CẦU BẮT BUỘC:
     ? '⚠️ AI system is busy (429 Rate Limit). Meals saved with estimated nutrition.'
     : `Saved ${meals.length} meal(s). Estimated nutritional baseline is ready!`;
 
-  return {
+  const analyzedMeals = meals.map((m) => ({
+    ...m,
+    calories: m.calories ?? 220,
+    protein: m.protein ?? 12,
+    carb: m.carb ?? 28,
+    fat: m.fat ?? 7,
+    fiber: m.fiber ?? 4,
+  }));
+
+  const summary: CaloriesSummary = {
     totalCalories: estCalories,
     protein: estProtein,
     carb: estCarb,
@@ -1353,8 +1416,9 @@ YÊU CẦU BẮT BUỘC:
       : (result.error || undefined),
     updatedAt: new Date().toISOString(),
   };
-};
 
+  return { summary, meals: analyzedMeals };
+};
 export const aiCoachService = {
   getCoachingMessage,
   analyzeNutrition,

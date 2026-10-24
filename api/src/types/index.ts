@@ -50,6 +50,11 @@ export interface FoodItem {
   time?: string;
   foodState?: FoodState;
   cookingMethod?: CookingMethod;
+  calories?: number;
+  protein?: number;
+  carb?: number;
+  fat?: number;
+  fiber?: number;
 }
 
 export interface CaloriesSummary {

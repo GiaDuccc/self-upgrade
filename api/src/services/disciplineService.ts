@@ -234,8 +234,8 @@ const saveDayCalories = async (
   const currentDay: DayRecord = { ...(records[dateKey] || {}) };
 
   const profile = user?.profile || DEFAULT_USER_PROFILE;
-  const previousSummary = currentDay.caloriesData?.summary;
-  const summary = await aiCoachService.analyzeNutrition(
+    const previousSummary = currentDay.caloriesData?.summary;
+  const { summary, meals: analyzedMeals } = await aiCoachService.analyzeNutrition(
     profile,
     dateKey,
     meals,
@@ -245,7 +245,7 @@ const saveDayCalories = async (
   records[dateKey] = {
     ...currentDay,
     caloriesData: {
-      meals,
+      meals: analyzedMeals,
       summary,
     },
     updatedAt: new Date().toISOString(),

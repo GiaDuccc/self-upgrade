@@ -315,8 +315,29 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                     <div className="food-item-left">
                       {renderFoodBadge(item)}
                       <div className="food-info">
-                        <strong className="food-name">{item.name}</strong>
-                        <span className="food-weight">{item.weight}</span>
+                        <div className="food-header-line">
+                          <strong className="food-name">{item.name}</strong>
+                          <span className="food-weight">({item.weight})</span>
+                        </div>
+                        {typeof item.calories === 'number' && (
+                          <div className="food-item-macros">
+                            <span className="food-macro-tag cal" title={isEn ? 'Calories' : 'Calo'}>
+                              🔥 {item.calories} kcal
+                            </span>
+                            <span className="food-macro-tag pro" title={isEn ? 'Protein' : 'Chất đạm'}>
+                              P: {item.protein ?? 0}g
+                            </span>
+                            <span className="food-macro-tag carb" title={isEn ? 'Carbs' : 'Tinh bột'}>
+                              C: {item.carb ?? 0}g
+                            </span>
+                            <span className="food-macro-tag fat" title={isEn ? 'Fat' : 'Chất béo'}>
+                              F: {item.fat ?? 0}g
+                            </span>
+                            <span className="food-macro-tag fiber" title={isEn ? 'Fiber' : 'Chất xơ'}>
+                              {isEn ? 'Fib' : 'Xơ'}: {item.fiber ?? 0}g
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
