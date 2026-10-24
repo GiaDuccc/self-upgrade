@@ -1,5 +1,11 @@
 import { axiosClient } from '~/apis/axiosClient';
 
+export interface AiCoachResponse {
+  message: string;
+  messageEn?: string;
+  error?: string;
+}
+
 export const getAiCoachingMessageAPI = async (
   payload: {
     dateKey?: string;
@@ -7,12 +13,16 @@ export const getAiCoachingMessageAPI = async (
     changeSignal?: string;
   },
   signal?: AbortSignal
-): Promise<string> => {
+): Promise<AiCoachResponse> => {
   const res = await axiosClient.post('/ai-coach/message', payload, {
     signal,
     timeout: 6800,
   });
-  return res.data?.message || res.data?.error || '';
+  return {
+    message: res.data?.message || res.data?.error || '',
+    messageEn: res.data?.messageEn || '',
+    error: res.data?.error,
+  };
 };
 
 

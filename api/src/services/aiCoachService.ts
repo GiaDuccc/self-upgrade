@@ -40,7 +40,7 @@ const OPENING_SUGGESTIONS = [
 async function callGeminiCascade(
   promptContext: string,
   signal?: AbortSignal
-): Promise<{ text: string | null; isTimeout?: boolean; isRateLimited?: boolean; lastError?: string }> {
+): Promise<{ text: string | null; textEn?: string; isTimeout?: boolean; isRateLimited?: boolean; lastError?: string }> {
   if (!env.GEMINI_API_KEY) {
     return { text: null, lastError: 'Thiếu GEMINI_API_KEY trong cấu hình hệ thống' };
   }
@@ -70,7 +70,8 @@ async function callGeminiCascade(
           contents: [{ parts: [{ text: promptContext }] }],
           generationConfig: {
             temperature: 1.0,
-            maxOutputTokens: 350,
+            maxOutputTokens: 600,
+            responseMimeType: 'application/json',
             thinkingConfig: {
               thinkingBudget: 0,
             },
@@ -110,37 +111,64 @@ async function callGeminiCascade(
 
     const parts = data?.candidates?.[0]?.content?.parts || [];
     const textPart = parts.find((p) => p.text && !p.thought) || parts[0];
-    let text = textPart?.text?.trim() || '';
+    const rawText = textPart?.text?.trim() || '';
 
-    if (text) {
-      text = text.replace(/^#+\s*/gm, '');
-      text = text.replace(/\*\*/g, '');
-      text = text.replace(/^[-*•]\s*/gm, '');
-      text = text.replace(/^["'“]+|["'”]+$/g, '').trim();
+    if (rawText) {
+      let messageVi = '';
+      let messageEn = '';
 
-      const lines = text
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
-      const filteredLines = lines.filter((l) => {
-        const lower = l.toLowerCase();
-        if (lower.endsWith(':')) return false;
-        if (
-          /^(lời khuyên|lời chào|nhận xét|động viên|chê|gợi ý|ai coach)\s*:/i.test(
-            l
+      try {
+        const parsed = JSON.parse(rawText);
+        if (parsed.message) messageVi = String(parsed.message).trim();
+        if (parsed.messageEn) messageEn = String(parsed.messageEn).trim();
+      } catch {
+        const match = rawText.match(/\{[\s\S]*\}/);
+        if (match) {
+          try {
+            const parsed = JSON.parse(match[0]);
+            if (parsed.message) messageVi = String(parsed.message).trim();
+            if (parsed.messageEn) messageEn = String(parsed.messageEn).trim();
+          } catch {}
+        }
+      }
+
+      if (!messageVi) {
+        messageVi = rawText;
+      }
+
+      const cleanSentence = (str: string) => {
+        let t = str.replace(/^#+\s*/gm, '');
+        t = t.replace(/\*\*/g, '');
+        t = t.replace(/^[-*•]\s*/gm, '');
+        t = t.replace(/^["'“]+|["'”]+$/g, '').trim();
+
+        const lines = t
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+        const filteredLines = lines.filter((l) => {
+          const lower = l.toLowerCase();
+          if (lower.endsWith(':')) return false;
+          if (
+            /^(lời khuyên|lời chào|nhận xét|động viên|chê|gợi ý|ai coach)\s*:/i.test(
+              l
+            )
           )
-        )
-          return false;
-        return true;
-      });
-      const cleanSentence = filteredLines
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+            return false;
+          return true;
+        });
+        return filteredLines
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
 
-      if (cleanSentence && cleanSentence.length >= 10) {
+      const cleanVi = cleanSentence(messageVi);
+      const cleanEn = messageEn ? cleanSentence(messageEn) : undefined;
+
+      if (cleanVi && cleanVi.length >= 10) {
         console.log(`   [AI Coach] ✅ Model ${AI_COACH_MODEL} thành công trong ${elapsed}ms!`);
-        return { text: cleanSentence };
+        return { text: cleanVi, textEn: cleanEn };
       }
     }
 
@@ -374,41 +402,72 @@ function generateDiverseFallback({
   recentHistory: string[];
   dateCtx: DateTemporalContext;
   recentChange: RecentChangeInfo | null;
-}): string {
+}): { vi: string; en: string } {
   const pct = percentage || 0;
   const targetTask = actionablePendingTasks[0] || 'mục tiêu còn lại';
   const recentDone = completedTasks[0] || 'thói quen vừa làm';
 
-  const pickRandom = (arr: string[]) => {
-    const valid = arr.filter((s) => !recentHistory.includes(s));
+  const pickRandom = (arr: Array<{ vi: string; en: string }>) => {
+    const valid = arr.filter((s) => !recentHistory.includes(s.vi));
     const pool = valid.length > 0 ? valid : arr;
     return pool[Math.floor(Math.random() * pool.length)];
   };
 
   if (mode === 'greeting') {
     const greetingPool = [
-      `Ơ kìa ${callName}, hôm nay thể chất đang ${physLabel.toLowerCase()} đấy, hãy lấy kỷ luật làm bàn đạp để chinh phục mọi mục tiêu nhé!`,
-      `Nhìn xem ai vừa vào nâng cấp bản thân này, ${callName} hãy giữ vững tinh thần ${mentLabel.toLowerCase()} và bùng nổ hết mình hôm nay!`,
-      `Chào ngày mới ${callName}, cơ thể đang sẵn sàng thì tâm trí đừng để trì hoãn chen chân vào lịch trình nhé!`,
-      `Chà chà ${callName}, năng lượng ${physLabel.toLowerCase()} này mà không dứt điểm các đầu việc thì quả là lãng phí!`,
-      `Hôm nay là cơ hội tuyệt vời để tự vượt ngưỡng chính mình đấy ${callName}, bắt tay vào việc ngay thôi!`,
-      `Khởi động ngày mới nào ${callName}, sự kỷ luật hôm nay sẽ định hình con người xuất sắc của bạn ngày mai!`,
+      {
+        vi: `Ơ kìa ${callName}, hôm nay thể chất đang ${physLabel.toLowerCase()} đấy, hãy lấy kỷ luật làm bàn đạp để chinh phục mọi mục tiêu nhé!`,
+        en: `Hey ${callName}, your physical state is ${physLabel.toLowerCase()} today—use discipline as your launchpad to conquer every goal!`,
+      },
+      {
+        vi: `Nhìn xem ai vừa vào nâng cấp bản thân này, ${callName} hãy giữ vững tinh thần ${mentLabel.toLowerCase()} và bùng nổ hết mình hôm nay!`,
+        en: `Look who is here to upgrade themselves! Keep up that ${mentLabel.toLowerCase()} spirit and unleash your full potential today, ${callName}!`,
+      },
+      {
+        vi: `Chào ngày mới ${callName}, cơ thể đang sẵn sàng thì tâm trí đừng để trì hoãn chen chân vào lịch trình nhé!`,
+        en: `Good day ${callName}! Your body is ready, don't let procrastination creep into your schedule!`,
+      },
+      {
+        vi: `Chà chà ${callName}, năng lượng ${physLabel.toLowerCase()} này mà không dứt điểm các đầu việc thì quả là lãng phí!`,
+        en: `Well well ${callName}, with this ${physLabel.toLowerCase()} energy, leaving tasks unfinished would be a total waste!`,
+      },
+      {
+        vi: `Hôm nay là cơ hội tuyệt vời để tự vượt ngưỡng chính mình đấy ${callName}, bắt tay vào việc ngay thôi!`,
+        en: `Today is a fantastic opportunity to push your limits, ${callName}—let's get right to work!`,
+      },
+      {
+        vi: `Khởi động ngày mới nào ${callName}, sự kỷ luật hôm nay sẽ định hình con người xuất sắc của bạn ngày mai!`,
+        en: `Time to jump into the day, ${callName}! Today's discipline shapes tomorrow's excellence!`,
+      },
     ];
     return pickRandom(greetingPool);
   }
 
   // Trường hợp 1: Đang cập nhật dữ liệu của một NGÀY TRONG QUÁ KHỨ
   if (dateCtx.isPastDay) {
-    const changePrefix = recentChange?.short || `Cập nhật lại sổ kỷ luật ${dateCtx.relativeDayLabel},`;
+    const changePrefixVi = recentChange?.short || `Cập nhật lại sổ kỷ luật ${dateCtx.relativeDayLabel},`;
+    const changePrefixEn = `Updated discipline records for ${dateCtx.shortDate},`;
     const pastPool =
       pct >= 70
         ? [
-            `${changePrefix} khép lại ${dateCtx.relativeDayLabel} ở mức ${pct}% là một cột mốc rất đáng khen đấy ${callName}, hãy mang trọn khí thế này sang bùng nổ trong ngày hôm nay nhé!`,
-            `${changePrefix} nhìn lại ${dateCtx.relativeDayLabel} đạt ${pct}% mới thấy sự bền bỉ của ${callName}, tiếp tục giữ vững phong độ đó cho lịch trình hôm nay nào!`,
+            {
+              vi: `${changePrefixVi} khép lại ${dateCtx.relativeDayLabel} ở mức ${pct}% là một cột mốc rất đáng khen đấy ${callName}, hãy mang trọn khí thế này sang bùng nổ trong ngày hôm nay nhé!`,
+              en: `${changePrefixEn} wrapping up ${dateCtx.shortDate} at ${pct}% is truly commendable, ${callName}! Carry this strong momentum into today!`,
+            },
+            {
+              vi: `${changePrefixVi} nhìn lại ${dateCtx.relativeDayLabel} đạt ${pct}% mới thấy sự bền bỉ của ${callName}, tiếp tục giữ vững phong độ đó cho lịch trình hôm nay nào!`,
+              en: `${changePrefixEn} looking back at ${pct}% proves your perseverance, ${callName}. Maintain that winning consistency for today!`,
+            },
           ]
         : [
-            `${changePrefix} ${dateCtx.relativeDayLabel} khép lại ở mức ${pct}% vẫn còn những mục tiêu bỏ ngỏ đấy ${callName}, hãy lấy đó làm bài học để hôm nay gỡ lại điểm số thật thuyết phục!`,
-            `${changePrefix} tổng kết ${dateCtx.relativeDayLabel} dừng ở ${pct}% là lời nhắc nhở rõ ràng nhất, hôm nay ${callName} quyết tâm kỷ luật gấp đôi để bù lại nhé!`,
+            {
+              vi: `${changePrefixVi} ${dateCtx.relativeDayLabel} khép lại ở mức ${pct}% vẫn còn những mục tiêu bỏ ngỏ đấy ${callName}, hãy lấy đó làm bài học để hôm nay gỡ lại điểm số thật thuyết phục!`,
+              en: `${changePrefixEn} finishing at ${pct}% left some unfinished business, ${callName}. Use it as fuel to dominate today's targets!`,
+            },
+            {
+              vi: `${changePrefixVi} tổng kết ${dateCtx.relativeDayLabel} dừng ở ${pct}% là lời nhắc nhở rõ ràng nhất, hôm nay ${callName} quyết tâm kỷ luật gấp đôi để bù lại nhé!`,
+              en: `${changePrefixEn} ending at ${pct}% is a clear wake-up call. Double down on your discipline today, ${callName}!`,
+            },
           ];
     return pickRandom(pastPool);
   }
@@ -418,57 +477,117 @@ function generateDiverseFallback({
     const lvlKey = recentChange.levelKey;
     if (lvlKey === 'PERFECT' || lvlKey === 'GOOD') {
       const sleepGoodPool = [
-        `Chốt mục tiêu "${recentChange.task?.title}" đúng chuẩn kỷ luật rồi đấy ${callName}! Khép lại ngày hôm nay ở mức ${pct}%, giờ hãy tắt hết thiết bị và ngủ thật sâu để sáng mai thức dậy lúc 5h tràn đầy năng lượng nhé!`,
-        `Biết dừng lại nghỉ ngơi trước 23h là đỉnh cao của sự tự chủ đấy ${callName}! Tổng kết ngày đạt ${pct}% rồi, chúc bạn một giấc ngủ chất lượng để cơ thể phục hồi hoàn toàn cho ngày mai bùng nổ!`,
+        {
+          vi: `Chốt mục tiêu "${recentChange.task?.title}" đúng chuẩn kỷ luật rồi đấy ${callName}! Khép lại ngày hôm nay ở mức ${pct}%, giờ hãy tắt hết thiết bị và ngủ thật sâu để sáng mai thức dậy lúc 5h tràn đầy năng lượng nhé!`,
+          en: `Locked in "${recentChange.task?.title}" with disciplined precision, ${callName}! Wrapping up today at ${pct}%, now power down devices and get deep sleep to wake up energized tomorrow!`,
+        },
+        {
+          vi: `Biết dừng lại nghỉ ngơi trước 23h là đỉnh cao của sự tự chủ đấy ${callName}! Tổng kết ngày đạt ${pct}% rồi, chúc bạn một giấc ngủ chất lượng để cơ thể phục hồi hoàn toàn cho ngày mai bùng nổ!`,
+          en: `Prioritizing rest before 11 PM is the pinnacle of self-mastery, ${callName}! Day finished at ${pct}%. Have high-quality sleep to fully recharge for an explosive tomorrow!`,
+        },
       ];
       return pickRandom(sleepGoodPool);
     }
     if (lvlKey === 'BAD') {
-      return `Thức khuya khiến mục tiêu "${recentChange.task?.title}" chỉ đạt mức Tệ thôi sao ${callName}? Ngày hôm nay khép lại ở ${pct}%, hãy tắt máy đi ngủ ngay để tránh uể oải vào sáng mai nhé!`;
+      return {
+        vi: `Thức khuya khiến mục tiêu "${recentChange.task?.title}" chỉ đạt mức Tệ thôi sao ${callName}? Ngày hôm nay khép lại ở ${pct}%, hãy tắt máy đi ngủ ngay để tránh uể oải vào sáng mai nhé!`,
+        en: `Staying up late dropped "${recentChange.task?.title}" down to Bad, ${callName}? Today finishes at ${pct}%, shut down screens and sleep now to avoid grogginess tomorrow!`,
+      };
     }
   }
 
   if (completedTasks.length === 0) {
     const zeroPool = [
-      `Ủa alo ${callName}, mở app nhìn đồng hồ mà chưa dứt điểm việc nào là định để cả ngày trôi qua vô ích sao?`,
-      `Kế hoạch nằm sẵn trên giấy rồi đấy ${callName}, bắt tay hoàn thành "${targetTask}" để lấy đà đi chứ!`,
-      `Này ${callName}, sự trì hoãn đang thắng 1-0 đấy, lập tức mở màn bằng một thói quen Hoàn Hảo để lật ngược tình thế đi!`,
-      `Chờ đợi động lực là cái bẫy đấy ${callName}, bắt tay vào làm ngay việc phù hợp nhất thay vì ngắm bảng việc!`,
+      {
+        vi: `Ủa alo ${callName}, mở app nhìn đồng hồ mà chưa dứt điểm việc nào là định để cả ngày trôi qua vô ích sao?`,
+        en: `Wait, ${callName}, checking the app with zero tasks done—are you planning to let the whole day slip away?`,
+      },
+      {
+        vi: `Kế hoạch nằm sẵn trên giấy rồi đấy ${callName}, bắt tay hoàn thành "${targetTask}" để lấy đà đi chứ!`,
+        en: `The plan is right in front of you, ${callName}. Knock out "${targetTask}" right now to build momentum!`,
+      },
+      {
+        vi: `Này ${callName}, sự trì hoãn đang thắng 1-0 đấy, lập tức mở màn bằng một thói quen Hoàn Hảo để lật ngược tình thế đi!`,
+        en: `Procrastination is leading 1-0 right now, ${callName}. Turn the tables immediately with a Perfect habit completion!`,
+      },
+      {
+        vi: `Chờ đợi động lực là cái bẫy đấy ${callName}, bắt tay vào làm ngay việc phù hợp nhất thay vì ngắm bảng việc!`,
+        en: `Waiting for motivation is a trap, ${callName}. Dive straight into action instead of staring at the task list!`,
+      },
     ];
     return pickRandom(zeroPool);
   }
 
   if (pct < 40) {
     const lowPool = [
-      `Mới được ${pct}% thôi sao hả ${callName}, tốc độ này còn chậm đấy, tập trung xử lý tiếp "${targetTask}" ngay nào!`,
-      `Nhìn con số ${pct}% đi ${callName}, nếu không tăng tốc thì cuối ngày lại ngồi tiếc nuối đấy, hành động ngay!`,
-      `Tích được ${recentDone} là tốt rồi nhưng ${pct}% vẫn cần cố gắng thêm nhiều nhé ${callName}, xốc lại tinh thần tiến tới mục tiêu kế tiếp!`,
-      `Thẳng thắn nhé ${callName}: ${pct}% là chưa đạt tiêu chuẩn tự nâng cấp đâu, đừng dễ dãi với bản thân nữa!`,
+      {
+        vi: `Mới được ${pct}% thôi sao hả ${callName}, tốc độ này còn chậm đấy, tập trung xử lý tiếp "${targetTask}" ngay nào!`,
+        en: `Only ${pct}% so far, ${callName}? That's too slow—lock in and tackle "${targetTask}" right away!`,
+      },
+      {
+        vi: `Nhìn con số ${pct}% đi ${callName}, nếu không tăng tốc thì cuối ngày lại ngồi tiếc nuối đấy, hành động ngay!`,
+        en: `Take a hard look at ${pct}%, ${callName}. Speed up now or you'll regret it at bedtime. Take action!`,
+      },
+      {
+        vi: `Tích được ${recentDone} là tốt rồi nhưng ${pct}% vẫn cần cố gắng thêm nhiều nhé ${callName}, xốc lại tinh thần tiến tới mục tiêu kế tiếp!`,
+        en: `Good job checking off ${recentDone}, but ${pct}% still needs serious work, ${callName}. Rally your focus for the next objective!`,
+      },
+      {
+        vi: `Thẳng thắn nhé ${callName}: ${pct}% là chưa đạt tiêu chuẩn tự nâng cấp đâu, đừng dễ dãi với bản thân nữa!`,
+        en: `Let's be blunt, ${callName}: ${pct}% does not meet self-upgrade standards. Stop going easy on yourself!`,
+      },
     ];
     return pickRandom(lowPool);
   }
 
   if (pct < 70) {
     const midPool = [
-      `Khá lắm ${callName}, đã đi được hơn nửa chặng đường ở mức ${pct}%, đẩy thêm 1-2 việc nữa lên Hoàn Hảo là ngày hôm nay cực kỳ mỹ mãn!`,
-      `Đang có đà quán tính rất tốt với ${pct}%, ${callName} đừng buông lỏng mà hãy xử lý gọn luôn "${targetTask}" nhé!`,
-      `Nhịp điệu kỷ luật hôm nay của ${callName} bén đấy, giữ vững phong độ này để chạm mốc xuất sắc!`,
-      `Điểm số ${pct}% chứng minh nỗ lực có thật, cố thêm một chút nữa thôi là bạn bỏ xa sự lười biếng rồi ${callName}!`,
+      {
+        vi: `Khá lắm ${callName}, đã đi được hơn nửa chặng đường ở mức ${pct}%, đẩy thêm 1-2 việc nữa lên Hoàn Hảo là ngày hôm nay cực kỳ mỹ mãn!`,
+        en: `Great job, ${callName}! You're over halfway there at ${pct}%. Push 1-2 more tasks to Perfect and today will be a major win!`,
+      },
+      {
+        vi: `Đang có đà quán tính rất tốt với ${pct}%, ${callName} đừng buông lỏng mà hãy xử lý gọn luôn "${targetTask}" nhé!`,
+        en: `You've got solid momentum going at ${pct}%, ${callName}. Don't ease up—take down "${targetTask}" cleanly!`,
+      },
+      {
+        vi: `Nhịp điệu kỷ luật hôm nay của ${callName} bén đấy, giữ vững phong độ này để chạm mốc xuất sắc!`,
+        en: `Your discipline rhythm is sharp today, ${callName}! Keep up this tempo to finish strong!`,
+      },
+      {
+        vi: `Điểm số ${pct}% chứng minh nỗ lực có thật, cố thêm một chút nữa thôi là bạn bỏ xa sự lười biếng rồi ${callName}!`,
+        en: `At ${pct}%, your effort is paying off. Just a little more push and you leave laziness in the dust, ${callName}!`,
+      },
     ];
     return pickRandom(midPool);
   }
 
   if (pct >= 90) {
     const perfectPool = [
-      `Khét lẹt luôn ${callName}! ${pct}% điểm kỷ luật thép hôm nay là minh chứng cho sự tự chủ tuyệt đối, tối nay tha hồ ngủ ngon!`,
-      `Đỉnh cao phong độ là đây chứ đâu, ${callName} đã gần như càn quét sạch sẽ bảng việc với ${pct}%, xuất sắc không tì vết!`,
-      `Nhìn bảng tích điểm ${pct}% mà thấy nể phục sự kiên định của ${callName}, bạn đang trở thành phiên bản mạnh mẽ nhất của chính mình!`,
-      `Thắng lợi giòn giã hôm nay thuộc về bạn, ${callName} nhớ tự thưởng cho mình chút thời gian thư giãn xứng đáng nhé!`,
+      {
+        vi: `Khét lẹt luôn ${callName}! ${pct}% điểm kỷ luật thép hôm nay là minh chứng cho sự tự chủ tuyệt đối, tối nay tha hồ ngủ ngon!`,
+        en: `Sensational performance, ${callName}! ${pct}% iron discipline today proves total self-mastery—you've earned a restful night!`,
+      },
+      {
+        vi: `Đỉnh cao phong độ là đây chứ đâu, ${callName} đã gần như càn quét sạch sẽ bảng việc với ${pct}%, xuất sắc không tì vết!`,
+        en: `Peak performance right here! You virtually swept the board clean at ${pct}%, outstanding execution, ${callName}!`,
+      },
+      {
+        vi: `Nhìn bảng tích điểm ${pct}% mà thấy nể phục sự kiên định của ${callName}, bạn đang trở thành phiên bản mạnh mẽ nhất của chính mình!`,
+        en: `Seeing ${pct}% is pure inspiration, ${callName}. You are stepping into the strongest version of yourself!`,
+      },
+      {
+        vi: `Thắng lợi giòn giã hôm nay thuộc về bạn, ${callName} nhớ tự thưởng cho mình chút thời gian thư giãn xứng đáng nhé!`,
+        en: `A resounding victory today is all yours, ${callName}! Enjoy well-deserved downtime tonight!`,
+      },
     ];
     return pickRandom(perfectPool);
   }
 
-  return `Tiến độ ${pct}% rất đáng ghi nhận, tiếp tục giữ vững nhịp độ này để kết thúc ngày trọn vẹn nhé ${callName}!`;
+  return {
+    vi: `Tiến độ ${pct}% rất đáng ghi nhận, tiếp tục giữ vững nhịp độ này để kết thúc ngày trọn vẹn nhé ${callName}!`,
+    en: `Progress at ${pct}% is well recognized. Keep maintaining this pace to finish the day strong, ${callName}!`,
+  };
 }
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -738,12 +857,24 @@ QUY TẮC BẮT BUỘC KHI NHẬN XÉT NGÀY QUÁ KHỨ (${dateCtx.relativeDayLa
 2. CÂU 1: Phản hồi TRỰC TIẾP vào thay đổi vừa cập nhật của ${dateCtx.relativeDayLabel} — gọi đúng tên việc vừa tích/bỏ tích và mức độ (hoặc nội dung ghi chú vừa lưu), đồng thời nói rõ ngữ cảnh đây là việc của ${dateCtx.relativeDayLabel} (VD: "hôm qua", "ngày ${dateCtx.shortDate}"...).
 3. CÂU 2: Đánh giá TỔNG KẾT khép lại ${dateCtx.relativeDayLabel} ở mức ${dayStats.percentage}% (nhìn nhận kết quả đã làm được hoặc những việc đã bỏ lỡ trong ngày cũ đó) và liên hệ sang NGÀY HÔM NAY (${todayInfo.dateKey}) — thúc đẩy phát huy tiếp hoặc rút kinh nghiệm để hôm nay gỡ điểm.
 4. CẤM TUYỆT ĐỐI: KHÔNG ĐƯỢC nói như thể ${dateCtx.relativeDayLabel} là ngày hôm nay! TUYỆT ĐỐI KHÔNG bắt hay giục người dùng "bây giờ hãy đi tập/đi học/làm tiếp việc X" của ngày cũ vì ngày đó đã kết thúc rồi!
-5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.`.trim();
+5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.
+
+ĐỊNH DẠNG JSON BẮT BUỘC TRẢ VỀ:
+{
+  "message": "nhận xét bằng tiếng Việt (đúng 2 câu ngắn, 25-45 từ, không tiêu đề, không xuống dòng)",
+  "messageEn": "the exact same feedback in English (natural, sharp, 2 sentences, 25-45 words, no titles, no line breaks)"
+}`.trim();
     } else if (dateCtx.isFutureDay) {
       specificContextAndRules = `
 BỐI CẢNH THỜI GIAN ĐẶC BIỆT (NGÀY TRONG TƯƠNG LAI):
 - Ngày thực tế hiện tại là ${todayInfo.dateKey}, nhưng người dùng đang thao tác trên ${dateCtx.relativeDayLabel} (chưa tới).
-- QUY TẮC: Viết ĐÚNG 2 CÂU ngắn (25–45 từ). Câu 1 nhận xét dí dỏm về thao tác vừa làm trên ${dateCtx.relativeDayLabel}; Câu 2 nhắc người dùng tập trung hoàn thành tốt lịch trình của ngày hôm nay (${todayInfo.dateKey}) trước. KHÔNG viết tiêu đề, KHÔNG xuống dòng.`.trim();
+- QUY TẮC: Viết ĐÚNG 2 CÂU ngắn (25–45 từ). Câu 1 nhận xét dí dỏm về thao tác vừa làm trên ${dateCtx.relativeDayLabel}; Câu 2 nhắc người dùng tập trung hoàn thành tốt lịch trình của ngày hôm nay (${todayInfo.dateKey}) trước. KHÔNG viết tiêu đề, KHÔNG xuống dòng.
+
+ĐỊNH DẠNG JSON BẮT BUỘC TRẢ VỀ:
+{
+  "message": "nhận xét bằng tiếng Việt (đúng 2 câu ngắn, 25-45 từ)",
+  "messageEn": "the exact same feedback in English (natural, sharp, 2 sentences, 25-45 words)"
+}`.trim();
     } else if (recentChange?.isSleepTask) {
       specificContextAndRules = `
 BỐI CẢNH ĐẶC BIỆT (VIỆC GIẤC NGỦ CUỐI NGÀY — "${recentChange.task?.title}"):
@@ -758,7 +889,13 @@ QUY TẮC BẮT BUỘC KHI NHẬN XÉT VIỆC "${recentChange.task?.title}":
    - Nếu vừa Bỏ tích: Hỏi khích tướng vì sao lại hủy cam kết ngủ sớm.
 3. CÂU 2: Chốt lại tổng kết ngày hôm nay ở mức ${dayStats.percentage}% và nhắn người dùng nghỉ ngơi/ngủ thật sâu để nạp đầy năng lượng cho sáng mai thức dậy bùng nổ (nếu trong ngày còn việc chưa làm thì chỉ dặn gác lại để ngày mai phục thù).
 4. CẤM TUYỆT ĐỐI: Khi người dùng vừa tích việc đi ngủ ("${recentChange.task?.title}"), TUYỆT ĐỐI KHÔNG ĐƯỢC bảo người dùng đứng dậy đi tập thể dục, đi tập gym, đi học tiếng Anh, học code hay làm thêm bất kỳ việc nào khác ngay lúc này!
-5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.`.trim();
+5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.
+
+ĐỊNH DẠNG JSON BẮT BUỘC TRẢ VỀ:
+{
+  "message": "nhận xét bằng tiếng Việt (đúng 2 câu ngắn, 25-45 từ, không tiêu đề, không xuống dòng)",
+  "messageEn": "the exact same feedback in English (natural, sharp, 2 sentences, 25-45 words, no titles, no line breaks)"
+}`.trim();
     } else {
       const actionableListStr =
         actionableNow.length > 0
@@ -782,7 +919,13 @@ QUY TẮC BẮT BUỘC:
 2. CÂU 1: Phản hồi TRỰC TIẾP vào THAY ĐỔI GẦN NHẤT — gọi đúng tên việc vừa tích/bỏ tích và mức độ (hoặc nội dung ghi chú / hành động vừa làm). Khen nếu là mức Hoàn Hảo/Tốt, chê thẳng nếu mức Tệ hoặc vừa bỏ tích, phản hồi sát nội dung nếu là ghi chú.
 3. CÂU 2: Nối sang TỔNG QUAN ngày hôm nay (${dayStats.percentage}%) — chỉ gợi ý việc tiếp theo nằm trong nhóm "Việc CHƯA LÀM phù hợp để thực hiện tiếp trong khung giờ hiện tại (${timeCtx.periodLabel})". Nếu hiện tại đã là đêm muộn (sau 22h) thì khuyên khép lại công việc để chuẩn bị ngủ trước 11h chứ KHÔNG giục đi tập gym/thể dục hay cày việc nặng. Nếu đã xong hết mọi việc thì khen tổng kết.
 4. Đa dạng cách mở câu (thán từ, đặt tên ${callName} ở giữa/cuối câu...), không rập khuôn.
-5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.`.trim();
+5. Tuyệt đối KHÔNG viết tiêu đề, KHÔNG xuống dòng, KHÔNG gạch đầu dòng, KHÔNG thêm dấu ngoặc kép bao bọc.
+
+ĐỊNH DẠNG JSON BẮT BUỘC TRẢ VỀ:
+{
+  "message": "nhận xét bằng tiếng Việt (đúng 2 câu ngắn, 25-45 từ, không tiêu đề, không xuống dòng)",
+  "messageEn": "the exact same feedback in English (natural, sharp, 2 sentences, 25-45 words, no titles, no line breaks)"
+}`.trim();
     }
 
     promptContext = `
@@ -826,17 +969,18 @@ ${specificContextAndRules}
     return { message: '' };
   }
 
-  if (cascadeResult.text) {
+    if (cascadeResult.text) {
     const message = cascadeResult.text;
+    const messageEn = cascadeResult.textEn;
     const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
     userRecentMessagesMap.set(userId, updatedHistory);
-    return { message };
+    return { message, messageEn };
   }
 
   // Nếu bị 429 (Rate limit / Quota): Tự động dùng Smart Fallback cá nhân hóa thay vì báo lỗi
   if (cascadeResult.isRateLimited) {
     console.log(`   [AI Coach] 🎯 Tự động kích hoạt câu nhận xét thông minh (Smart Fallback) cho user ${userId}...`);
-    let message = generateDiverseFallback({
+    const fallbackPair = generateDiverseFallback({
       mode,
       callName,
       percentage: dayStats.percentage,
@@ -849,6 +993,8 @@ ${specificContextAndRules}
       dateCtx,
       recentChange,
     });
+    let message = fallbackPair.vi;
+    let messageEn = fallbackPair.en;
     if (
       mode === 'feedback' &&
       recentChange &&
@@ -856,10 +1002,11 @@ ${specificContextAndRules}
       !recentChange.isSleepTask
     ) {
       message = `${recentChange.short} ${message.charAt(0).toLowerCase()}${message.slice(1)}`;
+      messageEn = `Noticed your update: ${messageEn.charAt(0).toLowerCase()}${messageEn.slice(1)}`;
     }
     const updatedHistory = [message, ...recentHistory].slice(0, MAX_HISTORY_TRACKED);
     userRecentMessagesMap.set(userId, updatedHistory);
-    return { message, isFallback: true };
+    return { message, messageEn, isFallback: true };
   }
 
   // Nếu bị timeout: trả về trực tiếp thông tin lỗi trong payload dữ liệu để hiển thị ra bong bóng chat
@@ -867,6 +1014,7 @@ ${specificContextAndRules}
     const errorDesc = 'Hết thời gian chờ phản hồi từ AI (Timeout sau 6s). Máy chủ AI phản hồi quá lâu.';
     return {
       message: '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!',
+      messageEn: '⚠️ AI response timed out (6s). Server is responding slowly, please try again!',
       error: errorDesc,
       isTimeout: true,
     };
@@ -876,6 +1024,7 @@ ${specificContextAndRules}
   const fallbackErr = cascadeResult.lastError || 'AI không trả về dữ liệu phản hồi';
   return {
     message: `⚠️ Không thể nhận phản hồi từ AI (${fallbackErr}). Vui lòng thử lại!`,
+    messageEn: `⚠️ Unable to get response from AI (${fallbackErr}). Please try again!`,
     error: fallbackErr,
     isTimeout: false,
   };
@@ -995,6 +1144,8 @@ const analyzeNutrition = async (
       fiber: 0,
       aiFeedback:
         'Chưa có món ăn nào được ghi lại cho ngày này. Hãy thêm các món bạn ăn từ 6h sáng đến 9h tối nhé!',
+      aiFeedbackEn:
+        'No meals logged yet for this day. Please add the meals you eat between 6:00 AM and 9:00 PM!',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -1070,6 +1221,7 @@ YÊU CẦU BẮT BUỘC:
    - So sánh sự thay đổi so với lần trước (nêu rõ vừa xóa món hay thêm món làm calo và macro tăng/giảm từ bao nhiêu xuống/lên bao nhiêu, nhắc đến cách chế biến luộc/hấp/xào/chiên/nướng nếu có).
    - Đánh giá sự cân đối đạm/carb/béo/chất xơ cho thể trạng và mục tiêu ${profile.focusGoal || 'sức khỏe'}.
    - Lời khuyên ngắn gọn, thiết thực, giàu tính kỷ luật.
+3. aiFeedbackEn: Dịch/viết lại toàn bộ đoạn nhận xét trên sang tiếng Anh chuẩn xác, tự nhiên, sắc bén (2-3 câu, tối đa 80 từ), tương ứng 100% nội dung của aiFeedback.
 
 ĐỊNH DẠNG BẮT BUỘC TRẢ VỀ JSON:
 {
@@ -1078,7 +1230,8 @@ YÊU CẦU BẮT BUỘC:
   "carb": number,
   "fat": number,
   "fiber": number,
-  "aiFeedback": "chuỗi nhận xét"
+  "aiFeedback": "chuỗi nhận xét tiếng Việt",
+  "aiFeedbackEn": "English feedback string"
 }
 `.trim();
 
@@ -1101,6 +1254,7 @@ YÊU CẦU BẮT BUỘC:
       fat: Math.round(Number(result.data.fat) * 10) / 10 || 0,
       fiber: Math.round(Number(result.data.fiber) * 10) / 10 || 0,
       aiFeedback: cleanFeedbackText(result.data.aiFeedback),
+      aiFeedbackEn: result.data.aiFeedbackEn?.trim() || undefined,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -1118,6 +1272,12 @@ YÊU CẦU BẮT BUỘC:
     ? '⚠️ Hệ thống AI đang bận (429 Rate Limit). Đã lưu thực đơn và tính nhanh dinh dưỡng ước tính.'
     : `Đã lưu thực đơn gồm ${meals.length} món ăn. Tỷ lệ dinh dưỡng ước tính cơ bản đã sẵn sàng!`;
 
+  const timeoutNoteEn = result.isTimeout
+    ? '⚠️ AI analysis timed out. Meals saved with estimated basic nutrition.'
+    : result.error?.includes('429')
+    ? '⚠️ AI system is busy (429 Rate Limit). Meals saved with estimated nutrition.'
+    : `Saved ${meals.length} meal(s). Estimated nutritional baseline is ready!`;
+
   return {
     totalCalories: estCalories,
     protein: estProtein,
@@ -1125,6 +1285,7 @@ YÊU CẦU BẮT BUỘC:
     fat: estFat,
     fiber: estFiber,
     aiFeedback: timeoutNote,
+    aiFeedbackEn: timeoutNoteEn,
     error: result.isTimeout
       ? 'Hết thời gian chờ phản hồi từ AI (Timeout sau 6.5s).'
       : (result.error || undefined),

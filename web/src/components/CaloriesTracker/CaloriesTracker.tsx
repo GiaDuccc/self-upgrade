@@ -632,7 +632,9 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
               </span>
               <p className="feedback-paragraph">
                 {initialSummary?.aiFeedback ? (
-                  initialSummary.aiFeedback
+                  isEn && initialSummary.aiFeedbackEn
+                    ? initialSummary.aiFeedbackEn
+                    : initialSummary.aiFeedback
                 ) : (
                   <span className="feedback-placeholder">
                     {isEn ? (

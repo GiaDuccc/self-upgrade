@@ -47,6 +47,7 @@ export interface CaloriesSummary {
   fat: number;
   fiber: number;
   aiFeedback: string;
+  aiFeedbackEn?: string;
   updatedAt?: string;
   error?: string;
 }

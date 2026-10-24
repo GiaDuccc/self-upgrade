@@ -18,7 +18,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiMessage, setAiMessage] = useState('');
+  const [aiMessages, setAiMessages] = useState<{ vi: string; en: string }>({ vi: '', en: '' });
   const { isEn } = useLanguage();
 
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,11 +75,20 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
     // Nếu trong phiên làm việc đã có lời chào của ngày này, tái sử dụng ngay lập tức (không gọi lại API)
     if (cachedGreeting) {
-      console.log(`⚡ [AI Coach FE] Lấy lời chào từ Session Cache: "${cachedGreeting.slice(0, 60)}..."`);
-      setAiMessage(cachedGreeting);
-      setIsAiLoading(false);
-      openWithAutoClose(5);
-      return;
+      try {
+        const parsed = JSON.parse(cachedGreeting);
+        if (parsed.vi || parsed.en) {
+          setAiMessages(parsed);
+          setIsAiLoading(false);
+          openWithAutoClose(5);
+          return;
+        }
+      } catch {
+        setAiMessages({ vi: cachedGreeting, en: cachedGreeting });
+        setIsAiLoading(false);
+        openWithAutoClose(5);
+        return;
+      }
     }
 
     const controller = new AbortController();
@@ -96,22 +105,29 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       },
       controller.signal
     )
-      .then((msg) => {
+      .then((res) => {
         if (requestId !== latestRequestIdRef.current || controller.signal.aborted) {
           return;
         }
-        const finalMsg =
-          msg ||
+        const finalMsgVi =
+          res.message ||
           '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
-        console.log(`✅ [AI Coach FE] Nhận phản hồi khởi đầu (#${requestId}):`, finalMsg);
-        setAiMessage(finalMsg);
+        const finalMsgEn =
+          res.messageEn ||
+          (finalMsgVi.startsWith('⚠️')
+            ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
+            : finalMsgVi);
+
+        const newMessages = { vi: finalMsgVi, en: finalMsgEn };
+        console.log(`✅ [AI Coach FE] Nhận phản hồi khởi đầu (#${requestId}):`, newMessages);
+        setAiMessages(newMessages);
         setIsAiLoading(false);
         openWithAutoClose(6);
 
         // Lưu vào cache nếu phản hồi hợp lệ (không phải câu thông báo lỗi)
-        if (finalMsg && !finalMsg.startsWith('⚠️')) {
+        if (finalMsgVi && !finalMsgVi.startsWith('⚠️')) {
           try {
-            sessionStorage.setItem(cacheKey, finalMsg);
+            sessionStorage.setItem(cacheKey, JSON.stringify(newMessages));
           } catch {}
         }
       })
@@ -128,7 +144,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         if (requestId === latestRequestIdRef.current) {
           const errMsg = resolveErrorBubbleMessage(error);
           console.warn(`⚠️ [AI Coach FE] Lỗi lấy lời chào ban đầu (#${requestId}):`, errMsg);
-          setAiMessage(errMsg);
+          setAiMessages({ vi: errMsg, en: errMsg });
           setIsAiLoading(false);
           openWithAutoClose(6);
         }
@@ -176,7 +192,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       console.log(`🤖 [AI Coach FE] Gửi request phân tích (#${requestId}) | Signal: "${triggerSignal}"`);
 
       try {
-        const msg = await getAiCoachingMessageAPI(
+        const res = await getAiCoachingMessageAPI(
           {
             dateKey: dateKeyRef.current,
             mode: 'feedback',
@@ -187,11 +203,18 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
         // Chỉ cập nhật nội dung nếu đây vẫn là request mới nhất
         if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
-          const finalMsg =
-            msg ||
+          const finalMsgVi =
+            res.message ||
             '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
-          console.log(`✅ [AI Coach FE] Nhận phản hồi (#${requestId}):`, finalMsg);
-          setAiMessage(finalMsg);
+          const finalMsgEn =
+            res.messageEn ||
+            (finalMsgVi.startsWith('⚠️')
+              ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
+              : finalMsgVi);
+
+          const newMessages = { vi: finalMsgVi, en: finalMsgEn };
+          console.log(`✅ [AI Coach FE] Nhận phản hồi (#${requestId}):`, newMessages);
+          setAiMessages(newMessages);
           setIsAiLoading(false);
           openWithAutoClose(6);
         }
@@ -210,7 +233,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         const errMsg = resolveErrorBubbleMessage(error);
         console.error(`❌ [AI Coach FE] Lỗi request #${requestId}:`, errMsg);
         if (requestId === latestRequestIdRef.current) {
-          setAiMessage(errMsg);
+          setAiMessages({ vi: errMsg, en: errMsg });
           setIsAiLoading(false);
           openWithAutoClose(6);
         }
@@ -255,7 +278,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
     console.log(`🔄 [AI Coach FE] Làm mới thủ công (#${requestId})...`);
 
     try {
-      const msg = await getAiCoachingMessageAPI(
+      const res = await getAiCoachingMessageAPI(
         {
           dateKey: dateKeyRef.current,
           mode: 'feedback',
@@ -264,17 +287,24 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
         controller.signal
       );
       if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
-        const finalMsg =
-          msg ||
+        const finalMsgVi =
+          res.message ||
           '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
-        console.log(`✅ [AI Coach FE] Nhận phản hồi làm mới (#${requestId}):`, finalMsg);
-        setAiMessage(finalMsg);
+        const finalMsgEn =
+          res.messageEn ||
+          (finalMsgVi.startsWith('⚠️')
+            ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
+            : finalMsgVi);
+
+        const newMessages = { vi: finalMsgVi, en: finalMsgEn };
+        console.log(`✅ [AI Coach FE] Nhận phản hồi làm mới (#${requestId}):`, newMessages);
+        setAiMessages(newMessages);
         setIsAiLoading(false);
         openWithAutoClose(6);
 
-        if (finalMsg && !finalMsg.startsWith('⚠️')) {
+        if (finalMsgVi && !finalMsgVi.startsWith('⚠️')) {
           try {
-            sessionStorage.setItem(`ai_coach_greeting_${dateKeyRef.current}`, finalMsg);
+            sessionStorage.setItem(`ai_coach_greeting_${dateKeyRef.current}`, JSON.stringify(newMessages));
           } catch {}
         }
       }
@@ -292,7 +322,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
       const errMsg = resolveErrorBubbleMessage(error);
       console.error(`❌ [AI Coach FE] Lỗi làm mới #${requestId}:`, errMsg);
       if (requestId === latestRequestIdRef.current) {
-        setAiMessage(errMsg);
+        setAiMessages({ vi: errMsg, en: errMsg });
         setIsAiLoading(false);
         openWithAutoClose(6);
       }
@@ -363,7 +393,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
             </div>
           ) : (
             <p className="ai-bubble-message">
-              {aiMessage ||
+              {(isEn ? (aiMessages.en || aiMessages.vi) : (aiMessages.vi || aiMessages.en)) ||
                 (isEn
                   ? 'Check off your daily tasks to let AI coach you.'
                   : 'Hãy tích các việc trong ngày để AI đồng hành cùng bạn.')}
