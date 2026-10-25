@@ -601,29 +601,29 @@ export const DayDetail: React.FC = () => {
       <div className="day-split-container">
         {/* KHUNG 1 (BÊN TRÁI): ĐIỀU HƯỚNG, NỘI DUNG, ĐIỂM SỐ, VÀ GHI CHÚ NGÀY BÊN DƯỚI */}
         <section className="day-detail-section day-split-left-col">
-          {/* Thanh điều hướng nhanh chuyển ngày */}
+          {/* Thanh điều hướng nhanh chuyển ngày & Thẻ ngày */}
           <div className="day-page-topbar">
             <div className="day-stepper-btns">
               <button
                 type="button"
                 className="btn-minimal btn-sm"
                 onClick={() => handleStepDay(-1)}
+                title={isEn ? 'Previous Day' : 'Ngày trước'}
               >
                 <ChevronLeft size={14} />
-                <span>{isEn ? 'Prev Day' : 'Ngày trước'}</span>
+                <span>{isEn ? 'Prev' : 'Ngày trước'}</span>
               </button>
               <button
                 type="button"
                 className="btn-minimal btn-sm"
                 onClick={() => handleStepDay(1)}
+                title={isEn ? 'Next Day' : 'Ngày sau'}
               >
-                <span>{isEn ? 'Next Day' : 'Ngày sau'}</span>
+                <span>{isEn ? 'Next' : 'Ngày sau'}</span>
                 <ChevronRight size={14} />
               </button>
             </div>
-          </div>
 
-          <div className="day-detail-title-group">
             <div className="day-tag-row">
               <span className="day-badge-mono">{activeDateKey}</span>
               <span className="day-weekday-pill">
@@ -635,6 +635,9 @@ export const DayDetail: React.FC = () => {
                 </span>
               )}
             </div>
+          </div>
+
+          <div className="day-detail-title-group">
             <h2 className="section-heading">
               {isEn ? 'Day Detail & Check-in' : 'Chi tiết & Tích việc'}
             </h2>
@@ -648,9 +651,7 @@ export const DayDetail: React.FC = () => {
             <div className="day-score-main">
               <div className="day-score-left">
                 <span className="day-score-label">
-                  {isEn
-                    ? 'ACHIEVED SCORE (PERSONALIZED)'
-                    : 'ĐIỂM ĐẠT ĐƯỢC (ĐÃ CÁ NHÂN HÓA)'}
+                  {isEn ? 'ACHIEVED SCORE' : 'ĐIỂM ĐẠT ĐƯỢC'}
                 </span>
                 <div className="day-score-big-row">
                   <div className="day-score-big">{dayStats.percentage}%</div>
@@ -689,78 +690,93 @@ export const DayDetail: React.FC = () => {
               </div>
             </div>
 
-            <div className="score-card-state-row">
-              <div className="personal-state-strip">
-                <span
-                  className="state-chip"
+            {/* PHẦN TRẠNG THÁI CÁ NHÂN: 3 Ô CÂN XỨNG & NÚT CẬP NHẬT */}
+            <div className="day-state-section">
+              <div className="day-state-header">
+                <span className="day-state-section-label">
+                  {isEn ? 'PERSONAL STATES' : 'TRẠNG THÁI HÔM NAY'}
+                </span>
+                <button
+                  type="button"
+                  className="btn-state-edit-link"
+                  onClick={onOpenProfileModal}
+                  title={
+                    isEn
+                      ? 'Update Physical, Mental & Emotional states'
+                      : 'Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân'
+                  }
+                >
+                  <UserCheck size={12} />
+                  <span>{isEn ? 'Update' : 'Cập nhật'}</span>
+                </button>
+              </div>
+
+              <div className="day-state-cards-grid">
+                <div
+                  className="state-mini-card"
                   title={physObj.desc}
                   onClick={onOpenProfileModal}
-                  style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
                 >
-                  {isEn ? 'Physical:' : 'Thể chất:'}{' '}
+                  <span className="state-mini-label">{isEn ? 'Physical' : 'Thể chất'}</span>
                   <strong
                     className={`state-text-val state-text-${physObj.tier || 'good'}`}
                   >
                     {physObj.label.split('/')[0].trim()}
                   </strong>
-                </span>
-                <span
-                  className="state-chip"
+                </div>
+
+                <div
+                  className="state-mini-card"
                   title={mentObj.desc}
                   onClick={onOpenProfileModal}
-                  style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
                 >
-                  {isEn ? 'Mental:' : 'Tinh thần:'}{' '}
+                  <span className="state-mini-label">{isEn ? 'Mental' : 'Tinh thần'}</span>
                   <strong
                     className={`state-text-val state-text-${mentObj.tier || 'good'}`}
                   >
                     {mentObj.label.split('/')[0].trim()}
                   </strong>
-                </span>
-                <span
-                  className="state-chip"
+                </div>
+
+                <div
+                  className="state-mini-card"
                   title={emoObj.desc}
                   onClick={onOpenProfileModal}
-                  style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
                 >
-                  {isEn ? 'Emotional:' : 'Cảm xúc:'}{' '}
+                  <span className="state-mini-label">{isEn ? 'Emotional' : 'Cảm xúc'}</span>
                   <strong
                     className={`state-text-val state-text-${emoObj.tier || 'good'}`}
                   >
                     {emoObj.label.split('/')[0].trim()}
                   </strong>
-                </span>
-                {dayData?.dayRecord?.sleepData && (
-                  <span
-                    className="state-chip"
-                    title={
-                      isEn
-                        ? `Sleep: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Source: ${dayData.dayRecord.sleepData.source}` : ''}`
-                        : `Giấc ngủ: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Nguồn: ${dayData.dayRecord.sleepData.source}` : ''}`
-                    }
-                  >
-                    🌙 {isEn ? 'Sleep:' : 'Giấc ngủ:'}{' '}
-                    <strong className="state-text-val state-text-good">
-                      {Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h{dayData.dayRecord.sleepData.durationMinutes % 60 > 0 ? ` ${dayData.dayRecord.sleepData.durationMinutes % 60}m` : ''}
-                      {dayData.dayRecord.sleepData.sleepScore ? ` (${dayData.dayRecord.sleepData.sleepScore}đ)` : ''}
-                    </strong>
-                  </span>
-                )}
+                </div>
               </div>
 
-              <button
-                type="button"
-                className="btn-minimal btn-sm btn-state-quick"
-                onClick={onOpenProfileModal}
-                title={
-                  isEn
-                    ? 'Update Physical, Mental & Emotional states'
-                    : 'Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân'
-                }
-              >
-                <UserCheck size={14} />
-                <span>{isEn ? 'States' : 'Trạng thái'}</span>
-              </button>
+              {dayData?.dayRecord?.sleepData && (
+                <div
+                  className="state-sleep-banner"
+                  title={
+                    isEn
+                      ? `Sleep: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Source: ${dayData.dayRecord.sleepData.source}` : ''}`
+                      : `Giấc ngủ: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Nguồn: ${dayData.dayRecord.sleepData.source}` : ''}`
+                  }
+                  onClick={onOpenProfileModal}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <span className="state-sleep-title">🌙 {isEn ? 'Sleep:' : 'Giấc ngủ:'}</span>
+                  <strong className="state-text-val state-text-good">
+                    {Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h{dayData.dayRecord.sleepData.durationMinutes % 60 > 0 ? ` ${dayData.dayRecord.sleepData.durationMinutes % 60}m` : ''}
+                    {dayData.dayRecord.sleepData.sleepScore ? ` (${dayData.dayRecord.sleepData.sleepScore}đ)` : ''}
+                  </strong>
+                </div>
+              )}
             </div>
 
             <div
