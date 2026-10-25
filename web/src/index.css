@@ -217,31 +217,45 @@ input {
   gap: 8px;
 }
 
-.month-switcher {
+.month-switcher,
+.day-date-switcher {
   display: flex;
   align-items: center;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  height: 33px;
+  box-sizing: border-box;
 }
 
-.month-switcher .btn-icon {
+.month-switcher .btn-icon,
+.day-date-switcher .btn-icon {
   border: none;
   border-radius: 0;
-  padding: 7px 10px;
+  padding: 0 10px;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
 }
 
-.month-display {
+.month-display,
+.day-date-display {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 14px;
+  padding: 0 13px;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 600;
+  color: var(--text-primary);
   border-left: 1px solid var(--border-subtle);
   border-right: 1px solid var(--border-subtle);
+  height: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 /* ============================================================================

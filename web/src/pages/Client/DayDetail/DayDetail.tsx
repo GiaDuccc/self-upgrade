@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
+  Calendar,
   Check,
   RotateCcw,
   Sparkles,
@@ -104,6 +105,7 @@ export const DayDetail: React.FC = () => {
   const navigate = useNavigate();
   const today = getTodayInfo();
   const activeDateKey = paramDateKey || today.dateKey;
+  const [, currMonthStr, currDayStr] = (activeDateKey || '').split('-');
 
   const {
     userProfile,
@@ -603,24 +605,28 @@ export const DayDetail: React.FC = () => {
         <section className="day-detail-section day-split-left-col">
           {/* Thanh điều hướng nhanh chuyển ngày & Thẻ ngày */}
           <div className="day-page-topbar">
-            <div className="day-stepper-btns">
+            <div className="day-date-switcher">
               <button
                 type="button"
-                className="btn-minimal btn-sm"
+                className="btn-minimal btn-icon"
                 onClick={() => handleStepDay(-1)}
-                title={isEn ? 'Previous Day' : 'Ngày trước'}
+                title={isEn ? 'Previous day' : 'Ngày trước'}
+                aria-label={isEn ? 'Previous day' : 'Ngày trước'}
               >
-                <ChevronLeft size={14} />
-                <span>{isEn ? 'Prev' : 'Ngày trước'}</span>
+                <ChevronLeft size={16} />
               </button>
+              <div className="day-date-display">
+                <Calendar size={14} />
+                <span>{currDayStr} / {currMonthStr}</span>
+              </div>
               <button
                 type="button"
-                className="btn-minimal btn-sm"
+                className="btn-minimal btn-icon"
                 onClick={() => handleStepDay(1)}
-                title={isEn ? 'Next Day' : 'Ngày sau'}
+                title={isEn ? 'Next day' : 'Ngày sau'}
+                aria-label={isEn ? 'Next day' : 'Ngày sau'}
               >
-                <span>{isEn ? 'Next' : 'Ngày sau'}</span>
-                <ChevronRight size={14} />
+                <ChevronRight size={16} />
               </button>
             </div>
 
