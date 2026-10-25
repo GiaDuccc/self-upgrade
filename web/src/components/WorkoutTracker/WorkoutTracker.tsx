@@ -281,7 +281,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                 className={`muscle-pill-btn ${isSelected ? 'active' : ''}`}
                 onClick={() => handleToggleMuscle(m.id)}
               >
-                <span className="muscle-pill-icon">{m.icon}</span>
                 <span>{isEn ? m.labelEn : m.label}</span>
                 {isSelected && <CheckCircle2 size={13} className="pill-check-icon" />}
               </button>
@@ -347,7 +346,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
               onClick={() => setIsAddingCustom(true)}
             >
               <Plus size={12} />
-              <span>{isEn ? '+ Custom Exercise' : '+ Thêm bài riêng'}</span>
+              <span>{isEn ? 'Custom Exercise' : 'Thêm bài riêng'}</span>
             </button>
           ) : (
             <div className="custom-exercise-inline-form">
@@ -457,7 +456,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                       onClick={() => handleDeleteExercise(ex.id)}
                       title={isEn ? 'Remove exercise' : 'Xóa bài tập này'}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
 
@@ -548,7 +547,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                 title={isEn ? 'Delete set' : 'Xóa set'}
                                 disabled={ex.sets.length <= 1}
                               >
-                                <Trash2 size={12} />
+                                <Trash2 size={16} />
                               </button>
                             </td>
                           </tr>
@@ -564,7 +563,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                       onClick={() => handleAddSet(ex.id)}
                     >
                       <Plus size={13} />
-                      <span>{isEn ? '+ Add Set' : '+ Thêm hiệp (Set)'}</span>
+                      <span>{isEn ? 'Add Set' : 'Thêm hiệp (Set)'}</span>
                     </button>
                   </div>
                 </div>

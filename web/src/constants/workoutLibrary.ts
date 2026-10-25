@@ -9,15 +9,15 @@ export interface PresetExercise {
 }
 
 export const MUSCLE_GROUP_OPTIONS = [
-  { id: 'nguc', label: 'Ngực', labelEn: 'Chest', icon: '🏋️‍♂️' },
-  { id: 'lung', label: 'Lưng & Xô', labelEn: 'Back & Lats', icon: '🛶' },
-  { id: 'vai', label: 'Vai', labelEn: 'Shoulders', icon: '🛡️' },
-  { id: 'tay_sau', label: 'Tay sau', labelEn: 'Triceps', icon: '💪' },
-  { id: 'tay_truoc', label: 'Tay trước', labelEn: 'Biceps', icon: '🦾' },
-  { id: 'core', label: 'Bụng & Core', labelEn: 'Abs & Core', icon: '🎯' },
-  { id: 'push', label: 'Push (Đẩy)', labelEn: 'Push Split', icon: '⚡' },
-  { id: 'pull', label: 'Pull (Kéo)', labelEn: 'Pull Split', icon: '🔥' },
-  { id: 'leg', label: 'Leg (Chân & Mông)', labelEn: 'Legs & Glutes', icon: '🦵' },
+  { id: 'nguc', label: 'Ngực', labelEn: 'Chest' },
+  { id: 'lung', label: 'Lưng & Xô', labelEn: 'Back & Lats' },
+  { id: 'vai', label: 'Vai', labelEn: 'Shoulders' },
+  { id: 'tay_sau', label: 'Tay sau', labelEn: 'Triceps' },
+  { id: 'tay_truoc', label: 'Tay trước', labelEn: 'Biceps' },
+  { id: 'core', label: 'Bụng & Core', labelEn: 'Abs & Core' },
+  { id: 'push', label: 'Push (Đẩy)', labelEn: 'Push Split' },
+  { id: 'pull', label: 'Pull (Kéo)', labelEn: 'Pull Split' },
+  { id: 'leg', label: 'Leg (Chân & Mông)', labelEn: 'Legs & Glutes' },
 ] as const;
 
 export const PRESET_EXERCISES_DATABASE: PresetExercise[] = [
