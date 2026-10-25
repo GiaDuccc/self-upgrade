@@ -13,9 +13,9 @@ export const env = {
   AUTHOR: process.env.AUTHOR || 'GiaDuc',
 
   WEBSITE_DOMAIN_DEVELOPMENT:
-    process.env.WEBSITE_DOMAIN_DEVELOPMENT || 'http://localhost:5173',
+    process.env.WEBSITE_DOMAIN_DEVELOPMENT || 'http://localhost:1904',
   WEBSITE_DOMAIN_DEV:
-    process.env.WEBSITE_DOMAIN_DEVELOPMENT || 'http://localhost:5173',
+    process.env.WEBSITE_DOMAIN_DEVELOPMENT || 'http://localhost:1904',
   WEBSITE_DOMAIN_PRODUCTION:
     process.env.WEBSITE_DOMAIN_PRODUCTION || 'https://self-upgrade.vercel.app',
 

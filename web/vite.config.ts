@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 1904,
     host: true,
     open: false,
     allowedHosts: true,
@@ -20,6 +20,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  preview: {
+    port: 1904,
   },
 });
 

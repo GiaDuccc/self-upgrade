@@ -272,111 +272,114 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </p>
             </div>
 
-            <div className="feature-item-row">
-              <div className="feature-item-icon-box">
-                <Flame size={20} />
-              </div>
-              <div className="feature-item-text">
-                <div className="feature-item-title-row">
-                  <strong>
-                    {isEn
-                      ? 'Calories & Nutrition Tracker'
-                      : 'Theo dõi Calories & Dinh dưỡng'}
-                  </strong>
-                  <span
-                    className={`feature-status-tag ${
-                      isCaloriesEnabled ? 'status-enabled' : 'status-disabled'
-                    }`}
-                  >
-                    {isCaloriesEnabled
-                      ? isEn
-                        ? 'ENABLED'
-                        : 'ĐANG BẬT'
-                      : isEn
-                      ? 'DISABLED'
-                      : 'ĐÃ TẮT'}
-                  </span>
+            <div className="settings-features-grid">
+              {/* Calories Tracker Module */}
+              <div className="feature-item-row">
+                <div className="feature-item-icon-box">
+                  <Flame size={20} />
                 </div>
-                <p className="feature-item-desc">
-                  {isEn
-                    ? 'Show meal logging tab, 5 macro metrics and AI Nutritionist in Day Detail. Disable to focus purely on your To-do list.'
-                    : 'Hiển thị tab ghi nhận bữa ăn, tính toán 5 chỉ số đa lượng và AI dinh dưỡng trong trang Chi tiết ngày. Tắt đi nếu bạn chỉ muốn tập trung hoàn toàn vào To-do list.'}
-                </p>
-              </div>
-
-              {/* Toggle switch */}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isCaloriesEnabled}
-                className={`toggle-switch-btn ${isCaloriesEnabled ? 'is-active' : ''}`}
-                onClick={() => onToggleCalories(!isCaloriesEnabled)}
-                title={
-                  isCaloriesEnabled
-                    ? isEn
-                      ? 'Click to disable Calories mode'
-                      : 'Nhấn để tắt chế độ Calories'
-                    : isEn
-                    ? 'Click to enable Calories mode'
-                    : 'Nhấn để bật chế độ Calories'
-                }
-              >
-                <span className="toggle-switch-thumb" />
-              </button>
-            </div>
-
-            {/* Gym & Workout Tracker Module */}
-            <div className="feature-item-row" style={{ marginTop: '12px' }}>
-              <div className="feature-item-icon-box">
-                <Dumbbell size={20} />
-              </div>
-              <div className="feature-item-text">
-                <div className="feature-item-title-row">
-                  <strong>
+                <div className="feature-item-text">
+                  <div className="feature-item-title-row">
+                    <strong>
+                      {isEn
+                        ? 'Calories & Nutrition Tracker'
+                        : 'Theo dõi Calories & Dinh dưỡng'}
+                    </strong>
+                    <span
+                      className={`feature-status-tag ${
+                        isCaloriesEnabled ? 'status-enabled' : 'status-disabled'
+                      }`}
+                    >
+                      {isCaloriesEnabled
+                        ? isEn
+                          ? 'ENABLED'
+                          : 'ĐANG BẬT'
+                        : isEn
+                        ? 'DISABLED'
+                        : 'ĐÃ TẮT'}
+                    </span>
+                  </div>
+                  <p className="feature-item-desc">
                     {isEn
-                      ? 'Gym & Workout Tracker'
-                      : 'Theo dõi Tập luyện (Gym Tracker)'}
-                  </strong>
-                  <span
-                    className={`feature-status-tag ${
-                      isWorkoutEnabled ? 'status-enabled' : 'status-disabled'
-                    }`}
-                  >
-                    {isWorkoutEnabled
-                      ? isEn
-                        ? 'ENABLED'
-                        : 'ĐANG BẬT'
-                      : isEn
-                      ? 'DISABLED'
-                      : 'ĐÃ TẮT'}
-                  </span>
+                      ? 'Show meal logging tab, 5 macro metrics and AI Nutritionist in Day Detail. Disable to focus purely on your To-do list.'
+                      : 'Hiển thị tab ghi nhận bữa ăn, tính toán 5 chỉ số đa lượng và AI dinh dưỡng trong trang Chi tiết ngày. Tắt đi nếu bạn chỉ muốn tập trung hoàn toàn vào To-do list.'}
+                  </p>
                 </div>
-                <p className="feature-item-desc">
-                  {isEn
-                    ? 'Log gym sessions, sets, reps, RIR and analyze Progressive Overload with AI Coach in Day Detail.'
-                    : 'Ghi chép buổi tập gym, set, rep, RIR và phân tích Progressive Overload cùng AI Huấn Luyện Viên trong Chi tiết ngày.'}
-                </p>
+
+                {/* Toggle switch */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isCaloriesEnabled}
+                  className={`toggle-switch-btn ${isCaloriesEnabled ? 'is-active' : ''}`}
+                  onClick={() => onToggleCalories(!isCaloriesEnabled)}
+                  title={
+                    isCaloriesEnabled
+                      ? isEn
+                        ? 'Click to disable Calories mode'
+                        : 'Nhấn để tắt chế độ Calories'
+                      : isEn
+                      ? 'Click to enable Calories mode'
+                      : 'Nhấn để bật chế độ Calories'
+                  }
+                >
+                  <span className="toggle-switch-thumb" />
+                </button>
               </div>
 
-              {/* Toggle switch */}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isWorkoutEnabled}
-                className={`toggle-switch-btn ${isWorkoutEnabled ? 'is-active' : ''}`}
-                onClick={() => onToggleWorkout?.(!isWorkoutEnabled)}
-                title={
-                  isWorkoutEnabled
-                    ? isEn
-                      ? 'Click to disable Workout mode'
-                      : 'Nhấn để tắt chế độ Tập luyện'
-                    : isEn
-                    ? 'Click to enable Workout mode'
-                    : 'Nhấn để bật chế độ Tập luyện'
-                }
-              >
-                <span className="toggle-switch-thumb" />
-              </button>
+              {/* Gym & Workout Tracker Module */}
+              <div className="feature-item-row">
+                <div className="feature-item-icon-box">
+                  <Dumbbell size={20} />
+                </div>
+                <div className="feature-item-text">
+                  <div className="feature-item-title-row">
+                    <strong>
+                      {isEn
+                        ? 'Gym & Workout Tracker'
+                        : 'Theo dõi Tập luyện (Gym Tracker)'}
+                    </strong>
+                    <span
+                      className={`feature-status-tag ${
+                        isWorkoutEnabled ? 'status-enabled' : 'status-disabled'
+                      }`}
+                    >
+                      {isWorkoutEnabled
+                        ? isEn
+                          ? 'ENABLED'
+                          : 'ĐANG BẬT'
+                        : isEn
+                        ? 'DISABLED'
+                        : 'ĐÃ TẮT'}
+                    </span>
+                  </div>
+                  <p className="feature-item-desc">
+                    {isEn
+                      ? 'Log gym sessions, sets, reps, RIR and analyze Progressive Overload with AI Coach in Day Detail.'
+                      : 'Ghi chép buổi tập gym, set, rep, RIR và phân tích Progressive Overload cùng AI Huấn Luyện Viên trong Chi tiết ngày.'}
+                  </p>
+                </div>
+
+                {/* Toggle switch */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isWorkoutEnabled}
+                  className={`toggle-switch-btn ${isWorkoutEnabled ? 'is-active' : ''}`}
+                  onClick={() => onToggleWorkout?.(!isWorkoutEnabled)}
+                  title={
+                    isWorkoutEnabled
+                      ? isEn
+                        ? 'Click to disable Workout mode'
+                        : 'Nhấn để tắt chế độ Tập luyện'
+                      : isEn
+                      ? 'Click to enable Workout mode'
+                      : 'Nhấn để bật chế độ Tập luyện'
+                  }
+                >
+                  <span className="toggle-switch-thumb" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -397,10 +400,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </p>
               </div>
 
-              <div className="settings-action-grid" style={{ gridTemplateColumns: '1fr' }}>
+              <div className="settings-shortcuts-btn-wrap">
                 <button
                   type="button"
-                  className="settings-action-btn"
+                  className="settings-action-btn settings-shortcuts-btn"
                   onClick={() => {
                     onClose();
                     onOpenShortcutsModal();

@@ -124,8 +124,8 @@ export const DailyStateModal: React.FC<DailyStateModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+        <form onSubmit={handleSubmit} className="modal-form-wrap">
+          <div className="modal-body daily-state-modal-body">
             {/* 1. TRẠNG THÁI THỂ CHẤT HÔM NAY */}
             <div className="profile-section-block">
               <div className="profile-section-title">
@@ -268,7 +268,7 @@ export const DailyStateModal: React.FC<DailyStateModalProps> = ({
             </div>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer daily-state-modal-footer">
             <button
               type="button"
               className="btn-minimal"

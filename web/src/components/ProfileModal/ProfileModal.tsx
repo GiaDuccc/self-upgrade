@@ -147,8 +147,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-body">
-          {/* 1. THÔNG TIN CƠ BẢN & CHỈ SỐ CƠ THỂ */}
+        <form onSubmit={handleSubmit} className="modal-form-wrap">
+          <div className="modal-body profile-modal-body">
+            {/* 1. THÔNG TIN CƠ BẢN & CHỈ SỐ CƠ THỂ */}
           <div className="profile-section-block">
             <div className="profile-section-title">
               <UserCheck size={15} />
@@ -413,8 +414,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer profile-modal-footer">
             <button
               type="button"
               className="btn-minimal"
