@@ -3973,7 +3973,7 @@ input {
 /* Feature Item Row */
 .feature-item-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   padding: 16px;
   border-radius: var(--radius-md);
@@ -4043,9 +4043,9 @@ input {
 
 /* Minimalist Toggle Switch Button */
 .toggle-switch-btn {
-  width: 46px;
-  height: 26px;
-  border-radius: 14px;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
   background-color: var(--bg-mixed);
   border: 1.5px solid var(--border-subtle);
   position: relative;
@@ -4053,14 +4053,17 @@ input {
   flex-shrink: 0;
   transition: all 0.2s ease;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .toggle-switch-thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
+  top: 50%;
+  left: 2.5px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background-color: var(--text-muted);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
@@ -4072,7 +4075,7 @@ input {
 }
 
 .toggle-switch-btn.is-active .toggle-switch-thumb {
-  transform: translateX(20px);
+  transform: translate(20px, -50%);
   background-color: var(--bg-primary);
 }
 

@@ -113,36 +113,34 @@ export const ClientPage: React.FC = () => {
   }, []);
 
   const handleToggleCalories = useCallback((enabled: boolean) => {
-    setSettings((prev) => {
-      const isEn = prev.language === 'en';
-      toast.info(
-        enabled
-          ? isEn
-            ? 'Enabled Calories & Nutrition mode'
-            : 'Đã bật chế độ Calories & Dinh dưỡng'
-          : isEn
-          ? 'Disabled Calories & Nutrition mode'
-          : 'Đã tắt chế độ Calories & Dinh dưỡng'
-      );
-      return { ...prev, enableCalories: enabled };
-    });
-  }, []);
+    setSettings((prev) => ({ ...prev, enableCalories: enabled }));
+    const isEn = settings.language === 'en';
+    toast.info(
+      enabled
+        ? isEn
+          ? 'Enabled Calories & Nutrition mode'
+          : 'Đã bật chế độ Calories & Dinh dưỡng'
+        : isEn
+        ? 'Disabled Calories & Nutrition mode'
+        : 'Đã tắt chế độ Calories & Dinh dưỡng',
+      { toastId: 'toggle-calories' }
+    );
+  }, [settings.language]);
 
   const handleToggleWorkout = useCallback((enabled: boolean) => {
-    setSettings((prev) => {
-      const isEn = prev.language === 'en';
-      toast.info(
-        enabled
-          ? isEn
-            ? 'Enabled Gym & Workout Tracker'
-            : 'Đã bật chế độ Theo dõi Tập luyện (Gym)'
-          : isEn
-          ? 'Disabled Gym & Workout Tracker'
-          : 'Đã tắt chế độ Theo dõi Tập luyện (Gym)'
-      );
-      return { ...prev, enableWorkout: enabled };
-    });
-  }, []);
+    setSettings((prev) => ({ ...prev, enableWorkout: enabled }));
+    const isEn = settings.language === 'en';
+    toast.info(
+      enabled
+        ? isEn
+          ? 'Enabled Gym & Workout Tracker'
+          : 'Đã bật chế độ Theo dõi Tập luyện (Gym)'
+        : isEn
+        ? 'Disabled Gym & Workout Tracker'
+        : 'Đã tắt chế độ Theo dõi Tập luyện (Gym)',
+      { toastId: 'toggle-workout' }
+    );
+  }, [settings.language]);
 
   const handleOpenSettingsModal = useCallback(() => {
     setIsSettingsModalOpen(true);

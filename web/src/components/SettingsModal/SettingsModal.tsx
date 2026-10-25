@@ -312,7 +312,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   role="switch"
                   aria-checked={isCaloriesEnabled}
                   className={`toggle-switch-btn ${isCaloriesEnabled ? 'is-active' : ''}`}
-                  onClick={() => onToggleCalories(!isCaloriesEnabled)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleCalories(!isCaloriesEnabled);
+                  }}
                   title={
                     isCaloriesEnabled
                       ? isEn
@@ -366,7 +369,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   role="switch"
                   aria-checked={isWorkoutEnabled}
                   className={`toggle-switch-btn ${isWorkoutEnabled ? 'is-active' : ''}`}
-                  onClick={() => onToggleWorkout?.(!isWorkoutEnabled)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleWorkout?.(!isWorkoutEnabled);
+                  }}
                   title={
                     isWorkoutEnabled
                       ? isEn
