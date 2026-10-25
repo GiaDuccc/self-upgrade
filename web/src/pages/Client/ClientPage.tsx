@@ -115,6 +115,7 @@ export const ClientPage: React.FC = () => {
   const handleToggleCalories = useCallback((enabled: boolean) => {
     setSettings((prev) => ({ ...prev, enableCalories: enabled }));
     const isEn = settings.language === 'en';
+    toast.dismiss();
     toast.info(
       enabled
         ? isEn
@@ -122,14 +123,14 @@ export const ClientPage: React.FC = () => {
           : 'Đã bật chế độ Calories & Dinh dưỡng'
         : isEn
         ? 'Disabled Calories & Nutrition mode'
-        : 'Đã tắt chế độ Calories & Dinh dưỡng',
-      { toastId: 'toggle-calories' }
+        : 'Đã tắt chế độ Calories & Dinh dưỡng'
     );
   }, [settings.language]);
 
   const handleToggleWorkout = useCallback((enabled: boolean) => {
     setSettings((prev) => ({ ...prev, enableWorkout: enabled }));
     const isEn = settings.language === 'en';
+    toast.dismiss();
     toast.info(
       enabled
         ? isEn
@@ -137,8 +138,7 @@ export const ClientPage: React.FC = () => {
           : 'Đã bật chế độ Theo dõi Tập luyện (Gym)'
         : isEn
         ? 'Disabled Gym & Workout Tracker'
-        : 'Đã tắt chế độ Theo dõi Tập luyện (Gym)',
-      { toastId: 'toggle-workout' }
+        : 'Đã tắt chế độ Theo dõi Tập luyện (Gym)'
     );
   }, [settings.language]);
 
