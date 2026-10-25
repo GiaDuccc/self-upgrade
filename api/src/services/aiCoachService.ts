@@ -481,17 +481,21 @@ const getCoachingMessage = async (
     timeCtx.hour
   );
 
+  const currentPhys = dayRecord?.physicalState || userProfile.physicalState || 'NORMAL';
+  const currentMent = dayRecord?.mentalState || userProfile.mentalState || 'STEADY';
+  const currentEmo = dayRecord?.emotionalState || userProfile.emotionalState || 'CALM';
+
   const physObj =
     PERSONALIZATION_OPTIONS.physicalStates.find(
-      (x) => x.id === userProfile.physicalState
+      (x) => x.id === currentPhys
     ) || { id: 'NORMAL', label: 'Bình thường' };
   const mentObj =
     PERSONALIZATION_OPTIONS.mentalStates.find(
-      (x) => x.id === userProfile.mentalState
+      (x) => x.id === currentMent
     ) || { id: 'STEADY', label: 'Ổn định' };
   const emoObj =
     PERSONALIZATION_OPTIONS.emotionalStates.find(
-      (x) => x.id === userProfile.emotionalState
+      (x) => x.id === currentEmo
     ) || { id: 'CALM', label: 'Cân bằng' };
   const goalObj =
     PERSONALIZATION_OPTIONS.focusGoals.find(

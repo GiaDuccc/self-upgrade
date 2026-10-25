@@ -128,6 +128,9 @@ export interface DayRecord {
   waterData?: WaterData;
   sleepData?: SleepData;
   workoutData?: WorkoutData;
+  physicalState?: string;
+  mentalState?: string;
+  emotionalState?: string;
   updatedAt?: string;
 }
 

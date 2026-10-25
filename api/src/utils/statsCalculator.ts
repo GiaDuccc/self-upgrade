@@ -156,14 +156,18 @@ export function calculateDayStats(
 
   let stateBonusPct = 0;
   if (checkedCount > 0 && userProfile) {
+    const physState = dayRecord?.physicalState || userProfile.physicalState || 'NORMAL';
+    const mentState = dayRecord?.mentalState || userProfile.mentalState || 'STEADY';
+    const emoState = dayRecord?.emotionalState || userProfile.emotionalState || 'CALM';
+
     const phys = PERSONALIZATION_OPTIONS.physicalStates.find(
-      (x) => x.id === userProfile.physicalState
+      (x) => x.id === physState
     );
     const ment = PERSONALIZATION_OPTIONS.mentalStates.find(
-      (x) => x.id === userProfile.mentalState
+      (x) => x.id === mentState
     );
     const emo = PERSONALIZATION_OPTIONS.emotionalStates.find(
-      (x) => x.id === userProfile.emotionalState
+      (x) => x.id === emoState
     );
 
     const rawResilienceBonus =

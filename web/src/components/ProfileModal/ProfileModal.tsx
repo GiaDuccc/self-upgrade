@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   X,
   UserCheck,
-  HeartPulse,
-  Brain,
-  Smile,
   Target,
   Dumbbell,
   Check,
@@ -277,153 +274,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
           </div>
 
-          {/* 2. TRẠNG THÁI THỂ CHẤT */}
-          <div className="profile-section-block">
-            <div className="profile-section-title">
-              <HeartPulse size={15} />
-              <span>
-                {isEn
-                  ? '2. CURRENT PHYSICAL STATE'
-                  : '2. TRẠNG THÁI THỂ CHẤT HIỆN TẠI'}
-              </span>
-            </div>
-            <div className="scope-cards-grid">
-              {localizedOptions.physicalStates.map((item) => {
-                const isSelected = formData.physicalState === item.id;
-                return (
-                  <label
-                    key={item.id}
-                    className={`scope-option-card scope-tier-${item.tier} ${
-                      isSelected
-                        ? `scope-option-selected scope-selected-${item.tier}`
-                        : ''
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="physicalState"
-                      checked={isSelected}
-                      onChange={() => handleChange('physicalState', item.id)}
-                      className="scope-radio"
-                    />
-                    <div className="scope-card-content">
-                      <div className="scope-card-header">
-                        <span className="scope-radio-indicator">
-                          {isSelected && <span className="scope-radio-dot" />}
-                        </span>
-                        <strong className="scope-title">{item.label}</strong>
-                        <span className={`tier-badge tier-badge-${item.tier}`}>
-                          {item.tierLabel}
-                        </span>
-                      </div>
-                      <p className="scope-desc">{item.desc}</p>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 3. TRẠNG THÁI TINH THẦN */}
-          <div className="profile-section-block">
-            <div className="profile-section-title">
-              <Brain size={15} />
-              <span>
-                {isEn
-                  ? '3. MENTAL STATE & FOCUS LEVEL'
-                  : '3. TRẠNG THÁI TINH THẦN & ĐỘ TẬP TRUNG'}
-              </span>
-            </div>
-            <div className="scope-cards-grid">
-              {localizedOptions.mentalStates.map((item) => {
-                const isSelected = formData.mentalState === item.id;
-                return (
-                  <label
-                    key={item.id}
-                    className={`scope-option-card scope-tier-${item.tier} ${
-                      isSelected
-                        ? `scope-option-selected scope-selected-${item.tier}`
-                        : ''
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="mentalState"
-                      checked={isSelected}
-                      onChange={() => handleChange('mentalState', item.id)}
-                      className="scope-radio"
-                    />
-                    <div className="scope-card-content">
-                      <div className="scope-card-header">
-                        <span className="scope-radio-indicator">
-                          {isSelected && <span className="scope-radio-dot" />}
-                        </span>
-                        <strong className="scope-title">{item.label}</strong>
-                        <span className={`tier-badge tier-badge-${item.tier}`}>
-                          {item.tierLabel}
-                        </span>
-                      </div>
-                      <p className="scope-desc">{item.desc}</p>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4. TRẠNG THÁI CẢM XÚC */}
-          <div className="profile-section-block">
-            <div className="profile-section-title">
-              <Smile size={15} />
-              <span>
-                {isEn ? '4. EMOTIONAL STATE' : '4. TRẠNG THÁI CẢM XÚC'}
-              </span>
-            </div>
-            <div className="scope-cards-grid">
-              {localizedOptions.emotionalStates.map((item) => {
-                const isSelected = formData.emotionalState === item.id;
-                return (
-                  <label
-                    key={item.id}
-                    className={`scope-option-card scope-tier-${item.tier} ${
-                      isSelected
-                        ? `scope-option-selected scope-selected-${item.tier}`
-                        : ''
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="emotionalState"
-                      checked={isSelected}
-                      onChange={() => handleChange('emotionalState', item.id)}
-                      className="scope-radio"
-                    />
-                    <div className="scope-card-content">
-                      <div className="scope-card-header">
-                        <span className="scope-radio-indicator">
-                          {isSelected && <span className="scope-radio-dot" />}
-                        </span>
-                        <strong className="scope-title">{item.label}</strong>
-                        <span className={`tier-badge tier-badge-${item.tier}`}>
-                          {item.tierLabel}
-                        </span>
-                      </div>
-                      <p className="scope-desc">{item.desc}</p>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 5. TRỌNG TÂM ƯU TIÊN & PHONG CÁCH NHẬN XÉT */}
+          {/* 2. TRỌNG TÂM ƯU TIÊN & PHONG CÁCH NHẬN XÉT */}
           <div className="profile-section-block">
             <div className="profile-section-title">
               <Target size={15} />
               <span>
                 {isEn
-                  ? '5. PRIMARY FOCUS GOAL (×1.25 SCORE BOOST) & COACHING STYLE'
-                  : '5. MỤC TIÊU TRỌNG TÂM (TRỌNG SỐ ĐIỂM ×1.25) & PHONG CÁCH HUẤN LUYỆN'}
+                  ? '2. PRIMARY FOCUS GOAL (×1.25 SCORE BOOST) & COACHING STYLE'
+                  : '2. MỤC TIÊU TRỌNG TÂM (TRỌNG SỐ ĐIỂM ×1.25) & PHONG CÁCH HUẤN LUYỆN'}
               </span>
             </div>
 
@@ -490,8 +348,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <Dumbbell size={15} />
               <span>
                 {isEn
-                  ? '6. GYM & WORKOUT GOALS (AI COACH CALIBRATION)'
-                  : '6. MỤC TIÊU TẬP LUYỆN GYM & TRÌNH ĐỘ (ĐỊNH HƯỚNG AI COACH)'}
+                  ? '3. GYM & WORKOUT GOALS (AI COACH CALIBRATION)'
+                  : '3. MỤC TIÊU TẬP LUYỆN GYM & TRÌNH ĐỘ (ĐỊNH HƯỚNG AI COACH)'}
               </span>
             </div>
 

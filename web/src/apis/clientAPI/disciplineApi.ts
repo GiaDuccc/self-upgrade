@@ -66,6 +66,16 @@ export const saveDayCaloriesAPI = async (payload: {
   return res.data;
 };
 
+export const saveDayStatesAPI = async (payload: {
+  dateKey: string;
+  physicalState: string;
+  mentalState: string;
+  emotionalState: string;
+}): Promise<DayDataResponse> => {
+  const res = await axiosClient.put('/disciplines/day/states', payload);
+  return res.data;
+};
+
 export const saveDayWorkoutAPI = async (payload: {
   dateKey: string;
   targetMuscles: string[];

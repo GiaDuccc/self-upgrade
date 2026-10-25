@@ -24,11 +24,13 @@ import {
   saveDayCaloriesAPI,
   saveDayWaterAPI,
   saveDayWorkoutAPI,
+  saveDayStatesAPI,
 } from '~/apis/clientAPI/disciplineApi';
 import { DayDataResponse, FoodItem, TaskItem, TaskLevelKey, WaterData, WorkoutExercise } from '~/interface/discipline.interface';
 import { WorkoutTracker } from '~/components/WorkoutTracker/WorkoutTracker';
 import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
 import { WaterTracker } from '~/components/WaterTracker/WaterTracker';
+import { DailyStateModal } from '~/components/DailyStateModal/DailyStateModal';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import {
   formatDateKey,
@@ -207,6 +209,36 @@ export const DayDetail: React.FC = () => {
   const workoutData = dayData?.dayRecord?.workoutData;
 
   const [isSavingWorkout, setIsSavingWorkout] = useState(false);
+  const [isStateModalOpen, setIsStateModalOpen] = useState(false);
+  const [isSavingStates, setIsSavingStates] = useState(false);
+
+  const handleSaveDayStates = useCallback(
+    async (states: { physicalState: string; mentalState: string; emotionalState: string }) => {
+      setIsSavingStates(true);
+      try {
+        const updated = await saveDayStatesAPI({
+          dateKey: activeDateKey,
+          ...states,
+        });
+        setDayData(updated);
+        refreshMonthStats();
+        notifyAiCoach(`STATES_UPDATED_${Date.now()}`);
+        toast.success(
+          isEn
+            ? 'Daily states updated successfully!'
+            : 'Đã cập nhật trạng thái ngày thành công!'
+        );
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message ||
+            (isEn ? 'Failed to update states' : 'Không thể cập nhật trạng thái')
+        );
+      } finally {
+        setIsSavingStates(false);
+      }
+    },
+    [activeDateKey, refreshMonthStats, notifyAiCoach, isEn]
+  );
 
   const handleSaveWorkout = useCallback(
     async (workout: { targetMuscles: string[]; exercises: WorkoutExercise[] }) => {
@@ -585,17 +617,24 @@ export const DayDetail: React.FC = () => {
     }
   };
 
+  const activePhysicalState =
+    dayData?.dayRecord?.physicalState || userProfile?.physicalState || 'NORMAL';
+  const activeMentalState =
+    dayData?.dayRecord?.mentalState || userProfile?.mentalState || 'STEADY';
+  const activeEmotionalState =
+    dayData?.dayRecord?.emotionalState || userProfile?.emotionalState || 'CALM';
+
   const physObj =
     localizedOptions.physicalStates.find(
-      (x) => x.id === userProfile.physicalState
+      (x) => x.id === activePhysicalState
     ) || localizedOptions.physicalStates[2];
   const mentObj =
     localizedOptions.mentalStates.find(
-      (x) => x.id === userProfile.mentalState
+      (x) => x.id === activeMentalState
     ) || localizedOptions.mentalStates[2];
   const emoObj =
     localizedOptions.emotionalStates.find(
-      (x) => x.id === userProfile.emotionalState
+      (x) => x.id === activeEmotionalState
     ) || localizedOptions.emotionalStates[2];
 
   return (
@@ -616,7 +655,6 @@ export const DayDetail: React.FC = () => {
                 <ChevronLeft size={16} />
               </button>
               <div className="day-date-display">
-                <Calendar size={14} />
                 <span>{currDayStr} / {currMonthStr}</span>
               </div>
               <button
@@ -705,11 +743,11 @@ export const DayDetail: React.FC = () => {
                 <button
                   type="button"
                   className="btn-state-edit-link"
-                  onClick={onOpenProfileModal}
+                  onClick={() => setIsStateModalOpen(true)}
                   title={
                     isEn
-                      ? 'Update Physical, Mental & Emotional states'
-                      : 'Cập nhật Thể chất, Tinh thần & Cảm xúc cá nhân'
+                      ? 'Update Physical, Mental & Emotional states for today'
+                      : 'Cập nhật Thể chất, Tinh thần & Cảm xúc của ngày hôm nay'
                   }
                 >
                   <UserCheck size={12} />
@@ -721,7 +759,7 @@ export const DayDetail: React.FC = () => {
                 <div
                   className="state-mini-card"
                   title={physObj.desc}
-                  onClick={onOpenProfileModal}
+                  onClick={() => setIsStateModalOpen(true)}
                   role="button"
                   tabIndex={0}
                 >
@@ -736,7 +774,7 @@ export const DayDetail: React.FC = () => {
                 <div
                   className="state-mini-card"
                   title={mentObj.desc}
-                  onClick={onOpenProfileModal}
+                  onClick={() => setIsStateModalOpen(true)}
                   role="button"
                   tabIndex={0}
                 >
@@ -751,7 +789,7 @@ export const DayDetail: React.FC = () => {
                 <div
                   className="state-mini-card"
                   title={emoObj.desc}
-                  onClick={onOpenProfileModal}
+                  onClick={() => setIsStateModalOpen(true)}
                   role="button"
                   tabIndex={0}
                 >
@@ -1211,6 +1249,17 @@ export const DayDetail: React.FC = () => {
           )}
         </section>
       </div>
+
+      <DailyStateModal
+        isOpen={isStateModalOpen}
+        onClose={() => setIsStateModalOpen(false)}
+        dateKey={activeDateKey}
+        initialPhysicalState={activePhysicalState}
+        initialMentalState={activeMentalState}
+        initialEmotionalState={activeEmotionalState}
+        onSaveStates={handleSaveDayStates}
+        isSaving={isSavingStates}
+      />
     </div>
   );
 };

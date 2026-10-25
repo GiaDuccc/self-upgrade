@@ -334,6 +334,32 @@ const saveDayWorkout = async (
   return await getDayData(userId, dateKey);
 };
 
+const saveDayStates = async (
+  userId: string,
+  payload: {
+    dateKey: string;
+    physicalState: string;
+    mentalState: string;
+    emotionalState: string;
+  }
+) => {
+  const { dateKey, physicalState, mentalState, emotionalState } = payload;
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
+  const records = { ...(disciplineDoc.records || {}) };
+  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+
+  records[dateKey] = {
+    ...currentDay,
+    physicalState,
+    mentalState,
+    emotionalState,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await disciplineModel.updateByUserId(userId, { records });
+  return await getDayData(userId, dateKey);
+};
+
 const getTargetDatesByScope = (
   scope: 'day' | 'week' | 'month' | 'all',
   selectedDateKey: string
@@ -526,6 +552,7 @@ export const disciplineService = {
   saveDayWater,
   saveDaySleep,
   saveDayWorkout,
+  saveDayStates,
   saveTask,
   deleteTask,
   exportData,
