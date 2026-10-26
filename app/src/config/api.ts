@@ -5,8 +5,8 @@ import { Platform } from 'react-native';
 // Mặc định: máy ảo Android dùng 10.0.2.2, máy thật hoặc iOS dùng IP mạng Wi-Fi LAN hiện tại
 export const DEFAULT_API_URL = Platform.select({
   android: 'http://10.0.2.2:2004/api/v1',
-  ios: 'http://192.168.31.134:2004/api/v1',
-  default: 'http://192.168.31.134:2004/api/v1',
+  ios: 'http://localhost:2004/api/v1',
+  default: 'http://localhost:2004/api/v1',
 });
 
 export const getBaseUrl = async (): Promise<string> => {

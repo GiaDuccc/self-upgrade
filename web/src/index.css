@@ -4889,7 +4889,7 @@ input {
   position: relative;
   display: flex;
   align-items: center;
-  min-width: 240px;
+  min-width: 400px;
 }
 
 .shelf-search-bar .search-icon {

@@ -7,7 +7,7 @@ export const getApiRoot = (): string => {
     const custom = localStorage.getItem('custom_api_root');
     if (custom && custom.trim()) return custom.trim();
     if (Capacitor.isNativePlatform()) {
-      return 'http://192.168.31.134:2004';
+      return (import.meta as any).env?.VITE_API_BASE_URL || 'http://10.0.2.2:2004';
     }
     if (
       typeof window !== 'undefined' &&
