@@ -253,8 +253,8 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
 
   const centerSubLabel = isDayScope
     ? isEn
-      ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 5} tasks done`
-      : `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks || 5} việc hoàn thành`
+      ? `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks ?? 0} tasks done`
+      : `${selectedDayStats.checkedCount}/${selectedDayStats.totalTasks ?? 0} việc hoàn thành`
     : isEn
     ? `${monthStats.activeDaysCount}/${monthStats.totalDays} active days`
     : `${monthStats.activeDaysCount}/${monthStats.totalDays} ngày đã tích`;

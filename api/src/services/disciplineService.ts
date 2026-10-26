@@ -44,21 +44,7 @@ const getMonthData = async (userId: string, year: number, month: number) => {
 
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
-  let taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
-
-  // Tự động đồng bộ chuẩn 10 việc mặc định nếu tài khoản đang mang danh sách 12 việc cũ
-  if (
-    Array.isArray(taskConfig.globalTasks) &&
-    taskConfig.globalTasks.length === 12 &&
-    taskConfig.globalTasks.some((t) => t.id === 'morning_exercise') &&
-    taskConfig.globalTasks.some((t) => t.id === 'read_book')
-  ) {
-    taskConfig = {
-      ...taskConfig,
-      globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
-    };
-    disciplineModel.updateByUserId(userId, { taskConfig });
-  }
+  const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
   const monthStats = calculateMonthStats(year, month, records, taskConfig, profile);
 
@@ -87,21 +73,7 @@ const getDayData = async (userId: string, dateKey: string) => {
 
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
-  let taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
-
-  // Tự động đồng bộ chuẩn 10 việc mặc định nếu tài khoản đang mang danh sách 12 việc cũ
-  if (
-    Array.isArray(taskConfig.globalTasks) &&
-    taskConfig.globalTasks.length === 12 &&
-    taskConfig.globalTasks.some((t) => t.id === 'morning_exercise') &&
-    taskConfig.globalTasks.some((t) => t.id === 'read_book')
-  ) {
-    taskConfig = {
-      ...taskConfig,
-      globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
-    };
-    disciplineModel.updateByUserId(userId, { taskConfig });
-  }
+  const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
   const dayRecord = records[dateKey] || { tasks: {}, note: '' };
   const tasksForDay = getTasksForDate(dateKey, taskConfig);

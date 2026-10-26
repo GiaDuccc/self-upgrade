@@ -67,7 +67,7 @@ export function getWeekDates(dateKey: string): string[] {
 
 export function getDefaultTaskConfig(): TaskConfig {
   return {
-    globalTasks: DAILY_TASKS.map((t) => ({ ...t })),
+    globalTasks: [],
     customTasks: [],
     excludedTaskIds: {},
     taskOverrides: {},
@@ -75,14 +75,14 @@ export function getDefaultTaskConfig(): TaskConfig {
 }
 
 export function getTasksForDate(dateKey: string, taskConfig?: TaskConfig | null): TaskItem[] {
-  if (!taskConfig) return DAILY_TASKS.map((t) => ({ ...t }));
+  if (!taskConfig) return [];
 
   const monthKey = dateKey.substring(0, 7);
 
   const sourceGlobal =
-    Array.isArray(taskConfig.globalTasks) && taskConfig.globalTasks.length > 0
+    Array.isArray(taskConfig.globalTasks)
       ? taskConfig.globalTasks
-      : DAILY_TASKS;
+      : [];
 
   const baseTasks: TaskItem[] = sourceGlobal.map((t) => ({
     ...t,
@@ -119,7 +119,7 @@ export function getTasksForDate(dateKey: string, taskConfig?: TaskConfig | null)
 
 export function calculateDayStats(
   dayRecord: DayRecord = {},
-  tasksForDay: TaskItem[] = DAILY_TASKS,
+  tasksForDay: TaskItem[] = [],
   userProfile: UserProfile = DEFAULT_USER_PROFILE
 ): DayStats {
   const tasksMap = dayRecord?.tasks || {};
@@ -146,13 +146,13 @@ export function calculateDayStats(
     counts[scoreDef.key] = (counts[scoreDef.key] || 0) + 1;
   });
 
-  rawPoints = Math.round(rawPoints * 10) / 10;
-  maxPoints = Math.max(10, Math.round(maxPoints * 10) / 10);
-
   const totalTasks = tasksList.length;
+  rawPoints = Math.round(rawPoints * 10) / 10;
+  maxPoints = totalTasks > 0 ? Math.max(10, Math.round(maxPoints * 10) / 10) : 0;
+
   const checkedCount = totalTasks - counts.NONE;
   const basePercentage =
-    totalTasks > 0 ? Math.round(((rawPoints / maxPoints) * 100) * 10) / 10 : 0;
+    totalTasks > 0 && maxPoints > 0 ? Math.round(((rawPoints / maxPoints) * 100) * 10) / 10 : 0;
 
   let stateBonusPct = 0;
   if (checkedCount > 0 && userProfile) {
@@ -241,7 +241,7 @@ export function calculateMonthStats(
     const dayRecord = allRecords[dateKey] || {};
     const tasksForDay = taskConfig
       ? getTasksForDate(dateKey, taskConfig)
-      : DAILY_TASKS;
+      : [];
     const stats = calculateDayStats(dayRecord, tasksForDay, userProfile);
     const weekday = getWeekdayLabel(year, month, d);
 
