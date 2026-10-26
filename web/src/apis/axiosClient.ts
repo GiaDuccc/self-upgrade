@@ -85,6 +85,25 @@ axiosClient.interceptors.response.use(
       }
     }
 
+    // Tự động thử lại transparent đối với các request GET đọc dữ liệu khi gặp lỗi mạng / Backend đang cold start
+    const isNetworkOrColdStart =
+      !error.response ||
+      error.code === 'ERR_NETWORK' ||
+      error.code === 'ECONNABORTED' ||
+      (error.response?.status >= 502 && error.response?.status <= 504);
+
+    if (
+      isNetworkOrColdStart &&
+      originalRequest &&
+      originalRequest.method?.toLowerCase() === 'get' &&
+      (!originalRequest._retryCount || originalRequest._retryCount < 2)
+    ) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      const delayMs = originalRequest._retryCount * 1200;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return axiosClient(originalRequest);
+    }
+
     return Promise.reject(error);
   }
 );

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { signOutClientAPI } from '~/apis/clientAPI/authApi';
@@ -43,6 +43,7 @@ export interface ClientOutletContext {
   dayRefreshTrigger: number;
   isCaloriesEnabled: boolean;
   isWorkoutEnabled: boolean;
+  isServerConnecting: boolean;
   theme: 'light' | 'dark';
   language: AppLanguage;
 }
@@ -87,6 +88,8 @@ export const ClientPage: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
   const [isProfileSetup, setIsProfileSetup] = useState<boolean>(true);
   const [isLoadingMonth, setIsLoadingMonth] = useState<boolean>(true);
+  const [isServerConnecting, setIsServerConnecting] = useState<boolean>(false);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState<boolean>(false);
   const [taskModalMode, setTaskModalMode] = useState<'add' | 'edit'>('add');
@@ -158,7 +161,7 @@ export const ClientPage: React.FC = () => {
     }
   }, []);
 
-  const fetchMonthData = useCallback(async () => {
+  const fetchMonthData = useCallback(async (isAutoRetry = false) => {
     try {
       const data = await getMonthDataAPI(currentYear, currentMonth);
       setMonthStats(data.monthStats);
@@ -170,21 +173,93 @@ export const ClientPage: React.FC = () => {
       });
       setIsProfileSetup(data.isProfileSetup);
 
+      // Nếu trước đó đang chờ kết nối máy chủ -> thông báo thành công và kích hoạt refresh chi tiết ngày
+      setIsServerConnecting((prevConnecting) => {
+        if (prevConnecting) {
+          toast.dismiss('server-connecting-toast');
+          toast.success(
+            settings.language === 'en'
+              ? 'Successfully connected to server!'
+              : 'Đã kết nối thành công với máy chủ!'
+          );
+          setDayRefreshTrigger((prev) => prev + 1);
+        }
+        return false;
+      });
+
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+
       // Nếu đăng nhập lần đầu chưa thiết lập thông tin cá nhân -> tự động mở modal thiết lập
       if (!data.isProfileSetup) {
         setIsProfileModalOpen(true);
       }
-    } catch {
-      toast.error('Không thể tải dữ liệu từ máy chủ!');
+    } catch (error: any) {
+      const isNetworkOrColdStart =
+        !error?.response ||
+        error?.code === 'ERR_NETWORK' ||
+        error?.code === 'ECONNABORTED' ||
+        (error?.response?.status >= 502 && error?.response?.status <= 504);
+
+      if (isNetworkOrColdStart) {
+        setIsServerConnecting(true);
+        if (!isAutoRetry) {
+          toast.info(
+            settings.language === 'en'
+              ? 'Server is starting up, automatically reconnecting...'
+              : 'Máy chủ đang khởi động, hệ thống đang tự động kết nối lại...',
+            { toastId: 'server-connecting-toast', autoClose: 4000 }
+          );
+        }
+
+        // Tự động thử kết nối lại sau 2.5 giây cho đến khi Backend sẵn sàng
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current);
+        }
+        reconnectTimerRef.current = setTimeout(() => {
+          fetchMonthData(true);
+        }, 2500);
+      } else {
+        toast.error('Không thể tải dữ liệu từ máy chủ!');
+      }
     } finally {
       setIsLoadingMonth(false);
     }
-  }, [currentYear, currentMonth]);
+  }, [currentYear, currentMonth, settings.language]);
 
   useEffect(() => {
     setIsLoadingMonth(true);
     fetchMonthData();
   }, [fetchMonthData]);
+
+  // Tự động kiểm tra và kết nối lại ngay khi người dùng quay lại tab trình duyệt hoặc có mạng
+  useEffect(() => {
+    const handleRecheckOnFocus = () => {
+      if (!monthStats) {
+        fetchMonthData(true);
+      }
+    };
+
+    window.addEventListener('focus', handleRecheckOnFocus);
+    window.addEventListener('online', handleRecheckOnFocus);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !monthStats) {
+        handleRecheckOnFocus();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleRecheckOnFocus);
+      window.removeEventListener('online', handleRecheckOnFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
+    };
+  }, [monthStats, fetchMonthData]);
 
   const handlePrevMonth = () => {
     let nextY = currentYear;
@@ -561,6 +636,7 @@ export const ClientPage: React.FC = () => {
     dayRefreshTrigger,
     isCaloriesEnabled: settings.enableCalories,
     isWorkoutEnabled: settings.enableWorkout,
+    isServerConnecting,
     theme: settings.theme,
     language: settings.language,
   };
@@ -593,6 +669,16 @@ export const ClientPage: React.FC = () => {
         />
 
         <main className="main-container">
+          {isServerConnecting && (
+            <div className="server-reconnect-banner" role="status" aria-live="polite">
+              <span className="reconnect-pulse-dot" />
+              <span>
+                {settings.language === 'en'
+                  ? 'Backend is starting up... Automatically reconnecting and loading data once ready'
+                  : 'Máy chủ đang khởi động... Đang tự động kết nối và nạp dữ liệu khi sẵn sàng'}
+              </span>
+            </div>
+          )}
           <Outlet context={outletContext} />
         </main>
 

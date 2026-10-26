@@ -179,6 +179,7 @@ export const DayDetail: React.FC = () => {
   const [isSavingCalories, setIsSavingCalories] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryDayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
   const noteTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -403,25 +404,54 @@ export const DayDetail: React.FC = () => {
       }
     }
 
-    getDayDataAPI(activeDateKey)
-      .then((res) => {
-        if (isMounted) {
-          setDayData(res);
-          setNoteInput(res.dayRecord?.note || '');
-          setIsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          toast.error('Không thể tải dữ liệu ngày!');
-          setIsLoading(false);
-        }
-      });
+    const loadDayData = (isRetry = false) => {
+      getDayDataAPI(activeDateKey)
+        .then((res) => {
+          if (isMounted) {
+            setDayData(res);
+            setNoteInput(res.dayRecord?.note || '');
+            setIsLoading(false);
+            if (retryDayTimerRef.current) {
+              clearTimeout(retryDayTimerRef.current);
+              retryDayTimerRef.current = null;
+            }
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            const isNetworkOrColdStart =
+              !err?.response ||
+              err?.code === 'ERR_NETWORK' ||
+              err?.code === 'ECONNABORTED' ||
+              (err?.response?.status >= 502 && err?.response?.status <= 504);
+
+            if (isNetworkOrColdStart) {
+              // Tự động lên lịch thử tải lại chi tiết ngày sau 2.5s nếu chưa có dữ liệu
+              if (retryDayTimerRef.current) {
+                clearTimeout(retryDayTimerRef.current);
+              }
+              retryDayTimerRef.current = setTimeout(() => {
+                if (isMounted) {
+                  loadDayData(true);
+                }
+              }, 2500);
+            } else if (!isRetry) {
+              toast.error(isEn ? 'Failed to load day schedule!' : 'Không thể tải dữ liệu ngày!');
+            }
+            setIsLoading(false);
+          }
+        });
+    };
+
+    loadDayData();
 
     return () => {
       isMounted = false;
+      if (retryDayTimerRef.current) {
+        clearTimeout(retryDayTimerRef.current);
+      }
     };
-  }, [activeDateKey, dayRefreshTrigger, buildInitialDayData]);
+  }, [activeDateKey, dayRefreshTrigger, buildInitialDayData, isEn]);
 
   // Cuộn ngang mượt mà khi lăn chuột trên bảng Thời gian (trục X) - Việc làm (trục Y)
   useEffect(() => {
