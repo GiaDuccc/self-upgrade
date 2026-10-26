@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { MonthlyLineChart, DistributionDonutChart } from '~/components/Charts/Charts';
 import { MonthDaysGrid } from '~/components/MonthDaysGrid/MonthDaysGrid';
+import { DashboardSkeleton } from '~/components/Skeleton/Skeleton';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import { getTodayInfo } from '~/utils/constants';
 import { translateRankTitle, useLanguage } from '~/utils/i18n';
@@ -21,15 +22,7 @@ export const Dashboard: React.FC = () => {
   const { language, isEn } = useLanguage();
 
   if (isLoadingMonth || !monthStats) {
-    return (
-      <div className="page-loading-box">
-        <span>
-          {isEn
-            ? `Loading statistics for ${currentMonth}/${currentYear}...`
-            : `Đang tải dữ liệu thống kê tháng ${currentMonth}/{currentYear}...`}
-        </span>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const selectedDayItem =

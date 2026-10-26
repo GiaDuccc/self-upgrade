@@ -31,6 +31,7 @@ import { WorkoutTracker } from '~/components/WorkoutTracker/WorkoutTracker';
 import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
 import { WaterTracker } from '~/components/WaterTracker/WaterTracker';
 import { DailyStateModal } from '~/components/DailyStateModal/DailyStateModal';
+import { DayDetailSkeleton } from '~/components/Skeleton/Skeleton';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import {
   formatDateKey,
@@ -589,15 +590,7 @@ export const DayDetail: React.FC = () => {
   };
 
   if (isLoading || !dayData) {
-    return (
-      <div className="page-loading-box">
-        <span>
-          {isEn
-            ? `Loading daily schedule for ${activeDateKey}...`
-            : `Đang tải chi tiết công việc ngày ${activeDateKey}...`}
-        </span>
-      </div>
-    );
+    return <DayDetailSkeleton />;
   }
 
   const { dayStats, dayRecord, weekday, day, month } = dayData;

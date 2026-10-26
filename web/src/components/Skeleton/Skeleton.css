@@ -1,0 +1,175 @@
+/* ==========================================================================
+   SKELETON LOADING ANIMATIONS & BASE STYLES
+   Tương thích hoàn hảo cả Light Theme (Kraft Paper) & Dark Theme
+   ========================================================================== */
+
+@keyframes agy-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.sk-shimmer-base {
+  background: linear-gradient(
+    90deg,
+    var(--bg-mixed) 0%,
+    var(--bg-mixed-subtle) 25%,
+    var(--bg-surface) 50%,
+    var(--bg-mixed-subtle) 75%,
+    var(--bg-mixed) 100%
+  );
+  background-size: 200% 100%;
+  animation: agy-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+[data-theme='dark'] .sk-shimmer-base {
+  background: linear-gradient(
+    90deg,
+    #21201D 0%,
+    #292824 25%,
+    #33312C 50%,
+    #292824 75%,
+    #21201D 100%
+  );
+  background-size: 200% 100%;
+  animation: agy-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.sk-box {
+  display: block;
+  border-radius: var(--radius-sm, 6px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Base skeleton card styling */
+.sk-card-container {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md, 10px);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   DASHBOARD SKELETON
+   ========================================================================== */
+.sk-dashboard-wrapper {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.sk-chart-box {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md, 10px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 280px;
+}
+
+.sk-chart-canvas-sim {
+  flex: 1;
+  min-height: 180px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px dashed var(--border-subtle);
+  display: flex;
+  align-items: flex-end;
+  padding: 16px 20px;
+  gap: 12px;
+}
+
+.sk-donut-canvas-sim {
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 12px;
+}
+
+.sk-donut-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 14px solid var(--bg-mixed);
+  position: relative;
+}
+
+.sk-grid-cell-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm, 6px);
+  padding: 12px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   DAY DETAIL SKELETON
+   ========================================================================== */
+.sk-day-detail-wrapper {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.sk-day-score-card {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md, 10px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sk-state-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.sk-state-cell {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sk-task-row {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sk-tab-btn {
+  height: 40px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-subtle);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0.6;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
