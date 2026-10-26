@@ -211,3 +211,52 @@
   min-height: 148px;
   box-sizing: border-box;
 }
+
+/* ==========================================================================
+   SERVER AUTO-RECONNECT BANNER
+   Hiển thị khi Backend đang khởi động (Render cold start hoặc chạy FE trước BE)
+   ========================================================================== */
+.server-reconnect-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  animation: fadeIn 0.25s ease-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.reconnect-pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #F59E0B;
+  box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  animation: reconnectPulse 1.6s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes reconnectPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
