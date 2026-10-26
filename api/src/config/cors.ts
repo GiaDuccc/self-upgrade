@@ -13,6 +13,8 @@ export const corsOptions: CorsOptions = {
     if (
       !origin ||
       WHITELIST_DOMAINS.includes(origin) ||
+      origin === env.WEBSITE_DOMAIN_PRODUCTION ||
+      origin.endsWith('.vercel.app') ||
       origin.endsWith('.trycloudflare.com') ||
       origin.startsWith('capacitor://') ||
       origin.startsWith('ionic://')

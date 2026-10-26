@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import ms from 'ms';
 import { authService } from '~/services/authService';
+import { env } from '~/config/environment';
 
 const signUp = async (
   req: Request,
@@ -50,10 +51,11 @@ const signInClient = async (
   try {
     const result = await authService.signInClient(req.body);
 
+    const isProduction = env.BUILD_MODE === 'production';
     res.cookie('refreshTokenClient', result.refreshToken, {
       httpOnly: true,
-      secure: false, // localhost
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: ms('14 days'),
     });
 
@@ -88,7 +90,12 @@ const signOutClient = async (
   try {
     const userId = req.jwtDecoded?._id;
     await authService.signOutClient(userId);
-    res.clearCookie('refreshTokenClient');
+    const isProduction = env.BUILD_MODE === 'production';
+    res.clearCookie('refreshTokenClient', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
     res.status(StatusCodes.OK).json({ loggedOut: true });
   } catch (error) {
     next(error);

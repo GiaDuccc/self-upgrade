@@ -26,12 +26,11 @@ const START_SERVER = () => {
 
   app.use(errorHandlingMiddleware);
 
-  const port = Number(env.LOCAL_DEV_APP_PORT) || 2004;
-  const host = env.LOCAL_DEV_APP_HOST || 'localhost';
+  const port = Number(process.env.PORT) || Number(env.LOCAL_DEV_APP_PORT) || 2004;
 
-  const server = app.listen(port, host, () => {
+  const server = app.listen(port, () => {
     console.log(
-      `3. [Self Upgrade API] Hi ${env.AUTHOR}, Back-end Server is running successfully at http://${host}:${port}/v1`
+      `3. [Self Upgrade API] Hi ${env.AUTHOR}, Back-end Server is running successfully on port ${port} (/v1)`
     );
   });
 
@@ -40,7 +39,7 @@ const START_SERVER = () => {
       console.warn(`Cổng ${port} đang bận, đang thử kết nối lại sau 500ms...`);
       setTimeout(() => {
         server.close();
-        server.listen(port, host);
+        server.listen(port);
       }, 500);
     } else {
       console.error('Server error:', err);

@@ -6,8 +6,15 @@ export const getApiRoot = (): string => {
   try {
     const custom = localStorage.getItem('custom_api_root');
     if (custom && custom.trim()) return custom.trim();
+
+    // Ưu tiên biến môi trường VITE_API_BASE_URL (Dành cho Vercel / Production / Cloudflare)
+    const envApi = (import.meta as any).env?.VITE_API_BASE_URL;
+    if (envApi && typeof envApi === 'string' && envApi.trim()) {
+      return envApi.trim().replace(/\/+$/, '');
+    }
+
     if (Capacitor.isNativePlatform()) {
-      return (import.meta as any).env?.VITE_API_BASE_URL || 'http://10.0.2.2:2004';
+      return 'http://10.0.2.2:2004';
     }
     if (
       typeof window !== 'undefined' &&

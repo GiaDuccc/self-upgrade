@@ -10,6 +10,7 @@
   "scripts": {
     "clean": "rimraf build",
     "build": "tsc && tsc-alias",
+    "start": "node ./build/server.js",
     "production": "npm run build && cross-env BUILD_MODE=production node ./build/server.js",
     "dev": "cross-env BUILD_MODE=dev tsx watch ./src/server.ts",
     "type-check": "tsc --noEmit"
