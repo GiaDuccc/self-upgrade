@@ -31,75 +31,89 @@ export const SkeletonBox: React.FC<SkeletonBoxProps> = ({
 };
 
 export const DashboardSkeleton: React.FC = () => {
-  // Mô phỏng 31 ngày trong lịch
   const calendarCells = Array.from({ length: 31 }, (_, i) => i + 1);
 
   return (
-    <div className="overview-split-container sk-dashboard-wrapper" role="status" aria-label="Loading dashboard...">
-      {/* CỘT TRÁI: THỐNG KÊ & BIỂU ĐỒ */}
+    <div className="overview-split-container" role="status" aria-label="Loading dashboard...">
+      {/* CỘT BÊN TRÁI: 580PX */}
       <div className="overview-split-left-col">
         {/* Tiêu đề & Badge */}
         <div className="section-header-bar">
           <div>
-            <SkeletonBox width="300px" height="26px" style={{ marginBottom: 8 }} />
-            <SkeletonBox width="420px" height="14px" />
+            <SkeletonBox width="280px" height="26px" style={{ marginBottom: 6 }} />
+            <SkeletonBox width="390px" height="14px" />
           </div>
-          <SkeletonBox width="140px" height="34px" borderRadius="999px" />
+          <SkeletonBox width="140px" height="32px" borderRadius="999px" />
         </div>
 
         {/* 4 Thẻ chỉ số tổng hợp (2x2) */}
         <div className="stats-cards-grid stats-cards-grid-split">
           {/* Card 1 */}
-          <div className="stat-card stat-card-highlight">
-            <SkeletonBox width="140px" height="12px" style={{ marginBottom: 12 }} />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
-              <SkeletonBox width="85px" height="38px" />
+          <div className="stat-card stat-card-highlight sk-stat-card">
+            <SkeletonBox width="150px" height="12px" />
+            <div className="stat-value-row" style={{ marginTop: 6, marginBottom: 6 }}>
+              <SkeletonBox width="85px" height="34px" />
               <SkeletonBox width="70px" height="22px" borderRadius="999px" />
             </div>
-            <SkeletonBox width="190px" height="12px" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <SkeletonBox width="190px" height="11px" />
+              <SkeletonBox width="130px" height="11px" />
+            </div>
           </div>
 
           {/* Card 2 */}
-          <div className="stat-card">
-            <SkeletonBox width="160px" height="12px" style={{ marginBottom: 12 }} />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-              <SkeletonBox width="95px" height="38px" />
+          <div className="stat-card sk-stat-card">
+            <SkeletonBox width="160px" height="12px" />
+            <div className="stat-value-row" style={{ marginTop: 6, marginBottom: 6 }}>
+              <SkeletonBox width="95px" height="34px" />
               <SkeletonBox width="60px" height="20px" />
             </div>
-            <SkeletonBox width="180px" height="12px" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <SkeletonBox width="180px" height="11px" />
+              <SkeletonBox width="120px" height="11px" />
+            </div>
           </div>
 
           {/* Card 3 */}
-          <div className="stat-card">
-            <SkeletonBox width="150px" height="12px" style={{ marginBottom: 12 }} />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-              <SkeletonBox width="70px" height="38px" />
+          <div className="stat-card sk-stat-card">
+            <SkeletonBox width="150px" height="12px" />
+            <div className="stat-value-row" style={{ marginTop: 6, marginBottom: 6 }}>
+              <SkeletonBox width="75px" height="34px" />
               <SkeletonBox width="65px" height="20px" />
             </div>
-            <SkeletonBox width="170px" height="12px" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <SkeletonBox width="170px" height="11px" />
+              <SkeletonBox width="140px" height="11px" />
+            </div>
           </div>
 
           {/* Card 4 */}
-          <div className="stat-card">
-            <SkeletonBox width="160px" height="12px" style={{ marginBottom: 12 }} />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
-              <SkeletonBox width="80px" height="38px" />
+          <div className="stat-card sk-stat-card">
+            <SkeletonBox width="160px" height="12px" />
+            <div className="stat-value-row" style={{ marginTop: 6, marginBottom: 6 }}>
+              <SkeletonBox width="80px" height="34px" />
               <SkeletonBox width="65px" height="22px" borderRadius="999px" />
             </div>
-            <SkeletonBox width="190px" height="12px" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <SkeletonBox width="185px" height="11px" />
+              <SkeletonBox width="115px" height="11px" />
+            </div>
           </div>
         </div>
 
-        {/* 2 Thẻ biểu đồ (Đường & Tròn) */}
+        {/* 2 Thẻ biểu đồ */}
         <div className="charts-split-stack">
           {/* Biểu đồ Đường */}
-          <div className="sk-chart-box">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <SkeletonBox width="220px" height="20px" />
-              <SkeletonBox width="100px" height="24px" borderRadius="999px" />
+          <div className="chart-box sk-chart-box-line">
+            <div className="chart-header">
+              <div>
+                <SkeletonBox width="230px" height="18px" style={{ marginBottom: 4 }} />
+                <SkeletonBox width="340px" height="12px" />
+              </div>
+              <SkeletonBox width="105px" height="24px" borderRadius="4px" />
             </div>
-            <div className="sk-chart-canvas-sim">
-              {[45, 60, 35, 75, 90, 65, 80, 50, 85, 95, 70, 85, 90, 60].map((h, idx) => (
+            <div className="sk-line-canvas">
+              {[45, 60, 35, 75, 90, 65, 80, 50, 85, 95, 70, 85, 90, 60, 80, 92].map((h, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -110,53 +124,64 @@ export const DashboardSkeleton: React.FC = () => {
                     justifyContent: 'flex-end',
                   }}
                 >
-                  <SkeletonBox width="100%" height="100%" borderRadius="4px" />
+                  <SkeletonBox width="100%" height="100%" borderRadius="3px" />
                 </div>
               ))}
             </div>
           </div>
 
           {/* Biểu đồ Phân bổ Tròn */}
-          <div className="sk-chart-box">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <SkeletonBox width="200px" height="20px" />
-              <SkeletonBox width="90px" height="24px" borderRadius="999px" />
+          <div className="chart-box sk-chart-box-donut">
+            <div className="chart-header">
+              <div>
+                <SkeletonBox width="240px" height="18px" style={{ marginBottom: 4 }} />
+                <SkeletonBox width="280px" height="12px" style={{ marginBottom: 8 }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <SkeletonBox width="110px" height="28px" borderRadius="6px" />
+                  <SkeletonBox width="90px" height="28px" borderRadius="6px" />
+                </div>
+              </div>
             </div>
-            <div className="sk-donut-canvas-sim">
-              <div className="sk-donut-circle sk-shimmer-base" />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, maxWidth: 240 }}>
-                <SkeletonBox width="100%" height="18px" />
-                <SkeletonBox width="80%" height="18px" />
-                <SkeletonBox width="65%" height="18px" />
+            <div className="sk-donut-canvas">
+              <div className="sk-donut-circle-shape sk-shimmer-base" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 240 }}>
+                <SkeletonBox width="100%" height="16px" />
+                <SkeletonBox width="85%" height="16px" />
+                <SkeletonBox width="70%" height="16px" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* CỘT PHẢI: LỊCH CÁC NGÀY TRONG THÁNG */}
+      {/* CỘT BÊN PHẢI: MINMAX(0, 1FR) - LỊCH 31 NGÀY */}
       <div className="overview-split-right-col">
         <section className="month-days-section">
           <div className="section-header-bar">
             <div>
-              <SkeletonBox width="240px" height="22px" style={{ marginBottom: 8 }} />
-              <SkeletonBox width="320px" height="13px" />
+              <SkeletonBox width="250px" height="22px" style={{ marginBottom: 6 }} />
+              <SkeletonBox width="330px" height="13px" />
             </div>
             <div className="grid-legend-pills">
               <SkeletonBox width="90px" height="22px" borderRadius="999px" />
               <SkeletonBox width="90px" height="22px" borderRadius="999px" />
-              <SkeletonBox width="100px" height="22px" borderRadius="999px" />
+              <SkeletonBox width="110px" height="22px" borderRadius="999px" />
             </div>
           </div>
 
           <div className="month-days-grid">
             {calendarCells.map((dayNum) => (
-              <div key={dayNum} className="sk-grid-cell-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <SkeletonBox width="26px" height="20px" />
-                  <SkeletonBox width="24px" height="12px" />
+              <div key={dayNum} className="day-cell-card sk-day-cell">
+                <div className="day-cell-top">
+                  <div className="day-cell-number-wrap">
+                    <SkeletonBox width="24px" height="20px" />
+                    <SkeletonBox width="22px" height="12px" />
+                  </div>
+                  {dayNum % 7 === 0 && <SkeletonBox width="45px" height="16px" borderRadius="999px" />}
                 </div>
-                <SkeletonBox width="100%" height="22px" borderRadius="4px" />
+                <SkeletonBox width="75%" height="18px" borderRadius="999px" />
+                <SkeletonBox width="100%" height="5px" borderRadius="999px" />
+                <SkeletonBox width="60%" height="12px" />
               </div>
             ))}
           </div>
@@ -167,111 +192,144 @@ export const DashboardSkeleton: React.FC = () => {
 };
 
 export const DayDetailSkeleton: React.FC = () => {
-  const taskRows = Array.from({ length: 7 }, (_, i) => i);
-
   return (
-    <div className="day-split-page-wrapper sk-day-detail-wrapper" role="status" aria-label="Loading day schedule...">
+    <div className="day-split-page-wrapper" id="day-detail-panel" role="status" aria-label="Loading day schedule...">
       <div className="day-split-container">
-        {/* CỘT TRÁI: ĐIỀU HƯỚNG, ĐIỂM SỐ, TRẠNG THÁI */}
+        {/* CỘT TRÁI: 460PX */}
         <section className="day-detail-section day-split-left-col">
           {/* Thanh chuyển ngày */}
           <div className="day-page-topbar">
             <div className="day-date-switcher">
               <SkeletonBox width="32px" height="32px" borderRadius="6px" />
-              <SkeletonBox width="95px" height="24px" />
+              <SkeletonBox width="90px" height="24px" />
               <SkeletonBox width="32px" height="32px" borderRadius="6px" />
             </div>
             <div className="day-tag-row">
               <SkeletonBox width="95px" height="24px" borderRadius="4px" />
-              <SkeletonBox width="60px" height="24px" borderRadius="999px" />
-              <SkeletonBox width="65px" height="24px" borderRadius="999px" />
+              <SkeletonBox width="60px" height="24px" borderRadius="4px" />
+              <SkeletonBox width="65px" height="24px" borderRadius="4px" />
             </div>
           </div>
 
-          {/* Tiêu đề trang */}
+          {/* Tiêu đề & mô tả */}
           <div className="day-detail-title-group">
-            <SkeletonBox width="240px" height="28px" style={{ marginBottom: 8 }} />
-            <SkeletonBox width="340px" height="14px" />
+            <SkeletonBox width="220px" height="26px" style={{ marginBottom: 4 }} />
+            <SkeletonBox width="360px" height="14px" />
           </div>
 
-          {/* Thẻ điểm số tổng hợp & Trạng thái */}
-          <div className="sk-day-score-card">
+          {/* Thẻ điểm số tổng hợp & Trạng thái cá nhân */}
+          <div className="day-score-summary-card sk-day-score-summary">
             <div className="day-score-main">
               <div className="day-score-left">
-                <SkeletonBox width="120px" height="12px" style={{ marginBottom: 8 }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                  <SkeletonBox width="110px" height="46px" />
+                <SkeletonBox width="115px" height="12px" style={{ marginBottom: 6 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                  <SkeletonBox width="105px" height="46px" />
                   <SkeletonBox width="95px" height="24px" borderRadius="999px" />
                 </div>
-                <SkeletonBox width="170px" height="14px" />
+                <SkeletonBox width="165px" height="13px" />
               </div>
               <div className="day-rank-box">
-                <SkeletonBox width="55px" height="12px" style={{ marginBottom: 8 }} />
+                <SkeletonBox width="50px" height="12px" style={{ marginBottom: 6 }} />
                 <SkeletonBox width="90px" height="26px" borderRadius="6px" />
               </div>
             </div>
 
-            {/* Trạng thái 3 ô */}
+            {/* Trạng thái cá nhân */}
             <div className="day-state-section">
               <div className="day-state-header">
                 <SkeletonBox width="140px" height="14px" />
                 <SkeletonBox width="75px" height="24px" borderRadius="6px" />
               </div>
-              <div className="sk-state-mini-grid">
-                <div className="sk-state-cell">
-                  <SkeletonBox width="45px" height="11px" />
-                  <SkeletonBox width="65px" height="18px" />
+              <div className="day-state-cards-grid">
+                <div className="state-mini-card sk-state-mini">
+                  <SkeletonBox width="45px" height="10px" />
+                  <SkeletonBox width="60px" height="16px" />
                 </div>
-                <div className="sk-state-cell">
-                  <SkeletonBox width="45px" height="11px" />
-                  <SkeletonBox width="65px" height="18px" />
+                <div className="state-mini-card sk-state-mini">
+                  <SkeletonBox width="45px" height="10px" />
+                  <SkeletonBox width="60px" height="16px" />
                 </div>
-                <div className="sk-state-cell">
-                  <SkeletonBox width="45px" height="11px" />
-                  <SkeletonBox width="65px" height="18px" />
+                <div className="state-mini-card sk-state-mini">
+                  <SkeletonBox width="45px" height="10px" />
+                  <SkeletonBox width="60px" height="16px" />
                 </div>
               </div>
+              <div className="sk-sleep-banner">
+                <SkeletonBox width="120px" height="16px" />
+                <SkeletonBox width="70px" height="16px" />
+              </div>
             </div>
-          </div>
 
-          {/* Module Lượng nước & Ghi chú */}
-          <div className="sk-card-container" style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <SkeletonBox width="140px" height="16px" />
-              <SkeletonBox width="65px" height="20px" />
+            {/* Progress bar */}
+            <SkeletonBox width="100%" height="8px" borderRadius="999px" />
+
+            {/* Thao tác nhanh */}
+            <div className="day-quick-actions">
+              <SkeletonBox width="100px" height="34px" borderRadius="6px" />
+              <SkeletonBox width="95px" height="34px" borderRadius="6px" />
+              <SkeletonBox width="105px" height="34px" borderRadius="6px" />
             </div>
-            <SkeletonBox width="100%" height="42px" borderRadius="6px" />
           </div>
         </section>
 
-        {/* CỘT PHẢI: TO-DO LIST & CÁC MODULE */}
+        {/* CỘT PHẢI: MINMAX(0, 1FR) */}
         <section className="day-detail-section day-split-right-col">
-          {/* Tab bar */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+          {/* Tab Bar: To-do List, Calories, Workout */}
+          <div className="day-mode-tab-bar" style={{ display: 'flex', gap: 10 }}>
             <SkeletonBox width="140px" height="38px" borderRadius="6px" />
-            <SkeletonBox width="160px" height="38px" borderRadius="6px" />
-            <SkeletonBox width="135px" height="38px" borderRadius="6px" />
+            <SkeletonBox width="165px" height="38px" borderRadius="6px" />
+            <SkeletonBox width="140px" height="38px" borderRadius="6px" />
           </div>
 
-          {/* Danh sách nhiệm vụ to-do */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {taskRows.map((idx) => (
-              <div key={idx} className="sk-task-row">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <SkeletonBox width="20px" height="20px" borderRadius="4px" />
-                  <SkeletonBox width="44px" height="22px" borderRadius="4px" />
-                  <SkeletonBox width={idx % 2 === 0 ? '240px' : '180px'} height="16px" />
+          {/* Timetable Matrix Skeleton 1:1 */}
+          <div className="sk-timetable-skeleton">
+            {/* Header row: Corner + 24 hours */}
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(34, 34, 32, 0.08)' }}>
+              <div className="sk-timetable-corner" />
+              {Array.from({ length: 10 }, (_, i) => (
+                <div key={i} className="sk-timetable-header-cell">
+                  <SkeletonBox width="50px" height="14px" style={{ margin: '0 auto' }} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <SkeletonBox width="80px" height="26px" borderRadius="999px" />
-                  <SkeletonBox width="26px" height="26px" borderRadius="4px" />
+              ))}
+            </div>
+            {/* 5 Task rows: Việc 1 .. Việc 5 */}
+            {Array.from({ length: 5 }, (_, rIdx) => (
+              <div key={rIdx} className="sk-timetable-row">
+                <div className="sk-timetable-y-cell">
+                  <SkeletonBox width="45px" height="14px" />
                 </div>
+                {Array.from({ length: 10 }, (_, cIdx) => (
+                  <div key={cIdx} className="sk-timetable-task-cell">
+                    {(rIdx + cIdx) % 3 === 0 ? (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <SkeletonBox width="18px" height="18px" borderRadius="4px" />
+                          <SkeletonBox width="40px" height="16px" borderRadius="999px" />
+                        </div>
+                        <SkeletonBox width="85%" height="13px" />
+                        <SkeletonBox width="50%" height="11px" />
+                      </>
+                    ) : null}
+                  </div>
+                ))}
               </div>
             ))}
+          </div>
+
+          {/* Ghi chú ngày 1:1 */}
+          <div className="day-note-box sk-day-note-box">
+            <div className="day-note-header">
+              <SkeletonBox width="200px" height="16px" />
+              <SkeletonBox width="120px" height="13px" />
+            </div>
+            <SkeletonBox width="100%" height="56px" borderRadius="6px" />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <SkeletonBox width="100px" height="32px" borderRadius="6px" />
+              <SkeletonBox width="110px" height="32px" borderRadius="6px" />
+            </div>
           </div>
         </section>
       </div>
     </div>
   );
 };
-

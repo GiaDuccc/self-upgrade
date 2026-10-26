@@ -47,7 +47,7 @@
         margin: 0;
         padding: 0;
         background-color: var(--sk-init-bg);
-        font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, monospace;
+        font-family: 'JetBrains Mono', monospace;
         -webkit-font-smoothing: antialiased;
       }
       @keyframes sk-init-anim {
@@ -68,6 +68,7 @@
         display: block;
         border-radius: 6px;
       }
+      /* Top Navbar: Kích thước 1:1 */
       .sk-init-nav {
         background-color: var(--sk-init-bg);
         border-bottom: 1.5px solid var(--sk-init-border);
@@ -75,6 +76,7 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
+        box-sizing: border-box;
       }
       .sk-init-nav-row {
         display: flex;
@@ -83,182 +85,350 @@
         width: 100%;
         gap: 16px;
       }
+      /* Main Container: 1650px chuẩn xác tuyệt đối */
       .sk-init-main {
-        max-width: 1440px;
+        max-width: 1650px;
         margin: 0 auto;
         padding: 24px 36px 56px;
         width: 100%;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
       }
-      .sk-init-split {
+      /* Bố cục Dashboard Split 580px minmax(0, 1fr) */
+      .sk-init-dash-split {
         display: grid;
-        grid-template-columns: 1.35fr 1fr;
-        gap: 28px;
-        align-items: start;
+        grid-template-columns: 580px minmax(0, 1fr);
+        gap: 24px;
+        align-items: flex-start;
+        width: 100%;
       }
-      .sk-init-cards-grid {
+      /* Bố cục DayDetail Split 460px minmax(0, 1fr) */
+      .sk-init-day-split {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 24px;
+        grid-template-columns: 460px minmax(0, 1fr);
+        gap: 24px;
+        align-items: flex-start;
+        width: 100%;
       }
-      .sk-init-card {
-        background-color: var(--sk-init-surface);
-        border: 1.5px solid var(--sk-init-border);
-        border-radius: 10px;
-        padding: 20px;
-        box-sizing: border-box;
-      }
-      .sk-init-days-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-        gap: 10px;
-        margin-top: 16px;
-      }
-      .sk-init-day-cell {
+      .sk-init-stat-card {
         background-color: var(--sk-init-surface);
         border: 1px solid var(--sk-init-border);
-        border-radius: 6px;
-        padding: 10px;
-        height: 85px;
+        border-radius: 10px;
+        padding: 16px 18px;
+        min-height: 122px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         box-sizing: border-box;
       }
-      @media (max-width: 1024px) {
-        .sk-init-nav { padding: 12px 20px; }
-        .sk-init-main { padding: 16px 16px 40px; }
-        .sk-init-split { grid-template-columns: 1fr; gap: 20px; }
+      .sk-init-chart-box {
+        background-color: var(--sk-init-surface);
+        border: 1px solid var(--sk-init-border);
+        border-radius: 10px;
+        padding: 18px 20px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
       }
-      @media (max-width: 640px) {
-        .sk-init-cards-grid { grid-template-columns: 1fr; }
+      .sk-init-days-section {
+        background-color: var(--sk-init-surface);
+        border: 1px solid var(--sk-init-border);
+        border-radius: 14px;
+        padding: 22px;
+        box-sizing: border-box;
+        width: 100%;
+      }
+      .sk-init-days-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(134px, 1fr));
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .sk-init-day-cell {
+        background-color: var(--sk-init-bg);
+        border: 1px solid var(--sk-init-border-subtle);
+        border-radius: 10px;
+        padding: 12px;
+        min-height: 102px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-sizing: border-box;
+      }
+      .sk-init-frame {
+        background-color: var(--sk-init-surface);
+        border: 1.5px solid var(--sk-init-border);
+        border-radius: 14px;
+        padding: 22px 24px;
+        box-sizing: border-box;
+      }
+      @media (max-width: 1180px) {
+        .sk-init-nav { padding: 12px 24px; }
+        .sk-init-main { padding: 16px 20px 40px; }
+        .sk-init-dash-split,
+        .sk-init-day-split { grid-template-columns: 1fr; gap: 20px; }
       }
     </style>
   </head>
   <body>
     <div id="root">
-      <!-- Instant 0ms Skeleton screen shown while JS bundles load / during page reload -->
-      <div class="sk-init-nav" aria-hidden="true">
+      <!-- Instant 0ms Skeleton screen: 1:1 kích thước chuẩn xác với dữ liệu thực -->
+      <header class="sk-init-nav" aria-hidden="true">
         <div class="sk-init-nav-row">
           <div style="display: flex; align-items: center; gap: 12px;">
             <span class="sk-init-shimmer" style="width: 36px; height: 36px; border-radius: 6px;"></span>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <span class="sk-init-shimmer" style="width: 160px; height: 16px;"></span>
-              <span class="sk-init-shimmer" style="width: 240px; height: 11px;"></span>
+              <span class="sk-init-shimmer" style="width: 170px; height: 18px;"></span>
+              <span class="sk-init-shimmer" style="width: 260px; height: 12px;"></span>
             </div>
           </div>
           <div style="display: flex; gap: 10px;">
-            <span class="sk-init-shimmer" style="width: 110px; height: 34px; border-radius: 6px;"></span>
-            <span class="sk-init-shimmer" style="width: 110px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 150px; height: 36px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 150px; height: 36px; border-radius: 6px;"></span>
           </div>
         </div>
         <div class="sk-init-nav-row">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="sk-init-shimmer" style="width: 32px; height: 32px; border-radius: 6px;"></span>
-            <span class="sk-init-shimmer" style="width: 130px; height: 32px; border-radius: 6px;"></span>
-            <span class="sk-init-shimmer" style="width: 32px; height: 32px; border-radius: 6px;"></span>
-            <span class="sk-init-shimmer" style="width: 80px; height: 32px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 34px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 140px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 34px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 85px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 125px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 145px; height: 34px; border-radius: 6px;"></span>
           </div>
           <div style="display: flex; gap: 8px;">
-            <span class="sk-init-shimmer" style="width: 95px; height: 32px; border-radius: 6px;"></span>
-            <span class="sk-init-shimmer" style="width: 34px; height: 32px; border-radius: 6px;"></span>
-            <span class="sk-init-shimmer" style="width: 34px; height: 32px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 34px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 34px; height: 34px; border-radius: 6px;"></span>
+            <span class="sk-init-shimmer" style="width: 34px; height: 34px; border-radius: 6px;"></span>
           </div>
         </div>
-      </div>
+      </header>
 
       <main class="sk-init-main" aria-hidden="true">
-        <div class="sk-init-split">
-          <!-- Cột trái: Stats & Charts -->
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <span class="sk-init-shimmer" style="width: 280px; height: 24px;"></span>
-                <span class="sk-init-shimmer" style="width: 380px; height: 13px;"></span>
+        <!-- VIEW 1: DASHBOARD SKELETON (Mặc định hoặc khi ở trang chủ) -->
+        <div id="sk-init-dashboard-view" class="sk-init-dash-split">
+          <!-- Cột trái: 580px -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="sk-init-shimmer" style="width: 280px; height: 26px;"></span>
+                <span class="sk-init-shimmer" style="width: 390px; height: 14px;"></span>
               </div>
-              <span class="sk-init-shimmer" style="width: 130px; height: 32px; border-radius: 999px;"></span>
+              <span class="sk-init-shimmer" style="width: 140px; height: 32px; border-radius: 999px;"></span>
             </div>
 
-            <div class="sk-init-cards-grid">
-              <div class="sk-init-card">
-                <span class="sk-init-shimmer" style="width: 140px; height: 11px; margin-bottom: 12px;"></span>
-                <div style="display: flex; gap: 10px; align-items: baseline; margin-bottom: 10px;">
-                  <span class="sk-init-shimmer" style="width: 85px; height: 36px;"></span>
-                  <span class="sk-init-shimmer" style="width: 65px; height: 22px; border-radius: 999px;"></span>
+            <!-- 4 Thẻ thống kê 2x2: Chiều cao chuẩn 122px -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+              <div class="sk-init-stat-card" style="border-width: 1.5px;">
+                <span class="sk-init-shimmer" style="width: 150px; height: 12px;"></span>
+                <div style="display: flex; gap: 10px; align-items: baseline;">
+                  <span class="sk-init-shimmer" style="width: 85px; height: 34px;"></span>
+                  <span class="sk-init-shimmer" style="width: 70px; height: 22px; border-radius: 999px;"></span>
                 </div>
-                <span class="sk-init-shimmer" style="width: 180px; height: 11px;"></span>
-              </div>
-              <div class="sk-init-card">
-                <span class="sk-init-shimmer" style="width: 150px; height: 11px; margin-bottom: 12px;"></span>
-                <div style="display: flex; gap: 8px; align-items: baseline; margin-bottom: 10px;">
-                  <span class="sk-init-shimmer" style="width: 95px; height: 36px;"></span>
-                  <span class="sk-init-shimmer" style="width: 55px; height: 20px;"></span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="sk-init-shimmer" style="width: 190px; height: 11px;"></span>
+                  <span class="sk-init-shimmer" style="width: 130px; height: 11px;"></span>
                 </div>
-                <span class="sk-init-shimmer" style="width: 175px; height: 11px;"></span>
               </div>
-              <div class="sk-init-card">
-                <span class="sk-init-shimmer" style="width: 140px; height: 11px; margin-bottom: 12px;"></span>
-                <div style="display: flex; gap: 8px; align-items: baseline; margin-bottom: 10px;">
-                  <span class="sk-init-shimmer" style="width: 70px; height: 36px;"></span>
+
+              <div class="sk-init-stat-card">
+                <span class="sk-init-shimmer" style="width: 160px; height: 12px;"></span>
+                <div style="display: flex; gap: 8px; align-items: baseline;">
+                  <span class="sk-init-shimmer" style="width: 95px; height: 34px;"></span>
                   <span class="sk-init-shimmer" style="width: 60px; height: 20px;"></span>
                 </div>
-                <span class="sk-init-shimmer" style="width: 160px; height: 11px;"></span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="sk-init-shimmer" style="width: 180px; height: 11px;"></span>
+                  <span class="sk-init-shimmer" style="width: 120px; height: 11px;"></span>
+                </div>
               </div>
-              <div class="sk-init-card">
-                <span class="sk-init-shimmer" style="width: 155px; height: 11px; margin-bottom: 12px;"></span>
-                <div style="display: flex; gap: 10px; align-items: baseline; margin-bottom: 10px;">
-                  <span class="sk-init-shimmer" style="width: 80px; height: 36px;"></span>
+
+              <div class="sk-init-stat-card">
+                <span class="sk-init-shimmer" style="width: 150px; height: 12px;"></span>
+                <div style="display: flex; gap: 8px; align-items: baseline;">
+                  <span class="sk-init-shimmer" style="width: 75px; height: 34px;"></span>
+                  <span class="sk-init-shimmer" style="width: 65px; height: 20px;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="sk-init-shimmer" style="width: 170px; height: 11px;"></span>
+                  <span class="sk-init-shimmer" style="width: 140px; height: 11px;"></span>
+                </div>
+              </div>
+
+              <div class="sk-init-stat-card">
+                <span class="sk-init-shimmer" style="width: 160px; height: 12px;"></span>
+                <div style="display: flex; gap: 10px; align-items: baseline;">
+                  <span class="sk-init-shimmer" style="width: 80px; height: 34px;"></span>
                   <span class="sk-init-shimmer" style="width: 65px; height: 22px; border-radius: 999px;"></span>
                 </div>
-                <span class="sk-init-shimmer" style="width: 185px; height: 11px;"></span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="sk-init-shimmer" style="width: 185px; height: 11px;"></span>
+                  <span class="sk-init-shimmer" style="width: 115px; height: 11px;"></span>
+                </div>
               </div>
             </div>
 
-            <!-- Chart Box Skeleton -->
-            <div class="sk-init-card" style="min-height: 270px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="sk-init-shimmer" style="width: 200px; height: 18px;"></span>
-                <span class="sk-init-shimmer" style="width: 90px; height: 24px; border-radius: 999px;"></span>
+            <!-- Biểu đồ 1: Biểu đồ đường (268px) -->
+            <div class="sk-init-chart-box" style="min-height: 268px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="sk-init-shimmer" style="width: 230px; height: 18px;"></span>
+                  <span class="sk-init-shimmer" style="width: 340px; height: 12px;"></span>
+                </div>
+                <span class="sk-init-shimmer" style="width: 105px; height: 24px; border-radius: 4px;"></span>
               </div>
-              <span class="sk-init-shimmer" style="width: 100%; height: 180px; border-radius: 6px;"></span>
+              <span class="sk-init-shimmer" style="width: 100%; height: 165px; border-radius: 6px;"></span>
+            </div>
+
+            <!-- Biểu đồ 2: Biểu đồ tròn (280px) -->
+            <div class="sk-init-chart-box" style="min-height: 280px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="sk-init-shimmer" style="width: 240px; height: 18px;"></span>
+                  <span class="sk-init-shimmer" style="width: 280px; height: 12px;"></span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <span class="sk-init-shimmer" style="width: 100px; height: 28px; border-radius: 6px;"></span>
+                  <span class="sk-init-shimmer" style="width: 90px; height: 28px; border-radius: 6px;"></span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 32px; padding: 10px;">
+                <span class="sk-init-shimmer" style="width: 145px; height: 145px; border-radius: 50%;"></span>
+                <div style="display: flex; flex-direction: column; gap: 14px; flex: 1; max-width: 240px;">
+                  <span class="sk-init-shimmer" style="width: 100%; height: 16px;"></span>
+                  <span class="sk-init-shimmer" style="width: 85%; height: 16px;"></span>
+                  <span class="sk-init-shimmer" style="width: 70%; height: 16px;"></span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Cột phải: Calendar Grid -->
-          <div class="sk-init-card" style="padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px;">
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <span class="sk-init-shimmer" style="width: 190px; height: 20px;"></span>
-                <span class="sk-init-shimmer" style="width: 240px; height: 12px;"></span>
+          <!-- Cột phải: Lưới 31 ngày trong tháng (minmax 134px 1fr) -->
+          <div class="sk-init-days-section">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="sk-init-shimmer" style="width: 250px; height: 22px;"></span>
+                <span class="sk-init-shimmer" style="width: 330px; height: 13px;"></span>
               </div>
-              <span class="sk-init-shimmer" style="width: 80px; height: 22px; border-radius: 999px;"></span>
+              <div style="display: flex; gap: 8px;">
+                <span class="sk-init-shimmer" style="width: 90px; height: 22px; border-radius: 999px;"></span>
+                <span class="sk-init-shimmer" style="width: 90px; height: 22px; border-radius: 999px;"></span>
+                <span class="sk-init-shimmer" style="width: 110px; height: 22px; border-radius: 999px;"></span>
+              </div>
             </div>
+
             <div class="sk-init-days-grid">
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
-              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 22px; height: 16px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 18px;"></span></div>
+              <!-- 31 ô ngày chuẩn xác 1:1 -->
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
+              <div class="sk-init-day-cell"><span class="sk-init-shimmer" style="width: 24px; height: 20px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 18px; border-radius: 999px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 5px;"></span><span class="sk-init-shimmer" style="width: 60%; height: 12px;"></span></div>
             </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: DAY DETAIL SKELETON (Khi người dùng mở trực tiếp /day/YYYY-MM-DD hoặc F5) -->
+        <div id="sk-init-day-view" class="sk-init-day-split" style="display: none;">
+          <!-- Cột trái: 460px -->
+          <div class="sk-init-frame" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="sk-init-shimmer" style="width: 32px; height: 32px; border-radius: 6px;"></span>
+                <span class="sk-init-shimmer" style="width: 90px; height: 24px;"></span>
+                <span class="sk-init-shimmer" style="width: 32px; height: 32px; border-radius: 6px;"></span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <span class="sk-init-shimmer" style="width: 95px; height: 24px; border-radius: 4px;"></span>
+                <span class="sk-init-shimmer" style="width: 65px; height: 24px; border-radius: 4px;"></span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span class="sk-init-shimmer" style="width: 220px; height: 26px;"></span>
+              <span class="sk-init-shimmer" style="width: 360px; height: 14px;"></span>
+            </div>
+
+            <div class="sk-init-stat-card" style="min-height: 365px; background-color: var(--sk-init-base);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <span class="sk-init-shimmer" style="width: 115px; height: 12px;"></span>
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <span class="sk-init-shimmer" style="width: 105px; height: 46px;"></span>
+                    <span class="sk-init-shimmer" style="width: 95px; height: 24px; border-radius: 999px;"></span>
+                  </div>
+                  <span class="sk-init-shimmer" style="width: 165px; height: 13px;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
+                  <span class="sk-init-shimmer" style="width: 50px; height: 12px;"></span>
+                  <span class="sk-init-shimmer" style="width: 90px; height: 26px; border-radius: 6px;"></span>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <span class="sk-init-shimmer" style="height: 52px; border-radius: 6px;"></span>
+                <span class="sk-init-shimmer" style="height: 52px; border-radius: 6px;"></span>
+                <span class="sk-init-shimmer" style="height: 52px; border-radius: 6px;"></span>
+              </div>
+
+              <span class="sk-init-shimmer" style="width: 100%; height: 36px; border-radius: 6px;"></span>
+              <span class="sk-init-shimmer" style="width: 100%; height: 8px; border-radius: 999px;"></span>
+
+              <div style="display: flex; gap: 8px;">
+                <span class="sk-init-shimmer" style="width: 100px; height: 34px; border-radius: 6px;"></span>
+                <span class="sk-init-shimmer" style="width: 95px; height: 34px; border-radius: 6px;"></span>
+                <span class="sk-init-shimmer" style="width: 105px; height: 34px; border-radius: 6px;"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cột phải: Timetable Matrix 1:1 -->
+          <div class="sk-init-frame" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; gap: 10px;">
+              <span class="sk-init-shimmer" style="width: 140px; height: 38px; border-radius: 6px;"></span>
+              <span class="sk-init-shimmer" style="width: 165px; height: 38px; border-radius: 6px;"></span>
+              <span class="sk-init-shimmer" style="width: 140px; height: 38px; border-radius: 6px;"></span>
+            </div>
+
+            <span class="sk-init-shimmer" style="width: 100%; height: 380px; border-radius: 10px;"></span>
+            <span class="sk-init-shimmer" style="width: 100%; height: 148px; border-radius: 10px;"></span>
           </div>
         </div>
       </main>
     </div>
+
+    <!-- Script tự động hiển thị skeleton tương ứng theo route trước khi React mount -->
+    <script>
+      try {
+        if (window.location.pathname.indexOf('/day') !== -1) {
+          var dashEl = document.getElementById('sk-init-dashboard-view');
+          var dayEl = document.getElementById('sk-init-day-view');
+          if (dashEl && dayEl) {
+            dashEl.style.display = 'none';
+            dayEl.style.display = 'grid';
+          }
+        }
+      } catch (e) {}
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

@@ -1,6 +1,7 @@
 /* ==========================================================================
    SKELETON LOADING ANIMATIONS & BASE STYLES
-   Tương thích hoàn hảo cả Light Theme (Kraft Paper) & Dark Theme
+   Kích thước 1:1 chuẩn xác tuyệt đối với giao diện thực tế (CLS = 0)
+   Hỗ trợ hoàn hảo cả Light Kraft & Dark Theme
    ========================================================================== */
 
 @keyframes agy-shimmer {
@@ -45,131 +46,168 @@
   overflow: hidden;
 }
 
-/* Base skeleton card styling */
-.sk-card-container {
-  background-color: var(--bg-surface);
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-md, 10px);
-  padding: 20px;
+/* ==========================================================================
+   DASHBOARD 1:1 SKELETON ENHANCEMENTS
+   ========================================================================== */
+.sk-stat-card {
+  min-height: 122px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   box-sizing: border-box;
 }
 
-/* ==========================================================================
-   DASHBOARD SKELETON
-   ========================================================================== */
-.sk-dashboard-wrapper {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.sk-chart-box {
-  background-color: var(--bg-surface);
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-md, 10px);
-  padding: 24px;
+.sk-chart-box-line {
+  min-height: 268px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-height: 280px;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-.sk-chart-canvas-sim {
-  flex: 1;
-  min-height: 180px;
-  border-radius: var(--radius-sm, 6px);
+.sk-line-canvas {
+  width: 100%;
+  height: 165px;
+  border-radius: var(--radius-sm);
   border: 1px dashed var(--border-subtle);
   display: flex;
   align-items: flex-end;
-  padding: 16px 20px;
-  gap: 12px;
+  padding: 14px 16px;
+  gap: 10px;
+  box-sizing: border-box;
 }
 
-.sk-donut-canvas-sim {
-  min-height: 190px;
+.sk-chart-box-donut {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.sk-donut-canvas {
+  height: 175px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  padding: 12px;
+  gap: 32px;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
-.sk-donut-circle {
-  width: 140px;
-  height: 140px;
+.sk-donut-circle-shape {
+  width: 145px;
+  height: 145px;
   border-radius: 50%;
-  border: 14px solid var(--bg-mixed);
+  border: 18px solid var(--bg-mixed);
   position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-.sk-grid-cell-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm, 6px);
-  padding: 12px;
-  min-height: 96px;
+.sk-day-cell {
+  min-height: 102px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
+  box-sizing: border-box;
+  cursor: default !important;
 }
 
 /* ==========================================================================
-   DAY DETAIL SKELETON
+   DAY DETAIL 1:1 SKELETON ENHANCEMENTS
    ========================================================================== */
-.sk-day-detail-wrapper {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.sk-day-score-card {
-  background-color: var(--bg-surface);
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-md, 10px);
-  padding: 24px;
+.sk-day-score-summary {
+  min-height: 365px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  box-sizing: border-box;
 }
 
-.sk-state-mini-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.sk-state-cell {
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm, 6px);
-  padding: 12px;
+.sk-state-mini {
+  height: 52px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: default !important;
 }
 
-.sk-task-row {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm, 6px);
-  padding: 14px 18px;
+.sk-sleep-banner {
+  height: 36px;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sk-tab-btn {
-  height: 40px;
-  border-radius: var(--radius-sm, 6px);
+  gap: 8px;
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0.6;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.sk-timetable-skeleton {
+  width: 100%;
+  background-color: var(--bg-surface);
+  border: 1px solid rgba(34, 34, 32, 0.08);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
+.sk-timetable-corner {
+  width: 80px;
+  min-width: 80px;
+  height: 48px;
+  background-color: var(--bg-surface);
+  border: 1px solid rgba(34, 34, 32, 0.08);
+  box-sizing: border-box;
+}
+
+.sk-timetable-header-cell {
+  width: 160px;
+  min-width: 160px;
+  height: 48px;
+  padding: 8px 6px;
+  text-align: center;
+  border: 1px solid rgba(34, 34, 32, 0.08);
+  box-sizing: border-box;
+  background-color: var(--bg-surface);
+}
+
+.sk-timetable-row {
+  display: flex;
+  height: 78px;
+  min-height: 78px;
+}
+
+.sk-timetable-y-cell {
+  width: 80px;
+  min-width: 80px;
+  height: 78px;
+  border: 1px solid rgba(34, 34, 32, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-surface);
+  box-sizing: border-box;
+}
+
+.sk-timetable-task-cell {
+  width: 160px;
+  min-width: 160px;
+  height: 78px;
+  padding: 8px;
+  border: 1px solid rgba(34, 34, 32, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.sk-day-note-box {
+  min-height: 148px;
+  box-sizing: border-box;
+}
