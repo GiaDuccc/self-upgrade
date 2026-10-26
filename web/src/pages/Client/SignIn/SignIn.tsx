@@ -1,14 +1,48 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LogIn, Mail, Lock, ArrowRight } from 'lucide-react';
-import { signInClientAPI } from '~/apis/clientAPI/authApi';
+import { signInClientAPI, checkServerHealthAPI } from '~/apis/clientAPI/authApi';
+import { AuthSkeleton } from '~/components/Skeleton/Skeleton';
 
 export const SignIn: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isServerReady, setIsServerReady] = useState(false);
   const navigate = useNavigate();
+
+  // Kiểm tra Backend đã khởi động xong chưa, tự động thăm dò mỗi 2s
+  useEffect(() => {
+    let isMounted = true;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const checkServer = async () => {
+      const ok = await checkServerHealthAPI();
+      if (!isMounted) return;
+      if (ok) {
+        setIsServerReady(true);
+      } else {
+        setIsServerReady(false);
+        pollTimer = setTimeout(checkServer, 2000);
+      }
+    };
+
+    checkServer();
+
+    const handleFocus = () => {
+      checkServer();
+    };
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +77,11 @@ export const SignIn: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Nếu Backend chưa khởi động xong (Render cold-start hoặc chưa chạy BE) -> hiển thị Skeleton loading 1:1
+  if (!isServerReady) {
+    return <AuthSkeleton mode="signin" />;
+  }
 
   return (
     <div className="auth-page-shell">
@@ -116,4 +155,3 @@ export const SignIn: React.FC = () => {
     </div>
   );
 };
-

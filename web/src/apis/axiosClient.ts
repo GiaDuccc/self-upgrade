@@ -43,6 +43,23 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Nếu gặp 404 do người dùng/tài khoản không tồn tại trong DB -> tự động dọn session và chuyển hướng đăng nhập
+    const isUserNotFound =
+      error.response?.status === 404 &&
+      typeof error.response?.data?.message === 'string' &&
+      (error.response.data.message.toLowerCase().includes('người dùng') ||
+        error.response.data.message.toLowerCase().includes('tài khoản') ||
+        error.response.data.message.toLowerCase().includes('user'));
+
+    if (isUserNotFound) {
+      localStorage.removeItem('accessTokenClient');
+      localStorage.removeItem('userInfoClient');
+      if (window.location.pathname !== '/sign-in' && window.location.pathname !== '/sign-up') {
+        window.location.href = '/sign-in';
+      }
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -78,10 +95,21 @@ axiosClient.interceptors.response.use(
         processQueue(refreshError, null);
         localStorage.removeItem('accessTokenClient');
         localStorage.removeItem('userInfoClient');
-        window.location.href = '/sign-in';
+        if (window.location.pathname !== '/sign-in' && window.location.pathname !== '/sign-up') {
+          window.location.href = '/sign-in';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
+      }
+    } else if (
+      error.response?.status === 401 &&
+      !originalRequest.url?.includes('/auth/signInClient')
+    ) {
+      localStorage.removeItem('accessTokenClient');
+      localStorage.removeItem('userInfoClient');
+      if (window.location.pathname !== '/sign-in' && window.location.pathname !== '/sign-up') {
+        window.location.href = '/sign-in';
       }
     }
 

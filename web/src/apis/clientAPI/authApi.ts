@@ -53,3 +53,12 @@ export const signOutClientAPI = async (): Promise<{ loggedOut: boolean }> => {
   return res.data;
 };
 
+export const checkServerHealthAPI = async (): Promise<boolean> => {
+  try {
+    const res = await axiosClient.get('/status', { timeout: 3500 });
+    return res.data?.status === 'OK';
+  } catch {
+    return false;
+  }
+};
+

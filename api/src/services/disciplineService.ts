@@ -33,15 +33,12 @@ const getSettingsMetadata = () => ({
 });
 
 const getMonthData = async (userId: string, year: number, month: number) => {
-  const [user, disciplineDoc] = await Promise.all([
-    userModel.findOneById(userId),
-    disciplineModel.findOrCreateByUserId(userId),
-  ]);
-
+  const user = await userModel.findOneById(userId);
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!');
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
   }
 
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
   const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
@@ -57,13 +54,9 @@ const getMonthData = async (userId: string, year: number, month: number) => {
 };
 
 const getDayData = async (userId: string, dateKey: string) => {
-  const [user, disciplineDoc] = await Promise.all([
-    userModel.findOneById(userId),
-    disciplineModel.findOrCreateByUserId(userId),
-  ]);
-
+  const user = await userModel.findOneById(userId);
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!');
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
   }
 
   const [y, m, d] = dateKey.split('-').map(Number);
@@ -71,6 +64,7 @@ const getDayData = async (userId: string, dateKey: string) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Định dạng ngày không hợp lệ (YYYY-MM-DD)!');
   }
 
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
   const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
@@ -472,15 +466,17 @@ const deleteTask = async (
 };
 
 const exportData = async (userId: string) => {
-  const [user, disciplineDoc] = await Promise.all([
-    userModel.findOneById(userId),
-    disciplineModel.findOrCreateByUserId(userId),
-  ]);
+  const user = await userModel.findOneById(userId);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
+
+  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
 
   return {
     records: disciplineDoc.records || {},
     taskConfig: disciplineDoc.taskConfig || getDefaultTaskConfig(),
-    userProfile: user?.profile || DEFAULT_USER_PROFILE,
+    userProfile: user.profile || DEFAULT_USER_PROFILE,
     exportedAt: new Date().toISOString(),
   };
 };

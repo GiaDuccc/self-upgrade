@@ -165,6 +165,28 @@
         padding: 22px 24px;
         box-sizing: border-box;
       }
+      /* Auth Skeleton 1:1 cho /sign-in, /sign-up, /verify-email */
+      .sk-init-auth-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 20px;
+        box-sizing: border-box;
+      }
+      .sk-init-auth-card {
+        width: 100%;
+        max-width: 460px;
+        background-color: var(--sk-init-surface);
+        border: 1.5px solid var(--sk-init-border);
+        border-radius: 12px;
+        padding: 32px 28px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
+      }
       @media (max-width: 1180px) {
         .sk-init-nav { padding: 12px 24px; }
         .sk-init-main { padding: 16px 20px 40px; }
@@ -414,12 +436,67 @@
           </div>
         </div>
       </main>
+
+      <!-- VIEW 3: AUTH SKELETON 1:1 (Khi mở trực tiếp /sign-in, /sign-up, /verify-email) -->
+      <div id="sk-init-auth-view" class="sk-init-auth-shell" style="display: none;" aria-hidden="true">
+        <div class="sk-init-auth-card">
+          <!-- Banner thông báo kết nối -->
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; background-color: var(--sk-init-base);">
+            <span class="sk-init-shimmer" style="width: 8px; height: 8px; border-radius: 50%;"></span>
+            <span class="sk-init-shimmer" style="width: 260px; height: 12px;"></span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--sk-init-border-subtle);">
+            <span class="sk-init-shimmer" style="width: 48px; height: 48px; border-radius: 50%;"></span>
+            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
+              <span id="sk-init-auth-title" class="sk-init-shimmer" style="width: 160px; height: 24px;"></span>
+              <span class="sk-init-shimmer" style="width: 100%; height: 13px;"></span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span class="sk-init-shimmer" style="width: 110px; height: 13px;"></span>
+              <span class="sk-init-shimmer" style="width: 100%; height: 44px; border-radius: 8px;"></span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span class="sk-init-shimmer" style="width: 130px; height: 13px;"></span>
+              <span class="sk-init-shimmer" style="width: 100%; height: 44px; border-radius: 8px;"></span>
+            </div>
+            <div id="sk-init-auth-confirm" style="display: none; flex-direction: column; gap: 6px;">
+              <span class="sk-init-shimmer" style="width: 160px; height: 13px;"></span>
+              <span class="sk-init-shimmer" style="width: 100%; height: 44px; border-radius: 8px;"></span>
+            </div>
+            <span class="sk-init-shimmer" style="width: 100%; height: 46px; border-radius: 8px; margin-top: 6px;"></span>
+          </div>
+
+          <div style="display: flex; justify-content: center;">
+            <span class="sk-init-shimmer" style="width: 200px; height: 14px;"></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Script tự động hiển thị skeleton tương ứng theo route trước khi React mount -->
     <script>
       try {
-        if (window.location.pathname.indexOf('/day') !== -1) {
+        var p = window.location.pathname;
+        if (p.indexOf('/sign-in') !== -1 || p.indexOf('/sign-up') !== -1 || p.indexOf('/verify-email') !== -1) {
+          var navEl = document.querySelector('.sk-init-nav');
+          var mainEl = document.querySelector('.sk-init-main');
+          var authEl = document.getElementById('sk-init-auth-view');
+          if (navEl) navEl.style.display = 'none';
+          if (mainEl) mainEl.style.display = 'none';
+          if (authEl) {
+            authEl.style.display = 'flex';
+            if (p.indexOf('/sign-up') !== -1) {
+              var cfm = document.getElementById('sk-init-auth-confirm');
+              var titleEl = document.getElementById('sk-init-auth-title');
+              if (cfm) cfm.style.display = 'flex';
+              if (titleEl) titleEl.style.width = '200px';
+            }
+          }
+        } else if (p.indexOf('/day') !== -1) {
           var dashEl = document.getElementById('sk-init-dashboard-view');
           var dayEl = document.getElementById('sk-init-day-view');
           if (dashEl && dayEl) {

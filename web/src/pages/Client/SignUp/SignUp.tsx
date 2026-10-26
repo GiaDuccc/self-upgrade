@@ -1,26 +1,66 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { UserPlus, Mail, Lock, ArrowLeft } from 'lucide-react';
-import { signUpAPI } from '~/apis/clientAPI/authApi';
+import { signUpAPI, checkServerHealthAPI } from '~/apis/clientAPI/authApi';
+import { AuthSkeleton } from '~/components/Skeleton/Skeleton';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isServerReady, setIsServerReady] = useState(false);
   const navigate = useNavigate();
+
+  // Kiểm tra Backend đã khởi động xong chưa, tự động thăm dò mỗi 2s
+  useEffect(() => {
+    let isMounted = true;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const checkServer = async () => {
+      const ok = await checkServerHealthAPI();
+      if (!isMounted) return;
+      if (ok) {
+        setIsServerReady(true);
+      } else {
+        setIsServerReady(false);
+        pollTimer = setTimeout(checkServer, 2000);
+      }
+    };
+
+    checkServer();
+
+    const handleFocus = () => {
+      checkServer();
+    };
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanEmail || !password) {
-      toast.warning('Vui lòng nhập đầy đủ Gmail và mật khẩu!');
+    if (!cleanEmail || !password || !confirmPassword) {
+      toast.warning('Vui lòng nhập đầy đủ Gmail, mật khẩu và xác nhận mật khẩu!');
       return;
     }
 
     if (password.length < 6) {
       toast.warning('Mật khẩu phải có ít nhất 6 ký tự!');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.warning('Mật khẩu nhập lại không khớp! Vui lòng kiểm tra lại.');
       return;
     }
 
@@ -47,6 +87,11 @@ export const SignUp: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Nếu Backend chưa khởi động xong (Render cold-start hoặc chưa chạy BE) -> hiển thị Skeleton loading 1:1
+  if (!isServerReady) {
+    return <AuthSkeleton mode="signup" />;
+  }
 
   return (
     <div className="auth-page-shell">
@@ -99,6 +144,25 @@ export const SignUp: React.FC = () => {
             </div>
           </div>
 
+          {/* Ô nhập lại mật khẩu xác nhận */}
+          <div className="form-group">
+            <label htmlFor="signup-confirm-password" className="form-label">
+              NHẬP LẠI MẬT KHẨU <span className="required-star">*</span>
+            </label>
+            <div className="auth-input-wrap">
+              <Lock size={16} className="auth-input-icon" />
+              <input
+                id="signup-confirm-password"
+                type="password"
+                className="form-input auth-input-with-icon"
+                placeholder="Nhập lại mật khẩu để xác nhận..."
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
           <button
             type="submit"
             className="btn-minimal btn-save-task auth-submit-btn"
@@ -119,4 +183,3 @@ export const SignUp: React.FC = () => {
     </div>
   );
 };
-

@@ -8,7 +8,7 @@ import { pickUser } from '~/utils/formatters';
 const getProfile = async (userId: string) => {
   const user = await userModel.findOneById(userId);
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!');
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
   }
 
   return {
@@ -23,7 +23,7 @@ const updateProfile = async (
 ) => {
   const user = await userModel.findOneById(userId);
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!');
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
   }
 
   const mergedProfile: UserProfile = {

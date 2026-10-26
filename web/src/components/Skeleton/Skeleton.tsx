@@ -333,3 +333,55 @@ export const DayDetailSkeleton: React.FC = () => {
     </div>
   );
 };
+
+export const AuthSkeleton: React.FC<{ mode?: 'signin' | 'signup' }> = ({ mode = 'signin' }) => {
+  return (
+    <div className="auth-page-shell" role="status" aria-label="Loading authentication...">
+      <div className="auth-card" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+        <div className="server-reconnect-banner" style={{ margin: 0, padding: '8px 14px' }}>
+          <span className="reconnect-pulse-dot" />
+          <span style={{ fontSize: '0.78rem' }}>
+            Máy chủ đang khởi động... Đang tự động kết nối
+          </span>
+        </div>
+
+        <div className="auth-brand-header">
+          <SkeletonBox width="48px" height="48px" borderRadius="50%" />
+          <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 6 }}>
+            <SkeletonBox width={mode === 'signup' ? '200px' : '160px'} height="24px" />
+            <SkeletonBox width="100%" height="13px" />
+          </div>
+        </div>
+
+        <div className="auth-form">
+          {/* Ô nhập Email */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <SkeletonBox width="110px" height="13px" />
+            <SkeletonBox width="100%" height="44px" borderRadius="8px" />
+          </div>
+
+          {/* Ô nhập Mật khẩu */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <SkeletonBox width="130px" height="13px" />
+            <SkeletonBox width="100%" height="44px" borderRadius="8px" />
+          </div>
+
+          {/* Ô Nhập lại mật khẩu nếu là trang Đăng ký */}
+          {mode === 'signup' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <SkeletonBox width="160px" height="13px" />
+              <SkeletonBox width="100%" height="44px" borderRadius="8px" />
+            </div>
+          )}
+
+          {/* Nút Submit */}
+          <SkeletonBox width="100%" height="46px" borderRadius="8px" style={{ marginTop: 6 }} />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <SkeletonBox width="200px" height="14px" />
+        </div>
+      </div>
+    </div>
+  );
+};
