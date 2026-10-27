@@ -252,11 +252,10 @@ export const DayDetail: React.FC = () => {
           exercises: workout.exercises,
         });
         setDayData(updated);
-        notifyAiCoach(`WORKOUT_SAVED_${Date.now()}`);
         toast.success(
           isEn
-            ? 'Workout saved and analyzed by AI Coach!'
-            : 'Đã lưu buổi tập và AI Huấn Luyện Viên đã phân tích!'
+            ? 'Workout saved and analyzed by AI Gym Coach!'
+            : 'Đã lưu buổi tập và AI Gym đã phân tích!'
         );
       } catch (error: any) {
         const msg =
@@ -267,7 +266,7 @@ export const DayDetail: React.FC = () => {
         setIsSavingWorkout(false);
       }
     },
-    [activeDateKey, notifyAiCoach, isEn]
+    [activeDateKey, isEn]
   );
 
   const currentTasksList = dayData?.dayStats?.tasksList || [];

@@ -231,7 +231,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
   // 2. KHI CÓ THAY ĐỔI (tích việc, lưu ghi chú, đổi trạng thái cá nhân):
   // Nếu có lượt tích mới, HỦY NGAY request cũ đang chờ và thay bằng dữ liệu của lượt tích mới
   useEffect(() => {
-    if (!triggerSignal || triggerSignal === lastSignalRef.current) {
+    if (!triggerSignal || triggerSignal === lastSignalRef.current || triggerSignal.startsWith('WORKOUT_')) {
       return;
     }
 
