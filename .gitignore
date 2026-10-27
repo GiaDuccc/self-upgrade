@@ -9,3 +9,8 @@ start-dev.bat
 run-dev.bat
 start.bat
 stop-dev.bat
+start-dev.ps1
+stop-dev.ps1
+.vscode/
+
+

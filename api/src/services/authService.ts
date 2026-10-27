@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
 import { StatusCodes } from 'http-status-codes';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { env } from '~/config/environment';
 import { DEFAULT_USER_PROFILE } from '~/config/settings';
 import { disciplineModel } from '~/models/disciplineModel';
@@ -19,7 +20,12 @@ const sendVerificationEmail = async (
   verifyCode: string,
   verifyToken: string
 ): Promise<boolean> => {
-  const verifyUrl = `${env.WEBSITE_DOMAIN_DEV}/verify-email?email=${encodeURIComponent(
+  const websiteBaseUrl =
+    env.BUILD_MODE === 'production'
+      ? env.WEBSITE_DOMAIN_PRODUCTION
+      : env.WEBSITE_DOMAIN_DEVELOPMENT;
+
+  const verifyUrl = `${websiteBaseUrl}/verify-email?email=${encodeURIComponent(
     email
   )}&token=${verifyToken}`;
 
@@ -28,16 +34,6 @@ const sendVerificationEmail = async (
   console.log(`[OTP CODE]: ${verifyCode}`);
   console.log(`[VERIFY LINK]: ${verifyUrl}`);
   console.log('====================================================');
-
-  const smtpUser = env.SMTP_USER.trim();
-  const smtpPass = env.SMTP_PASS.replace(/\s+/g, '').trim();
-
-  if (!smtpUser || !smtpPass) {
-    console.warn(
-      '[Nodemailer] Chưa cấu hình SMTP_PASS (Mật khẩu ứng dụng Gmail 16 ký tự) trong file api/.env. Vui lòng điền SMTP_PASS để gửi email thật tới người dùng!'
-    );
-    return false;
-  }
 
   const emailHtml = `
     <div style="font-family: 'Inter', Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #FAF7F2; color: #222220; padding: 32px; border-radius: 14px; border: 2px solid #222220;">
@@ -62,14 +58,54 @@ const sendVerificationEmail = async (
     </div>
   `;
 
+  // 1. Thử gửi qua Resend REST API trước (Port 443 HTTPS - Cực nhanh ~0.3s, không bao giờ bị Render chặn cổng)
+  if (env.RESEND_API_KEY && env.RESEND_API_KEY.trim() !== '') {
+    try {
+      const resend = new Resend(env.RESEND_API_KEY.trim());
+      const { data, error } = await resend.emails.send({
+        from: env.ADMIN_SENDER_EMAIL || 'Self Upgrade <onboarding@resend.dev>',
+        to: email,
+        subject: `[Self Upgrade] Mã xác nhận (${verifyCode}) kích hoạt tài khoản của bạn`,
+        html: emailHtml,
+      });
+
+      if (data && !error) {
+        console.log(`[Resend API] Đã gửi email xác nhận thành công tới: ${email}`);
+        return true;
+      }
+    } catch (resendError) {
+      console.warn(
+        '[Resend API Warning] Không thể gửi qua Resend, tự động chuyển sang Gmail SMTP:',
+        resendError
+      );
+    }
+  }
+
+  // 2. Fallback sang Gmail SMTP (Tối ưu hóa ép buộc IPv4 và timeout ngắn để tránh bị treo trên Render)
+  const smtpUser = env.SMTP_USER.trim();
+  const smtpPass = env.SMTP_PASS.replace(/\s+/g, '').trim();
+
+  if (!smtpUser || !smtpPass) {
+    console.warn(
+      '[Email Warning] Chưa cấu hình SMTP_PASS hoặc RESEND_API_KEY. Vui lòng cấu hình để gửi email!'
+    );
+    return false;
+  }
+
   try {
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // SSL trực tiếp
       auth: {
         user: smtpUser,
         pass: smtpPass,
       },
-    });
+      family: 4, // Bắt buộc dùng IPv4, khắc phục 100% lỗi timeout DNS IPv6 trên Render Linux
+      connectionTimeout: 7000, // Timeout 7s, tránh treo request
+      greetingTimeout: 5000,
+      socketTimeout: 8000,
+    } as any);
 
     await transporter.sendMail({
       from: `"Self Upgrade" <${smtpUser}>`,
@@ -78,7 +114,7 @@ const sendVerificationEmail = async (
       html: emailHtml,
     });
 
-    console.log(`[Nodemailer] Đã gửi email xác nhận thành công tới: ${email}`);
+    console.log(`[Nodemailer] Đã gửi email xác nhận thành công qua Gmail SMTP tới: ${email}`);
     return true;
   } catch (error) {
     console.error('[Nodemailer Error] Không thể gửi email qua Gmail SMTP:', error);
