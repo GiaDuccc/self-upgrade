@@ -25,6 +25,7 @@ export const env = {
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   BREVO_API_KEY: process.env.BREVO_API_KEY || '',
   BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL || '',
+  GOOGLE_SCRIPT_MAIL_URL: process.env.GOOGLE_SCRIPT_MAIL_URL || '',
   ADMIN_SENDER_EMAIL:
     process.env.ADMIN_SENDER_EMAIL || 'Self Upgrade <onboarding@resend.dev>',
 

@@ -63,8 +63,35 @@ const sendVerificationEmail = async (
 
   const subject = `[Self Upgrade] Mã xác nhận (${verifyCode}) kích hoạt tài khoản của bạn`;
 
-  // 1. Brevo HTTP API (HTTPS 443 - Render không chặn). Gửi được tới MỌI email
-  //    chỉ cần xác minh 1 địa chỉ người gửi (Gmail), KHÔNG cần sở hữu tên miền.
+  // 1. Google Apps Script Webhook (HTTPS Cổng 443 - Miễn phí 100%, gửi bằng chính Gmail, không cần mua domain, không bao giờ bị Render chặn)
+  if (env.GOOGLE_SCRIPT_MAIL_URL && env.GOOGLE_SCRIPT_MAIL_URL.trim() !== '') {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 9000);
+      const res = await fetch(env.GOOGLE_SCRIPT_MAIL_URL.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          subject,
+          html: emailHtml,
+        }),
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        console.log(`[Google Script Webhook] Đã gửi email xác nhận thành công tới: ${email}`);
+        return true;
+      }
+      console.warn(`[Google Script Webhook Warning] HTTP ${res.status}`);
+    } catch (gsError) {
+      console.warn('[Google Script Webhook Warning] Lỗi khi gọi Google Script:', gsError);
+    }
+  }
+
+  // 2. Brevo HTTP API (HTTPS 443). Lưu ý: Brevo hiện tại yêu cầu xác thực tên miền riêng (DKIM/DMARC)
   const brevoApiKey = env.BREVO_API_KEY.trim();
   const brevoSender = (env.BREVO_SENDER_EMAIL || env.SMTP_USER).trim();
   if (brevoApiKey && brevoSender) {
@@ -191,10 +218,10 @@ const signUp = async (reqBody: { email: string; password: string }) => {
     return {
       user: pickUser(updatedUser),
       emailSent,
-      devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
+      devVerifyCode: !emailSent || env.BUILD_MODE === 'dev' ? verifyCode : undefined,
       message: emailSent
         ? 'Tài khoản chưa xác thực đã được cập nhật. Vui lòng kiểm tra email để lấy mã xác nhận!'
-        : EMAIL_FAILED_MESSAGE,
+        : 'Tài khoản đã tạo thành công! (Do máy chủ chưa gửi được mail, bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
     };
   }
 
@@ -221,10 +248,10 @@ const signUp = async (reqBody: { email: string; password: string }) => {
   return {
     user: pickUser(getNewUser),
     emailSent,
-    devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
+    devVerifyCode: !emailSent || env.BUILD_MODE === 'dev' ? verifyCode : undefined,
     message: emailSent
       ? 'Đăng ký thành công! Vui lòng kiểm tra hộp thư email để nhập mã xác nhận 6 số.'
-      : EMAIL_FAILED_MESSAGE,
+      : 'Tài khoản đã tạo thành công! (Do máy chủ chưa gửi được mail, bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
   };
 };
 
@@ -313,8 +340,10 @@ const resendVerification = async (reqBody: { email: string }) => {
 
   return {
     emailSent,
-    devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
-    message: emailSent ? 'Đã gửi lại mã xác nhận mới tới email của bạn!' : EMAIL_FAILED_MESSAGE,
+    devVerifyCode: !emailSent || env.BUILD_MODE === 'dev' ? verifyCode : undefined,
+    message: emailSent
+      ? 'Đã gửi lại mã xác nhận mới tới email của bạn!'
+      : 'Đã tạo mã xác nhận mới! (Do máy chủ chưa gửi được mail, bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
   };
 };
 
