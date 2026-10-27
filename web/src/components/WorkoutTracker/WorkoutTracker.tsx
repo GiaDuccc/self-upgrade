@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Dumbbell,
   Plus,
-  Minus,
   Trash2,
   Sparkles,
   Zap,
@@ -26,11 +25,44 @@ import {
 } from '~/constants/workoutLibrary';
 import { useLanguage } from '~/utils/i18n';
 
+// Icon mũi tên dạng khối bo cạnh cho cụm stepper tăng / giảm
+const SolidTriangleUp: React.FC = () => (
+  <svg
+    width="9"
+    height="7"
+    viewBox="0 0 12 10"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinejoin="round"
+    strokeLinecap="round"
+    style={{ display: 'block' }}
+  >
+    <polygon points="6,2 9.5,8 2.5,8" />
+  </svg>
+);
+
+const SolidTriangleDown: React.FC = () => (
+  <svg
+    width="9"
+    height="7"
+    viewBox="0 0 12 10"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinejoin="round"
+    strokeLinecap="round"
+    style={{ display: 'block' }}
+  >
+    <polygon points="6,8 9.5,2 2.5,2" />
+  </svg>
+);
+
 export interface UIExerciseSet {
   setNumber: number;
   weightKg: number | string;
   reps: number | string;
-  rir: number;
+  rir: number | string;
 }
 
 export interface UIWorkoutExercise {
@@ -43,7 +75,7 @@ export interface UIWorkoutExercise {
 // Helper chuẩn hóa dữ liệu workout để so sánh sự thay đổi chính xác
 const serializeWorkout = (
   muscles: string[] = [],
-  exs: Array<{ name: string; category?: string; sets: Array<{ weightKg: number | string; reps: number | string; rir: number }> }> = []
+  exs: Array<{ name: string; category?: string; sets: Array<{ weightKg: number | string; reps: number | string; rir: number | string }> }> = []
 ): string => {
   return JSON.stringify({
     muscles: [...muscles].sort(),
@@ -53,7 +85,7 @@ const serializeWorkout = (
       sets: (e.sets || []).map((s) => ({
         weightKg: s.weightKg === '' ? 0 : Number(s.weightKg) || 0,
         reps: s.reps === '' ? 0 : Number(s.reps) || 0,
-        rir: Number(s.rir) || 0,
+        rir: s.rir === '' ? 2 : Number(s.rir) || 0,
       })),
     })),
   });
@@ -378,17 +410,45 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     );
   };
 
-  // Cập nhật RIR
+  // Cập nhật RIR khi người dùng gõ vào ô input (cho phép xóa rỗng hoặc nhập số 0-10)
   const handleUpdateRir = (
     exerciseId: string,
     setIndex: number,
-    rir: number
+    rawVal: string
   ) => {
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
         const updatedSets = [...ex.sets];
-        updatedSets[setIndex] = { ...updatedSets[setIndex], rir };
+        if (rawVal === '') {
+          updatedSets[setIndex] = { ...updatedSets[setIndex], rir: '' };
+        } else {
+          const num = parseInt(rawVal, 10);
+          if (!isNaN(num) && num >= 0 && num <= 10) {
+            updatedSets[setIndex] = { ...updatedSets[setIndex], rir: num };
+          }
+        }
+        return { ...ex, sets: updatedSets };
+      })
+    );
+  };
+
+  // Nút custom tăng / giảm RIR với bước nhảy ± 1 (tối thiểu 0, tối đa 10)
+  const handleStepRir = (
+    exerciseId: string,
+    setIndex: number,
+    stepDelta: number
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        const updatedSets = [...ex.sets];
+        const currentVal =
+          updatedSets[setIndex].rir === ''
+            ? 2
+            : parseInt(String(updatedSets[setIndex].rir), 10) || 0;
+        const nextVal = Math.min(10, Math.max(0, currentVal + stepDelta));
+        updatedSets[setIndex] = { ...updatedSets[setIndex], rir: nextVal };
         return { ...ex, sets: updatedSets };
       })
     );
@@ -413,7 +473,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     return exercises.reduce((acc, e) => acc + e.sets.length, 0);
   }, [exercises]);
 
-  // Lưu: Các ô trống tự động chuyển về 0
+  // Lưu: Các ô trống tự động chuyển về 0 (hoặc mặc định RIR = 2)
   const handleSave = async () => {
     const sanitizedExercises: WorkoutExercise[] = exercises.map((ex, exIdx) => ({
       id: ex.id,
@@ -431,7 +491,10 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
           s.reps === '' || s.reps === null || isNaN(Number(s.reps))
             ? 0
             : Math.max(0, parseInt(String(s.reps), 10)),
-        rir: typeof s.rir === 'number' ? s.rir : 2,
+        rir:
+          s.rir === '' || s.rir === null || isNaN(Number(s.rir))
+            ? 2
+            : Math.max(0, parseInt(String(s.rir), 10)),
       })),
     }));
 
@@ -733,129 +796,173 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                 {s.setNumber}
                               </span>
                             </td>
-                            {/* Ô NHẬP TẠ VỚI CUSTOM STEPPER BUTTONS (± 2.5 KG) & CHO PHÉP XÓA TRỐNG SỐ 0 */}
+                            {/* Ô NHẬP TẠ VỚI MŨI TÊN TĂNG GIẢM DẠNG KHỐI BO CẠNH (± 2.5 KG) - ĐÃ BỎ CHỮ KG BÊN CẠNH */}
                             <td className="col-weight">
-                              <div className="stepper-input-group">
-                                <button
-                                  type="button"
-                                  className="stepper-btn stepper-btn-minus"
-                                  onClick={() =>
-                                    handleStepWeight(ex.id, sIdx, -2.5)
+                              <div className="stepper-input-wrapper">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={500}
+                                  step={0.5}
+                                  className="stepper-native-input weight-input"
+                                  value={s.weightKg}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    handleUpdateWeight(
+                                      ex.id,
+                                      sIdx,
+                                      e.target.value
+                                    )
                                   }
-                                  title={
-                                    isEn
-                                      ? 'Decrease by 2.5 kg'
-                                      : 'Giảm 2.5 kg'
-                                  }
-                                  aria-label="Decrease weight"
-                                >
-                                  <Minus size={11} strokeWidth={2.5} />
-                                </button>
-                                <div className="stepper-field-wrapper">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={500}
-                                    step={0.5}
-                                    className="set-input stepper-input weight-input"
-                                    value={s.weightKg}
-                                    placeholder="0"
-                                    onChange={(e) =>
-                                      handleUpdateWeight(
-                                        ex.id,
-                                        sIdx,
-                                        e.target.value
-                                      )
+                                />
+                                <div className="stepper-arrows-col">
+                                  <button
+                                    type="button"
+                                    className="stepper-arrow-btn stepper-arrow-up"
+                                    onClick={() =>
+                                      handleStepWeight(ex.id, sIdx, 2.5)
                                     }
-                                  />
-                                  <span className="unit-label">kg</span>
+                                    tabIndex={-1}
+                                    title={
+                                      isEn
+                                        ? 'Increase by 2.5 kg'
+                                        : 'Tăng 2.5 kg'
+                                    }
+                                    aria-label="Increase weight"
+                                  >
+                                    <SolidTriangleUp />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="stepper-arrow-btn stepper-arrow-down"
+                                    onClick={() =>
+                                      handleStepWeight(ex.id, sIdx, -2.5)
+                                    }
+                                    tabIndex={-1}
+                                    title={
+                                      isEn
+                                        ? 'Decrease by 2.5 kg'
+                                        : 'Giảm 2.5 kg'
+                                    }
+                                    aria-label="Decrease weight"
+                                  >
+                                    <SolidTriangleDown />
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="stepper-btn stepper-btn-plus"
-                                  onClick={() =>
-                                    handleStepWeight(ex.id, sIdx, 2.5)
-                                  }
-                                  title={
-                                    isEn
-                                      ? 'Increase by 2.5 kg'
-                                      : 'Tăng 2.5 kg'
-                                  }
-                                  aria-label="Increase weight"
-                                >
-                                  <Plus size={11} strokeWidth={2.5} />
-                                </button>
                               </div>
                             </td>
 
-                            {/* Ô NHẬP REPS VỚI CUSTOM STEPPER BUTTONS (± 1 REP) */}
+                            {/* Ô NHẬP REPS VỚI MŨI TÊN TĂNG GIẢM DẠNG KHỐI BO CẠNH (± 1 REP) */}
                             <td className="col-reps">
-                              <div className="stepper-input-group">
-                                <button
-                                  type="button"
-                                  className="stepper-btn stepper-btn-minus"
-                                  onClick={() =>
-                                    handleStepReps(ex.id, sIdx, -1)
+                              <div className="stepper-input-wrapper">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={200}
+                                  className="stepper-native-input reps-input"
+                                  value={s.reps}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    handleUpdateReps(
+                                      ex.id,
+                                      sIdx,
+                                      e.target.value
+                                    )
                                   }
-                                  title={
-                                    isEn ? 'Decrease by 1 rep' : 'Giảm 1 rep'
-                                  }
-                                  aria-label="Decrease reps"
-                                >
-                                  <Minus size={11} strokeWidth={2.5} />
-                                </button>
-                                <div className="stepper-field-wrapper">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={200}
-                                    className="set-input stepper-input reps-input"
-                                    value={s.reps}
-                                    placeholder="0"
-                                    onChange={(e) =>
-                                      handleUpdateReps(
-                                        ex.id,
-                                        sIdx,
-                                        e.target.value
-                                      )
+                                />
+                                <div className="stepper-arrows-col">
+                                  <button
+                                    type="button"
+                                    className="stepper-arrow-btn stepper-arrow-up"
+                                    onClick={() =>
+                                      handleStepReps(ex.id, sIdx, 1)
                                     }
-                                  />
+                                    tabIndex={-1}
+                                    title={
+                                      isEn ? 'Increase by 1 rep' : 'Tăng 1 rep'
+                                    }
+                                    aria-label="Increase reps"
+                                  >
+                                    <SolidTriangleUp />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="stepper-arrow-btn stepper-arrow-down"
+                                    onClick={() =>
+                                      handleStepReps(ex.id, sIdx, -1)
+                                    }
+                                    tabIndex={-1}
+                                    title={
+                                      isEn ? 'Decrease by 1 rep' : 'Giảm 1 rep'
+                                    }
+                                    aria-label="Decrease reps"
+                                  >
+                                    <SolidTriangleDown />
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="stepper-btn stepper-btn-plus"
-                                  onClick={() =>
-                                    handleStepReps(ex.id, sIdx, 1)
-                                  }
-                                  title={
-                                    isEn ? 'Increase by 1 rep' : 'Tăng 1 rep'
-                                  }
-                                  aria-label="Increase reps"
-                                >
-                                  <Plus size={11} strokeWidth={2.5} />
-                                </button>
                               </div>
                             </td>
 
+                            {/* Ô NHẬP RIR VỚI MŨI TÊN TĂNG GIẢM DẠNG KHỐI BO CẠNH (± 1 RIR) */}
                             <td className="col-rir">
-                              <select
-                                className="set-select rir-select"
-                                value={s.rir}
-                                onChange={(e) =>
-                                  handleUpdateRir(
-                                    ex.id,
-                                    sIdx,
-                                    parseInt(e.target.value, 10) || 0
-                                  )
+                              <div
+                                className="stepper-input-wrapper"
+                                title={
+                                  s.rir === 0
+                                    ? isEn ? 'RIR 0: Failure (no reps left)' : 'RIR 0: Hết sức hoàn toàn (Failure)'
+                                    : s.rir === 1
+                                    ? isEn ? 'RIR 1: 1 rep in reserve' : 'RIR 1: Còn dư 1 rep'
+                                    : s.rir === 2
+                                    ? isEn ? 'RIR 2: Hypertrophy target' : 'RIR 2: Chuẩn mục tiêu tăng cơ'
+                                    : isEn ? `RIR ${s.rir}: ${s.rir} reps left` : `RIR ${s.rir}: Còn dư ${s.rir} rep`
                                 }
                               >
-                                <option value={0}>0 (Failure 🔥)</option>
-                                <option value={1}>1 (Rất nặng)</option>
-                                <option value={2}>2 (Chuẩn đẹp)</option>
-                                <option value={3}>3 (Vừa sức)</option>
-                                <option value={4}>4 (Khởi động)</option>
-                                <option value={5}>5+ (Nhẹ)</option>
-                              </select>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={10}
+                                  className="stepper-native-input rir-input"
+                                  value={s.rir}
+                                  placeholder="2"
+                                  onChange={(e) =>
+                                    handleUpdateRir(
+                                      ex.id,
+                                      sIdx,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                                <div className="stepper-arrows-col">
+                                  <button
+                                    type="button"
+                                    className="stepper-arrow-btn stepper-arrow-up"
+                                    onClick={() =>
+                                      handleStepRir(ex.id, sIdx, 1)
+                                    }
+                                    tabIndex={-1}
+                                    title={
+                                      isEn ? 'Increase RIR (+1)' : 'Tăng RIR (+1)'
+                                    }
+                                    aria-label="Increase RIR"
+                                  >
+                                    <SolidTriangleUp />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="stepper-arrow-btn stepper-arrow-down"
+                                    onClick={() =>
+                                      handleStepRir(ex.id, sIdx, -1)
+                                    }
+                                    tabIndex={-1}
+                                    title={
+                                      isEn ? 'Decrease RIR (-1)' : 'Giảm RIR (-1)'
+                                    }
+                                    aria-label="Decrease RIR"
+                                  >
+                                    <SolidTriangleDown />
+                                  </button>
+                                </div>
+                              </div>
                             </td>
                             <td className="col-action">
                               <button
