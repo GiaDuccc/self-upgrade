@@ -83,26 +83,24 @@ function resolveTaskHour(task: TaskItem): number {
   return 8;
 }
 
-function buildTaskGridMap(tasks: TaskItem[]): Map<string, TaskItem> {
+function buildTaskGridMap(tasks: TaskItem[]): { gridMap: Map<string, TaskItem>; dynamicRows: number[] } {
   const gridMap = new Map<string, TaskItem>();
-  const hourCounts: Record<number, number> = {};
+  let maxCol = 4; // Tối thiểu 5 hàng (Việc 1 .. Việc 5)
 
   tasks.forEach((task) => {
     const hour = resolveTaskHour(task);
-    let col = typeof task.columnIndex === 'number' ? task.columnIndex : -1;
-    if (col < 0 || col > 4) {
-      col = hourCounts[hour] || 0;
-      hourCounts[hour] = col + 1;
-    }
-    while (col < 5 && gridMap.has(`${hour}_${col}`)) {
+    let col = typeof task.columnIndex === 'number' && task.columnIndex >= 0 ? task.columnIndex : 0;
+    while (gridMap.has(`${hour}_${col}`)) {
       col++;
     }
-    if (col < 5) {
-      gridMap.set(`${hour}_${col}`, task);
+    gridMap.set(`${hour}_${col}`, task);
+    if (col > maxCol) {
+      maxCol = col;
     }
   });
 
-  return gridMap;
+  const dynamicRows = Array.from({ length: maxCol + 1 }, (_, i) => i);
+  return { gridMap, dynamicRows };
 }
 
 export const DayDetail: React.FC = () => {
@@ -278,7 +276,7 @@ export const DayDetail: React.FC = () => {
   );
 
   const currentTasksList = dayData?.dayStats?.tasksList || [];
-  const taskGridMap = useMemo(
+  const { gridMap: taskGridMap, dynamicRows } = useMemo(
     () => buildTaskGridMap(currentTasksList),
     [currentTasksList]
   );
@@ -461,15 +459,18 @@ export const DayDetail: React.FC = () => {
   }, [activeDateKey, dayRefreshTrigger, buildInitialDayData, isEn]);
 
   // Cuộn ngang mượt mà khi lăn chuột trên bảng Thời gian (trục X) - Việc làm (trục Y)
+  // Lăn chuột dọc thông thường (deltaY) tự động chuyển thành cuộn ngang không cần giữ phím Shift
   useEffect(() => {
     const container = tableContainerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      e.stopPropagation();
-      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-      container.scrollLeft += delta;
-      e.preventDefault();
+      const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (delta !== 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        container.scrollLeft += delta;
+      }
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -477,7 +478,7 @@ export const DayDetail: React.FC = () => {
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
-  }, [isLoading, activeDayTab]);
+  }, [isLoading, activeDayTab, taskViewMode]);
 
   // Tự động đưa tầm nhìn ngang của bảng tới khung giờ có công việc đầu tiên trong ngày
   useEffect(() => {
@@ -486,7 +487,7 @@ export const DayDetail: React.FC = () => {
     const hours = currentTasksList.map((t) => resolveTaskHour(t));
     const minHour = Math.max(0, Math.min(...hours) - 1);
     container.scrollLeft = minHour * 160;
-  }, [activeDateKey, isLoading, activeDayTab, currentTasksList.length]);
+  }, [activeDateKey, isLoading, activeDayTab, taskViewMode, currentTasksList.length]);
 
   const handleToggleTask = async (taskId: string) => {
     const currentLevel = dayData?.dayRecord?.tasks?.[taskId] || 'NONE';
@@ -1040,7 +1041,12 @@ export const DayDetail: React.FC = () => {
                         const isTaskChecked = (tasksMap[task.id] || 'NONE') !== 'NONE';
                         const isBoosted = isTaskBoostedByProfile(task, userProfile);
                         const hour = resolveTaskHour(task);
-                        const timeFormatted = task.timeHint || `${String(hour).padStart(2, '0')}:00`;
+                        const slotTime = `${String(hour).padStart(2, '0')}:00`;
+                        const rawHint = (task.timeHint || '').trim();
+                        const timeFormatted =
+                          rawHint && !rawHint.includes(slotTime)
+                            ? `${slotTime} • ${rawHint}`
+                            : (rawHint || slotTime);
 
                         return (
                           <div
@@ -1157,8 +1163,8 @@ export const DayDetail: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {/* Trục Y: Việc 1 .. Việc 5 */}
-                            {COLUMNS_5.map((colIdx) => (
+                            {/* Trục Y: Việc 1 .. Việc 5 (tự động mở rộng nếu nhiều việc cùng giờ) */}
+                            {dynamicRows.map((colIdx) => (
                               <tr key={colIdx} className="timetable-row">
                                 <td className="timetable-td timetable-td-time">
                                   <span className="timetable-time-text">

@@ -109,26 +109,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   if (!isOpen) return null;
 
   const trimmedCurrentTitle = title.trim();
-  const isDuplicateName =
-    trimmedCurrentTitle.length > 0 &&
-    existingTasks.some(
-      (t) =>
-        t.id !== initialTask?.id &&
-        t.title &&
-        t.title.trim().toLowerCase() === trimmedCurrentTitle.toLowerCase()
-    );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trimmedCurrentTitle) {
       setErrorMsg('Vui lòng nhập tên đầu việc!');
-      return;
-    }
-
-    if (isDuplicateName) {
-      setErrorMsg(
-        `Đầu việc "${trimmedCurrentTitle}" đã tồn tại trong danh sách! Vui lòng đặt tên khác.`
-      );
       return;
     }
 
@@ -287,16 +272,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 {isEn ? 'TASK TITLE' : 'TÊN ĐẦU VIỆC'}{' '}
                 <span className="required-star">*</span>
               </label>
-              {isDuplicateName && (
-                <span className="live-duplicate-badge">
-                  {isEn ? '⚠️ Duplicate title' : '⚠️ Trùng tên'}
-                </span>
-              )}
             </div>
             <input
               id="task-title-input"
               type="text"
-              className={`form-input ${isDuplicateName ? 'form-input-error' : ''}`}
+              className="form-input"
               placeholder={
                 isEn
                   ? 'e.g., Run 5km, Learn English vocabulary, Listen to podcast...'

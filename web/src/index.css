@@ -1504,7 +1504,12 @@ input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  opacity: 0; /* Mặc định ẩn trên PC */
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.task-card-item:hover .btn-edit-task {
+  opacity: 1; /* Chỉ hiện khi hover vào thẻ trên PC */
 }
 
 .btn-edit-task:hover {
@@ -1519,7 +1524,7 @@ input {
 }
 
 .task-card-title {
-  font-size: 0.88rem;
+  font-size: 1.02rem; /* Tăng 2px trên PC (từ 0.88rem lên 1.02rem ~ 16.3px) */
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.35;
@@ -6317,8 +6322,12 @@ input {
     gap: 6px;
   }
 
+  .btn-edit-task {
+    opacity: 1 !important; /* Trên điện thoại luôn hiển thị để người dùng chạm bấm */
+  }
+
   .task-card-title {
-    font-size: 0.82rem;
+    font-size: 0.82rem !important;
   }
 
   .task-badge-cat,

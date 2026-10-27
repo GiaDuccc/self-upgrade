@@ -376,7 +376,7 @@ const saveTask = async (
   const monthKey = dateKey.substring(0, 7);
 
   if (mode === 'add') {
-    const newId = `task_custom_${Date.now()}`;
+    const newId = `task_custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const newTaskObj: CustomTaskItem = {
       id: newId,
       title,
