@@ -316,11 +316,54 @@ function classifyPendingTasksByTime(
   return { actionableNow, passedTimeWindow };
 }
 
+function parseTaskScheduledHour(task: TaskItem | undefined, hourPart?: string): number {
+  if (hourPart) {
+    const match = hourPart.match(/^(\d{1,2})h$/i);
+    if (match) {
+      const h = parseInt(match[1], 10);
+      if (!isNaN(h) && h >= 0 && h <= 23) return h;
+    }
+  }
+
+  if (task) {
+    if (typeof task.hour === 'number' && !isNaN(task.hour) && task.hour >= 0 && task.hour <= 23) {
+      return task.hour;
+    }
+    if (task.timeHint) {
+      const m = task.timeHint.match(/(\d{1,2}):(\d{2})/);
+      if (m) {
+        const h = parseInt(m[1], 10);
+        if (!isNaN(h) && h >= 0 && h <= 23) return h;
+      }
+      const m2 = task.timeHint.match(/(\d{1,2})h/i);
+      if (m2) {
+        const h = parseInt(m2[1], 10);
+        if (!isNaN(h) && h >= 0 && h <= 23) return h;
+      }
+    }
+    const id = (task.id || '').toLowerCase();
+    const titleLower = (task.title || '').toLowerCase();
+    if (id.includes('wake') || titleLower.includes('dậy')) return 5;
+    if (id.includes('english') || titleLower.includes('tiếng anh')) return 7;
+    if (id.includes('work') || titleLower.includes('làm việc')) return 8;
+    if (id.includes('code') || titleLower.includes('code')) return 9;
+    if (id.includes('game') || titleLower.includes('game')) return 11;
+    if (id.includes('nap') || titleLower.includes('ngủ trưa')) return 13;
+    if (id.includes('water') || titleLower.includes('nước')) return 15;
+    if (id.includes('gym') || titleLower.includes('thể dục') || titleLower.includes('tập gym')) return 17;
+    if (id.includes('junk_food') || titleLower.includes('ăn vặt')) return 19;
+    if (id.includes('sleep') || titleLower.includes('ngủ trước') || titleLower.includes('đi ngủ')) return 22;
+  }
+
+  return 12;
+}
+
 function describeRecentChange(
   signal: string | undefined,
   tasksList: TaskItem[],
   stateLabels: { phys: string; ment: string; emo: string },
-  dateCtx: DateTemporalContext
+  dateCtx: DateTemporalContext,
+  currentHour?: number
 ): RecentChangeContext | null {
   if (!signal) return null;
   const parts = signal.split('|');
@@ -382,6 +425,14 @@ function describeRecentChange(
   const hourNote = hourPart ? ` vào khung giờ ${hourPart}` : '';
   const title = task?.title || 'một đầu việc';
   const sleepFlag = isNightSleepTask(task);
+  const scheduledHour = parseTaskScheduledHour(task, hourPart);
+
+  const isFutureHourTask =
+    !dateCtx.isPastDay &&
+    !dateCtx.isFutureDay &&
+    levelKey !== 'NONE' &&
+    typeof currentHour === 'number' &&
+    scheduledHour > currentHour;
 
   if (levelKey === 'NONE') {
     return {
@@ -389,6 +440,8 @@ function describeRecentChange(
       task,
       levelKey,
       hourPart,
+      scheduledHour,
+      isFutureHourTask: false,
       isSleepTask: sleepFlag,
       detail: `Người dùng vừa BỎ TÍCH việc "${title}".`,
       short: `Vừa bỏ tích "${title}"${dateCtx.isPastDay ? ` của ${dateCtx.relativeDayLabel}` : ''},`,
@@ -400,6 +453,8 @@ function describeRecentChange(
     task,
     levelKey,
     hourPart,
+    scheduledHour,
+    isFutureHourTask,
     isSleepTask: sleepFlag,
     detail: `Người dùng vừa tích hoàn thành việc "${title}"${hourNote}.`,
     short: `Vừa tích "${title}"${hourNote}${dateCtx.isPastDay ? ` cho ${dateCtx.relativeDayLabel}` : ''},`,
@@ -514,7 +569,8 @@ const getCoachingMessage = async (
             ment: mentObj.label,
             emo: emoObj.label,
           },
-          dateCtx
+          dateCtx,
+          timeCtx.hour
         )
       : null;
 

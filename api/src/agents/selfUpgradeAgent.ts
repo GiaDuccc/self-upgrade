@@ -53,6 +53,8 @@ export interface RecentChangeContext {
   waterMl?: string;
   noteText?: string;
   isSleepTask?: boolean;
+  scheduledHour?: number;
+  isFutureHourTask?: boolean;
 }
 
 const TASK_TITLE_EN_MAP: Record<string, string> = {
@@ -393,6 +395,59 @@ export function runDisciplineCoachAgent(params: {
   // BƯỚC 5: CHẾ ĐỘ FEEDBACK — CÁC HÀNH ĐỘNG ĐẶC BIỆT TRONG NGÀY HÔM NAY
   // --------------------------------------------------------------------------
 
+  // 5.0. THẮC MẮC KHI TÍCH VIỆC Ở KHUNG GIỜ TƯƠNG LAI (TRÁNH BẤM NHẦM)
+  if (recentChange?.isFutureHourTask) {
+    const taskTitleVi = recentChange.task?.title || 'đầu việc này';
+    const taskTitleEn = translateTaskTitle(taskTitleVi);
+    const scheduledHour = recentChange.scheduledHour ?? 12;
+    const scheduledTimeStr = `${String(scheduledHour).padStart(2, '0')}:00`;
+    const lvl = recentChange.levelKey;
+
+    // 5.0.1. Tích việc đi ngủ đêm vào ban ngày (trước 20h)
+    if (recentChange.isSleepTask && timeCtx.hour < 20) {
+      const sleepFuturePool: Array<{ vi: string; en: string }> = [
+        {
+          vi: `Ủa ${callName} ơi, bây giờ mới có ${timeCtx.timeStr} thôi mà bạn đã tích hoàn thành "${taskTitleVi}" rồi á? Bạn có nhấn nhầm ô không đấy, hay là hôm nay định đi ngủ sớm từ giữa ban ngày thế này? 😄`,
+          en: `Wait, ${nameEn}! It’s only ${timeCtx.timeStr} right now, but you already checked off "${taskTitleEn}"? Did you tap it by mistake, or are you really heading to sleep in broad daylight? 😄`,
+        },
+        {
+          vi: `Đồng hồ mới chỉ ${timeCtx.timeStr} thôi mà ${callName} đã vội chốt mục "${taskTitleVi}" rồi! Có phải bạn bấm nhầm không nè, chứ giờ này mặt trời còn chưa lặn mà đã chuẩn bị đi ngủ đêm sao?`,
+          en: `Hold on ${nameEn}, the clock shows ${timeCtx.timeStr} and you’ve already ticked "${taskTitleEn}"! Make sure you didn't click the wrong box—save this one for tonight before 11 PM!`,
+        },
+        {
+          vi: `Ủa ${callName}, mới ${timeCtx.timeStr} mà đã tích "${taskTitleVi}" rồi à? Coi chừng ấn nhầm ô nha, giờ này hãy tập trung làm việc và sinh hoạt đã, tối đến tầm 22h-23h hẵng chốt mục này nhé!`,
+          en: `Wait ${nameEn}, it's just ${timeCtx.timeStr} and you already checked "${taskTitleEn}"? Watch out for misclicks—focus on your daytime goals first, and wrap this one up tonight!`,
+        },
+      ];
+      const chosen = pickNonRepeating(sleepFuturePool, history);
+      recordEpisodicMemory(userId, chosen.vi);
+      return { message: chosen.vi, messageEn: chosen.en };
+    }
+
+    // 5.0.2. Tích việc có giờ lớn hơn giờ hiện tại (ví dụ 12h trưa tích việc 15h, 17h, 21h...)
+    const futureHourPool: Array<{ vi: string; en: string }> = [
+      {
+        vi: `Ủa ${callName} ơi, bây giờ mới có ${timeCtx.timeStr} thôi mà bạn đã tích hoàn thành "${taskTitleVi}" (lên lịch lúc ${scheduledTimeStr}) rồi thế? Bạn có nhấn nhầm ô không đấy, hay là vừa tranh thủ giải quyết sớm trước giờ vậy?`,
+        en: `Wait a second, ${nameEn}! It’s only ${timeCtx.timeStr} right now, but you’ve already checked off "${taskTitleEn}" scheduled for ${scheduledTimeStr}? Did you accidentally tap the wrong task, or did you genuinely knock it out early ahead of schedule?`,
+      },
+      {
+        vi: `Khoan đã ${callName}, đồng hồ mới chỉ ${timeCtx.timeStr} mà bạn đã đánh dấu xong "${taskTitleVi}" dự kiến cho khung ${scheduledTimeStr} rồi à? Nếu bạn làm sớm thật thì quá đỉnh, còn nếu lỡ tay bấm nhầm thì nhớ kiểm tra lại kẻo lệch bảng theo dõi nhé!`,
+        en: `Hold on ${nameEn}, it's just ${timeCtx.timeStr} and you already marked "${taskTitleEn}" (scheduled at ${scheduledTimeStr}) as complete! If you truly crushed it early, kudos to you! But if it was a slip of the finger, make sure to double-check!`,
+      },
+      {
+        vi: `Ủa alo ${callName}! Bây giờ mới ${timeCtx.timeStr} mà mục "${taskTitleVi}" (khung ${scheduledTimeStr}) đã thấy tích ${lvl === 'PERFECT' ? 'Hoàn Hảo' : 'xong'} rồi. Bạn có vô tình chạm nhầm nút không, hay là hôm nay đổi lịch làm việc này sớm hơn thế?`,
+        en: `Hey ${nameEn}! Clock says ${timeCtx.timeStr}, yet "${taskTitleEn}" (set for ${scheduledTimeStr}) is already checked. Did you tap it by mistake, or did you shuffle your schedule to finish it early today?`,
+      },
+      {
+        vi: `Thấy ${callName} tích "${taskTitleVi}" sớm hơn lịch trình (${scheduledTimeStr}) khi mới ${timeCtx.timeStr}. Bạn có lỡ tay ấn nhầm không nè? Kỷ luật tự giác là trung thực với từng mốc giờ, xác nhận lại giúp mình nha!`,
+        en: `Noticed you checked "${taskTitleEn}" earlier than its scheduled ${scheduledTimeStr} time slot while it's only ${timeCtx.timeStr}, ${nameEn}. Was that a misclick? True discipline means honest tracking—double check when you get a moment!`,
+      },
+    ];
+    const chosen = pickNonRepeating(futureHourPool, history);
+    recordEpisodicMemory(userId, chosen.vi);
+    return { message: chosen.vi, messageEn: chosen.en };
+  }
+
   // 5A. Vừa thao tác mục Giấc ngủ cuối ngày ("Đi ngủ trước 11h")
   if (recentChange?.isSleepTask) {
     const lvl = recentChange.levelKey;
@@ -506,6 +561,23 @@ export function runDisciplineCoachAgent(params: {
 
   // 5F. Vừa bấm Tích nhanh tất cả (ALL)
   if (recentChange?.kind === 'ALL') {
+    // Nếu bấm tích tất cả vào ban ngày (trước 19h tối)
+    if (timeCtx.hour < 19 && !dateCtx.isPastDay && !dateCtx.isFutureDay) {
+      const daytimeAllPool: Array<{ vi: string; en: string }> = [
+        {
+          vi: `Ủa ${callName} ơi, bây giờ mới có ${timeCtx.timeStr} mà bạn đã bấm "Tích tất cả" 100% rồi á? Coi chừng ấn nhầm nút nhé, vì các việc buổi chiều tối như thể dục, làm việc, hay ngủ đêm vẫn còn ở phía trước mà! Hãy kiểm tra lại bảng việc nha.`,
+          en: `Wait ${nameEn}, it's only ${timeCtx.timeStr} and you just clicked "Check All" for 100%? Watch out for accidental clicks—afternoon and evening goals like workout and night sleep are still ahead!`,
+        },
+        {
+          vi: `Khoan nào ${callName}, mới ${timeCtx.timeStr} thôi mà toàn bộ công việc trong ngày đã được tích sạch rồi! Có phải bạn bấm nhầm nút "Tích tất cả" không? Hãy chắc chắn rằng bạn chỉ tích những việc đã thật sự hoàn thành thôi nhé.`,
+          en: `Hold on ${nameEn}! It's just ${timeCtx.timeStr} and the entire day is marked done. Did you hit "Check All" by mistake? Remember true discipline is logging tasks as you genuinely complete them!`,
+        },
+      ];
+      const chosen = pickNonRepeating(daytimeAllPool, history);
+      recordEpisodicMemory(userId, chosen.vi);
+      return { message: chosen.vi, messageEn: chosen.en };
+    }
+
     const allPool: Array<{ vi: string; en: string }> = [
       {
         vi: `Cú quét sạch toàn bộ bảng việc lên mức ${pct}% cực kỳ dứt khoát đấy ${callName}! Hãy đảm bảo mọi đầu việc đều được thực hiện trung thực 100% với bản thân vì kỷ luật thật sự nằm ở hành động thực tế nhé.`,
