@@ -277,13 +277,15 @@ const saveDayWorkout = async (
   const currentDay: DayRecord = { ...(records[dateKey] || {}) };
 
   const profile = user?.profile || DEFAULT_USER_PROFILE;
-  const summary = await aiCoachService.analyzeWorkout({
-    profile,
-    dateKey,
-    targetMuscles: targetMuscles || [],
-    exercises: exercises || [],
-    allRecords: records,
-  });
+  const summary = (exercises && exercises.length > 0)
+    ? await aiCoachService.analyzeWorkout({
+        profile,
+        dateKey,
+        targetMuscles: targetMuscles || [],
+        exercises: exercises || [],
+        allRecords: records,
+      })
+    : undefined;
 
   records[dateKey] = {
     ...currentDay,

@@ -4,7 +4,6 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  RotateCcw,
   Search,
   Flame,
   Zap,
@@ -27,6 +26,25 @@ import {
   PresetExercise,
 } from '~/constants/workoutLibrary';
 import { useLanguage } from '~/utils/i18n';
+
+// Helper chuẩn hóa dữ liệu workout để so sánh sự thay đổi chính xác
+const serializeWorkout = (
+  muscles: string[] = [],
+  exs: WorkoutExercise[] = []
+): string => {
+  return JSON.stringify({
+    muscles: [...muscles].sort(),
+    exercises: exs.map((e) => ({
+      name: (e.name || '').trim().toLowerCase(),
+      category: e.category || 'gym',
+      sets: (e.sets || []).map((s) => ({
+        weightKg: Number(s.weightKg) || 0,
+        reps: Number(s.reps) || 0,
+        rir: Number(s.rir) || 0,
+      })),
+    })),
+  });
+};
 
 export interface WorkoutTrackerProps {
   dateKey: string;
@@ -54,13 +72,23 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
   const [exercises, setExercises] = useState<WorkoutExercise[]>(
     () => initialWorkoutData?.exercises || []
   );
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Ô tìm kiếm & thêm bài tập nhanh
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState('');
   const [customExerciseName, setCustomExerciseName] = useState('');
   const [isAddingCustom, setIsAddingCustom] = useState(false);
   const [showRirTooltip, setShowRirTooltip] = useState(false);
+
+  // Kiểm tra xem người dùng có thực hiện thay đổi nào so với dữ liệu ban đầu/đã lưu không
+  const isChanged = useMemo(() => {
+    return (
+      serializeWorkout(selectedMuscles, exercises) !==
+      serializeWorkout(
+        initialWorkoutData?.targetMuscles,
+        initialWorkoutData?.exercises
+      )
+    );
+  }, [selectedMuscles, exercises, initialWorkoutData]);
 
   const lastDateKeyRef = useRef(dateKey);
 
@@ -69,27 +97,22 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
       lastDateKeyRef.current = dateKey;
       setSelectedMuscles(initialWorkoutData?.targetMuscles || []);
       setExercises(initialWorkoutData?.exercises || []);
-      setHasUnsavedChanges(false);
       setExerciseSearchTerm('');
       setIsAddingCustom(false);
       return;
     }
 
-    if (!hasUnsavedChanges) {
+    if (!isChanged) {
       setSelectedMuscles(initialWorkoutData?.targetMuscles || []);
       setExercises(initialWorkoutData?.exercises || []);
     }
-  }, [dateKey, initialWorkoutData, hasUnsavedChanges]);
+  }, [dateKey, initialWorkoutData, isChanged]);
 
   // Toggle chọn nhóm cơ
   const handleToggleMuscle = (muscleId: string) => {
     setSelectedMuscles((prev) => {
       const exists = prev.includes(muscleId);
-      const updated = exists
-        ? prev.filter((m) => m !== muscleId)
-        : [...prev, muscleId];
-      setHasUnsavedChanges(true);
-      return updated;
+      return exists ? prev.filter((m) => m !== muscleId) : [...prev, muscleId];
     });
   };
 
@@ -136,7 +159,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     };
 
     setExercises((prev) => [...prev, newEx]);
-    setHasUnsavedChanges(true);
     setExerciseSearchTerm('');
     setCustomExerciseName('');
     setIsAddingCustom(false);
@@ -145,7 +167,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
   // Xóa bài tập
   const handleDeleteExercise = (exerciseId: string) => {
     setExercises((prev) => prev.filter((e) => e.id !== exerciseId));
-    setHasUnsavedChanges(true);
   };
 
   // Thêm set cho một bài tập (tự động clone trọng lượng & rep từ set trước đó)
@@ -166,7 +187,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         };
       })
     );
-    setHasUnsavedChanges(true);
   };
 
   // Xóa set của một bài tập
@@ -183,7 +203,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         };
       })
     );
-    setHasUnsavedChanges(true);
   };
 
   // Cập nhật giá trị của một set
@@ -209,7 +228,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         };
       })
     );
-    setHasUnsavedChanges(true);
   };
 
   // Tính tổng volume tức thì của các bài tập trên màn hình
@@ -235,22 +253,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
       targetMuscles: selectedMuscles,
       exercises,
     });
-    setHasUnsavedChanges(false);
-  };
-
-  const handleResetWorkout = () => {
-    if (exercises.length === 0 && selectedMuscles.length === 0) return;
-    if (
-      window.confirm(
-        isEn
-          ? 'Are you sure you want to clear all exercises for this day?'
-          : 'Bạn có chắc chắn muốn xóa toàn bộ bài tập của buổi hôm nay không?'
-      )
-    ) {
-      setSelectedMuscles([]);
-      setExercises([]);
-      setHasUnsavedChanges(true);
-    }
   };
 
   const summary = initialWorkoutData?.summary;
@@ -572,23 +574,20 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
           </div>
         )}
 
-        {/* 4. THANH HÀNH ĐỘNG DƯỚI CÙNG (SAVE & RESET) */}
+        {/* 4. THANH HÀNH ĐỘNG DƯỚI CÙNG (LƯU & PHÂN TÍCH) */}
         <div className="workout-bottom-actions">
-          <button
-            type="button"
-            className="btn-minimal btn-sm btn-reset-workout"
-            onClick={handleResetWorkout}
-            disabled={exercises.length === 0 && selectedMuscles.length === 0}
-          >
-            <RotateCcw size={14} />
-            <span>{isEn ? 'Reset Workout' : 'Xóa trắng buổi tập'}</span>
-          </button>
-
           <button
             type="button"
             className="btn-minimal btn-save-workout"
             onClick={handleSave}
-            disabled={isSaving || exercises.length === 0}
+            disabled={isSaving || !isChanged}
+            title={
+              !isChanged
+                ? isEn
+                  ? 'No changes to save'
+                  : 'Chưa có thay đổi mới để lưu'
+                : undefined
+            }
           >
             {isSaving ? (
               <>
@@ -610,7 +609,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
       </div>
 
       {/* 5. KHUNG NHẬN XÉT AI WORKOUT COACH (AI PROGRESSIVE OVERLOAD INSIGHT) */}
-      {summary && (
+      {summary && exercises.length > 0 && (
         <div className="workout-ai-coach-card">
           <div className="ai-coach-header">
             <div className="ai-coach-title">

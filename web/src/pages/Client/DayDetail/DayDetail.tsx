@@ -253,9 +253,9 @@ export const DayDetail: React.FC = () => {
         });
         setDayData(updated);
         toast.success(
-          isEn
-            ? 'Workout saved and analyzed by AI Gym Coach!'
-            : 'Đã lưu buổi tập và AI Gym đã phân tích!'
+          workout.exercises.length === 0
+            ? (isEn ? 'Workout cleared and saved!' : 'Đã xóa bài tập và lưu thành công!')
+            : (isEn ? 'Workout saved and analyzed by AI Gym Coach!' : 'Đã lưu buổi tập và AI Gym đã phân tích!')
         );
       } catch (error: any) {
         const msg =
