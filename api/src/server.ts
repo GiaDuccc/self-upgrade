@@ -12,6 +12,9 @@ import { APIs_V1 } from '~/routes/v1';
 const START_SERVER = () => {
   const app = express();
 
+  // Bật trust proxy cho môi trường chạy sau reverse proxy (như Render, Nginx)
+  app.set('trust proxy', 1);
+
   app.use((_req, res, next) => {
     res.set('Cache-Control', 'no-store');
     next();
