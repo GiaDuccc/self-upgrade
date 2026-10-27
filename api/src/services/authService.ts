@@ -404,7 +404,7 @@ const signInClient = async (reqBody: { email: string; password: string }) => {
 
 const refreshTokenClient = async (clientRefreshToken: string) => {
   if (!clientRefreshToken) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy Refresh Token!');
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy Refresh Token trong cookie!');
   }
 
   const decoded = JwtProvider.verifyToken(
@@ -413,10 +413,15 @@ const refreshTokenClient = async (clientRefreshToken: string) => {
   );
 
   const user = await userModel.findOneById(decoded._id);
-  if (!user || user.refreshToken !== clientRefreshToken) {
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa!');
+  }
+
+  // So sánh Refresh Token từ cookie với giá trị lưu trong database
+  if (user.refreshToken !== clientRefreshToken) {
     throw new ApiError(
       StatusCodes.UNAUTHORIZED,
-      'Refresh Token không hợp lệ hoặc đã đăng xuất!'
+      'Refresh Token không hợp lệ hoặc đã bị thay đổi so với database!'
     );
   }
 

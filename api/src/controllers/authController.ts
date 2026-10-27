@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import ms from 'ms';
 import { authService } from '~/services/authService';
 import { env } from '~/config/environment';
+import { JwtProvider } from '~/utils/token';
 
 const signUp = async (
   req: Request,
@@ -43,6 +44,37 @@ const resendVerification = async (
   }
 };
 
+const getCookieOptions = (req: Request) => {
+  const isHttps =
+    env.BUILD_MODE === 'production' ||
+    process.env.NODE_ENV === 'production' ||
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https';
+
+  return {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: isHttps ? ('none' as const) : ('lax' as const),
+    path: '/',
+    maxAge: ms('14 days'),
+  };
+};
+
+const getClearCookieOptions = (req: Request) => {
+  const isHttps =
+    env.BUILD_MODE === 'production' ||
+    process.env.NODE_ENV === 'production' ||
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https';
+
+  return {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: isHttps ? ('none' as const) : ('lax' as const),
+    path: '/',
+  };
+};
+
 const signInClient = async (
   req: Request,
   res: Response,
@@ -51,13 +83,7 @@ const signInClient = async (
   try {
     const result = await authService.signInClient(req.body);
 
-    const isProduction = env.BUILD_MODE === 'production';
-    res.cookie('refreshTokenClient', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: ms('14 days'),
-    });
+    res.cookie('refreshTokenClient', result.refreshToken, getCookieOptions(req));
 
     res.status(StatusCodes.OK).json({
       user: result.user,
@@ -88,14 +114,22 @@ const signOutClient = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.jwtDecoded?._id;
+    let userId = req.jwtDecoded?._id;
+    if (!userId) {
+      const clientRefreshToken = req.cookies?.refreshTokenClient;
+      if (clientRefreshToken) {
+        try {
+          const decoded = JwtProvider.verifyToken(
+            clientRefreshToken,
+            env.REFRESH_TOKEN_SECRET_SIGNATURE_CLIENT
+          );
+          userId = decoded._id;
+        } catch {}
+      }
+    }
+
     await authService.signOutClient(userId);
-    const isProduction = env.BUILD_MODE === 'production';
-    res.clearCookie('refreshTokenClient', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-    });
+    res.clearCookie('refreshTokenClient', getClearCookieOptions(req));
     res.status(StatusCodes.OK).json({ loggedOut: true });
   } catch (error) {
     next(error);

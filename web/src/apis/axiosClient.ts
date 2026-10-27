@@ -81,8 +81,9 @@ axiosClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const apiBase = `${getApiRoot()}/v1`;
         const res = await axios.put(
-          `${API_ROOT}/v1/auth/refreshTokenClient`,
+          `${apiBase}/auth/refreshTokenClient`,
           {},
           { withCredentials: true }
         );
@@ -106,10 +107,12 @@ axiosClient.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest.url?.includes('/auth/signInClient')
     ) {
-      localStorage.removeItem('accessTokenClient');
-      localStorage.removeItem('userInfoClient');
-      if (window.location.pathname !== '/sign-in' && window.location.pathname !== '/sign-up') {
-        window.location.href = '/sign-in';
+      if (originalRequest.url?.includes('/auth/refreshTokenClient') || originalRequest._retry) {
+        localStorage.removeItem('accessTokenClient');
+        localStorage.removeItem('userInfoClient');
+        if (window.location.pathname !== '/sign-in' && window.location.pathname !== '/sign-up') {
+          window.location.href = '/sign-in';
+        }
       }
     }
 
