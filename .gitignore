@@ -3,3 +3,9 @@ dist/
 .env
 .env.local
 *.log
+
+# Local dev runner scripts
+start-dev.bat
+run-dev.bat
+start.bat
+stop-dev.bat
