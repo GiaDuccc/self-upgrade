@@ -260,3 +260,49 @@
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
   }
 }
+
+@media (max-width: 768px) {
+  .sk-stat-card {
+    min-height: 96px;
+  }
+
+  .sk-donut-canvas {
+    flex-direction: column;
+    height: auto;
+    gap: 14px;
+  }
+
+  .sk-donut-circle-shape {
+    width: 135px;
+    height: 135px;
+  }
+
+  .sk-day-cell {
+    min-height: 86px;
+  }
+
+  .sk-timetable-corner,
+  .sk-timetable-y-cell {
+    width: 58px;
+    min-width: 58px;
+  }
+
+  .sk-timetable-header-cell,
+  .sk-timetable-task-cell {
+    width: 124px;
+    min-width: 124px;
+  }
+
+  .sk-timetable-row,
+  .sk-timetable-y-cell,
+  .sk-timetable-task-cell {
+    height: 68px;
+    min-height: 68px;
+  }
+
+  .server-reconnect-banner {
+    padding: 8px 12px;
+    font-size: 0.74rem;
+    margin-bottom: 12px;
+  }
+}

@@ -59,12 +59,14 @@ export const Header: React.FC<HeaderProps> = React.memo(({
       <div className="top-navbar-row-top">
         <div className="brand-block" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <div className="brand-logo-mark">SU</div>
-          <div>
+          <div className="brand-text-block">
             <h1 className="brand-title">
               SELF UPGRADE
-              {userProfile.name?.trim()
-                ? ` — ${userProfile.name.trim().toUpperCase()}`
-                : ''}
+              {userProfile.name?.trim() && (
+                <span className="brand-user-name">
+                  {` — ${userProfile.name.trim().toUpperCase()}`}
+                </span>
+              )}
             </h1>
             <p className="brand-subtitle">
               {userProfile.personalMotto?.trim()
@@ -85,7 +87,8 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             onClick={() => navigate('/')}
           >
             <LayoutDashboard size={15} />
-            <span>{isEn ? 'Monthly Overview' : 'Tổng quan tháng'}</span>
+            <span className="nav-tab-text-desktop">{isEn ? 'Monthly Overview' : 'Tổng quan tháng'}</span>
+            <span className="nav-tab-text-mobile">{isEn ? 'Month' : 'Tháng'}</span>
           </button>
           <button
             type="button"
@@ -93,8 +96,11 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             onClick={() => navigate(`/day/${targetDayKey}`)}
           >
             <CheckSquare size={15} />
-            <span>
+            <span className="nav-tab-text-desktop">
               {isEn ? 'Day Detail' : 'Chi tiết ngày'} ({targetDayKey.slice(8, 10)}/{targetDayKey.slice(5, 7)})
+            </span>
+            <span className="nav-tab-text-mobile">
+              {targetDayKey.slice(8, 10)}/{targetDayKey.slice(5, 7)}
             </span>
           </button>
         </nav>
@@ -113,9 +119,12 @@ export const Header: React.FC<HeaderProps> = React.memo(({
               <ChevronLeft size={16} />
             </button>
             <div className="month-display">
-              <Calendar size={15} />
-              <span>
+              <Calendar size={14} />
+              <span className="month-text-desktop">
                 {isEn ? 'Month' : 'Tháng'} {String(currentMonth).padStart(2, '0')} / {currentYear}
+              </span>
+              <span className="month-text-mobile">
+                {String(currentMonth).padStart(2, '0')}/{currentYear}
               </span>
             </div>
             <button
@@ -130,10 +139,12 @@ export const Header: React.FC<HeaderProps> = React.memo(({
 
           <button
             type="button"
-            className="btn-minimal"
+            className="btn-minimal btn-today-header"
             onClick={onJumpToday}
+            title={isEn ? 'Today' : 'Hôm nay'}
           >
-            {isEn ? 'Today' : 'Hôm nay'}
+            <span className="header-btn-text">{isEn ? 'Today' : 'Hôm nay'}</span>
+            <span className="header-btn-icon-label">HN</span>
           </button>
 
           <button
@@ -143,7 +154,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             title={isEn ? 'Add a new task / habit' : 'Thêm một đầu việc / thói quen mới'}
           >
             <Plus size={15} />
-            <span>{isEn ? 'Add Task' : 'Thêm đầu việc'}</span>
+            <span className="header-btn-text">{isEn ? 'Add Task' : 'Thêm đầu việc'}</span>
           </button>
 
           <button
@@ -157,7 +168,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             }
           >
             <UserCheck size={15} />
-            <span>
+            <span className="header-btn-text">
               {userProfile.name?.trim()
                 ? userProfile.name.trim()
                 : isEn

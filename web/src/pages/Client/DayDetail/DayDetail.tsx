@@ -14,6 +14,8 @@ import {
   CheckSquare,
   Flame,
   Dumbbell,
+  List,
+  Grid,
 } from 'lucide-react';
 import {
   clearDayAPI,
@@ -176,6 +178,12 @@ export const DayDetail: React.FC = () => {
     return !buildInitialDayData(activeDateKey);
   });
   const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories' | 'workout'>('todolist');
+  const [taskViewMode, setTaskViewMode] = useState<'list' | 'grid'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      return 'list';
+    }
+    return 'grid';
+  });
   const [isSavingCalories, setIsSavingCalories] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const noteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -785,7 +793,8 @@ export const DayDetail: React.FC = () => {
                   role="button"
                   tabIndex={0}
                 >
-                  <span className="state-mini-label">{isEn ? 'Physical' : 'Thể chất'}</span>
+                  <span className="state-mini-label state-label-desktop">{isEn ? 'Physical' : 'Thể chất'}</span>
+                  <span className="state-mini-label state-label-mobile">💪</span>
                   <strong
                     className={`state-text-val state-text-${physObj.tier || 'good'}`}
                   >
@@ -800,7 +809,8 @@ export const DayDetail: React.FC = () => {
                   role="button"
                   tabIndex={0}
                 >
-                  <span className="state-mini-label">{isEn ? 'Mental' : 'Tinh thần'}</span>
+                  <span className="state-mini-label state-label-desktop">{isEn ? 'Mental' : 'Tinh thần'}</span>
+                  <span className="state-mini-label state-label-mobile">🧠</span>
                   <strong
                     className={`state-text-val state-text-${mentObj.tier || 'good'}`}
                   >
@@ -815,7 +825,8 @@ export const DayDetail: React.FC = () => {
                   role="button"
                   tabIndex={0}
                 >
-                  <span className="state-mini-label">{isEn ? 'Emotional' : 'Cảm xúc'}</span>
+                  <span className="state-mini-label state-label-desktop">{isEn ? 'Emotional' : 'Cảm xúc'}</span>
+                  <span className="state-mini-label state-label-mobile">❤️</span>
                   <strong
                     className={`state-text-val state-text-${emoObj.tier || 'good'}`}
                   >
@@ -866,7 +877,7 @@ export const DayDetail: React.FC = () => {
             <div className="day-quick-actions">
               <button
                 type="button"
-                className="btn-minimal btn-sm"
+                className="btn-minimal btn-sm btn-quick-add"
                 onClick={() => {
                   const nowH = new Date().getHours();
                   onOpenAddTaskModal({
@@ -882,11 +893,11 @@ export const DayDetail: React.FC = () => {
                 }
               >
                 <Plus size={14} />
-                <span>{isEn ? 'Add Task' : 'Thêm việc'}</span>
+                <span className="quick-action-text">{isEn ? 'Add Task' : 'Thêm việc'}</span>
               </button>
               <button
                 type="button"
-                className="btn-minimal btn-sm"
+                className="btn-minimal btn-sm btn-quick-toggle"
                 onClick={handleToggleAllTasks}
                 title={
                   allTasksCompleted
@@ -899,7 +910,7 @@ export const DayDetail: React.FC = () => {
                 }
               >
                 <CheckSquare size={14} />
-                <span>
+                <span className="quick-action-text">
                   {allTasksCompleted
                     ? isEn
                       ? 'Uncheck All'
@@ -911,7 +922,7 @@ export const DayDetail: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="btn-minimal btn-sm"
+                className="btn-minimal btn-sm btn-quick-reset"
                 onClick={handleClearDay}
                 title={
                   isEn
@@ -920,7 +931,7 @@ export const DayDetail: React.FC = () => {
                 }
               >
                 <RotateCcw size={14} />
-                <span>{isEn ? 'Reset Day' : 'Đặt lại ngày'}</span>
+                <span className="quick-action-text">{isEn ? 'Reset Day' : 'Đặt lại ngày'}</span>
               </button>
             </div>
           </div>
@@ -994,179 +1005,287 @@ export const DayDetail: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className="timetable-wrapper">
-                  <div className="timetable-container" ref={tableContainerRef}>
-                    <table className="timetable-table">
-                      <thead>
-                        <tr>
-                          {/* Ô góc chia đôi chéo: Thời gian ở trên phải (trục X), Việc làm ở dưới trái (trục Y) */}
-                          <th className="timetable-th timetable-corner-th">
-                            <div className="diagonal-cell">
-                              <svg
-                                className="diagonal-svg"
-                                viewBox="0 0 100 100"
-                                preserveAspectRatio="none"
-                              >
-                                <line
-                                  x1="0"
-                                  y1="0"
-                                  x2="100"
-                                  y2="100"
-                                  stroke="var(--border-subtle)"
-                                  strokeWidth="1"
-                                  vectorEffect="non-scaling-stroke"
-                                />
-                              </svg>
-                              <span className="diagonal-label diagonal-time-label">
-                                {isEn ? 'Time' : 'Thời gian'}
-                              </span>
-                              <span className="diagonal-label diagonal-task-label">
-                                {isEn ? 'Tasks' : 'Việc làm'}
-                              </span>
-                            </div>
-                          </th>
+                <div className="tasks-display-container">
+                  {/* THANH CHUYỂN ĐỔI CHẾ ĐỘ XEM: DANH SÁCH (TỐI ĐA 3 THẺ/HÀNG) vs BẢNG 24H */}
+                  <div className="task-view-switch-row">
+                    <div className="task-count-pill">
+                      <span className="task-count-num">{currentTasksList.length}</span>
+                      <span className="task-count-text">{isEn ? 'tasks scheduled' : 'công việc trong ngày'}</span>
+                    </div>
+                    <div className="task-view-toggle-btns">
+                      <button
+                        type="button"
+                        className={`view-toggle-btn ${taskViewMode === 'list' ? 'active' : ''}`}
+                        onClick={() => setTaskViewMode('list')}
+                        title={isEn ? 'List View' : 'Xem dạng danh sách thẻ (Tối đa 3 thẻ/hàng)'}
+                      >
+                        <List size={14} />
+                        <span>{isEn ? 'List' : 'Danh sách'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`view-toggle-btn ${taskViewMode === 'grid' ? 'active' : ''}`}
+                        onClick={() => setTaskViewMode('grid')}
+                        title={isEn ? '24h Grid View' : 'Xem dạng bảng lưới 24h'}
+                      >
+                        <Grid size={14} />
+                        <span>{isEn ? '24h Grid' : 'Bảng 24h'}</span>
+                      </button>
+                    </div>
+                  </div>
 
-                          {/* Trục X: Thời gian từ 00:00 đến 24:00 */}
-                          {HOURS_24.map((hour) => {
-                            const hourLabel = `${String(hour).padStart(2, '0')}:00`;
-                            return (
-                              <th key={hour} className="timetable-th timetable-th-col">
-                                <div className="timetable-col-header-text">
-                                  {hourLabel}
+                  {taskViewMode === 'list' ? (
+                    <div className="tasks-list-grid">
+                      {currentTasksList.map((task) => {
+                        const isTaskChecked = (tasksMap[task.id] || 'NONE') !== 'NONE';
+                        const isBoosted = isTaskBoostedByProfile(task, userProfile);
+                        const hour = resolveTaskHour(task);
+                        const timeFormatted = task.timeHint || `${String(hour).padStart(2, '0')}:00`;
+
+                        return (
+                          <div
+                            key={task.id}
+                            className={`task-card-item ${isTaskChecked ? 'task-card-checked' : ''}`}
+                            onClick={() => handleEditTaskClick(task)}
+                          >
+                            <div className="task-card-header">
+                              <div className="task-card-badges">
+                                <span className="task-badge-cat">
+                                  {translateCategory(task.category, language)}
+                                </span>
+                                {isBoosted && <span className="task-badge-boost">★ ×1.25</span>}
+                                <span className="task-badge-time">{timeFormatted}</span>
+                              </div>
+
+                              <div className="task-card-actions">
+                                <button
+                                  type="button"
+                                  className="btn-edit-task"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditTaskClick(task);
+                                  }}
+                                  title={isEn ? 'Edit task' : 'Sửa việc'}
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`timetable-checkbox ${isTaskChecked ? 'checked' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleTask(task.id);
+                                  }}
+                                  aria-label={isTaskChecked ? 'Uncheck task' : 'Check task'}
+                                  title={isTaskChecked ? (isEn ? 'Uncheck' : 'Bỏ tích') : (isEn ? 'Check' : 'Tích hoàn thành')}
+                                >
+                                  {isTaskChecked && <Check size={14} strokeWidth={3} />}
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="task-card-body">
+                              <h4 className="task-card-title">{task.title}</h4>
+                              {task.target && (
+                                <p className="task-card-target">{task.target}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <button
+                        type="button"
+                        className="btn-add-task-list-bottom"
+                        onClick={() => {
+                          const nowH = new Date().getHours();
+                          onOpenAddTaskModal({
+                            hour: nowH,
+                            columnIndex: 0,
+                            timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                          });
+                        }}
+                      >
+                        <Plus size={15} />
+                        <span>{isEn ? 'Add Task' : 'Thêm việc mới'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="timetable-wrapper">
+                      <div className="timetable-container" ref={tableContainerRef}>
+                        <table className="timetable-table">
+                          <thead>
+                            <tr>
+                              {/* Ô góc chia đôi chéo: Thời gian ở trên phải (trục X), Việc làm ở dưới trái (trục Y) */}
+                              <th className="timetable-th timetable-corner-th">
+                                <div className="diagonal-cell">
+                                  <svg
+                                    className="diagonal-svg"
+                                    viewBox="0 0 100 100"
+                                    preserveAspectRatio="none"
+                                  >
+                                    <line
+                                      x1="0"
+                                      y1="0"
+                                      x2="100"
+                                      y2="100"
+                                      stroke="var(--border-subtle)"
+                                      strokeWidth="1"
+                                      vectorEffect="non-scaling-stroke"
+                                    />
+                                  </svg>
+                                  <span className="diagonal-label diagonal-time-label">
+                                    {isEn ? 'Time' : 'Thời gian'}
+                                  </span>
+                                  <span className="diagonal-label diagonal-task-label">
+                                    {isEn ? 'Tasks' : 'Việc làm'}
+                                  </span>
                                 </div>
                               </th>
-                            );
-                          })}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Trục Y: Việc 1 .. Việc 5 */}
-                        {COLUMNS_5.map((colIdx) => (
-                          <tr key={colIdx} className="timetable-row">
-                            <td className="timetable-td timetable-td-time">
-                              <span className="timetable-time-text">
-                                {isEn ? `Task ${colIdx + 1}` : `Việc ${colIdx + 1}`}
-                              </span>
-                            </td>
-                            {HOURS_24.map((hour) => {
-                              const hourLabel = `${String(hour).padStart(2, '0')}:00`;
-                              const task = taskGridMap.get(`${hour}_${colIdx}`);
 
-                              if (task) {
-                                const isTaskChecked =
-                                  (tasksMap[task.id] || 'NONE') !== 'NONE';
-                                const isBoosted = isTaskBoostedByProfile(
-                                  task,
-                                  userProfile
-                                );
-
+                              {/* Trục X: Thời gian từ 00:00 đến 24:00 */}
+                              {HOURS_24.map((hour) => {
+                                const hourLabel = `${String(hour).padStart(2, '0')}:00`;
                                 return (
-                                  <td
-                                    key={hour}
-                                    className={`timetable-td timetable-td-task-cell ${
-                                      isTaskChecked
-                                        ? 'cell-has-task-checked'
-                                        : 'cell-has-task'
-                                    }`}
-                                  >
-                                    <div
-                                      className={`grid-task-card ${
-                                        isTaskChecked
-                                          ? 'grid-task-card-checked'
-                                          : ''
-                                      }`}
-                                      onClick={() => handleEditTaskClick(task)}
-                                      title={
-                                        isEn
-                                          ? 'Click to edit or delete this task'
-                                          : 'Nhấp để chỉnh sửa hoặc xoá đầu việc này'
-                                      }
-                                    >
-                                      <div className="grid-task-top">
-                                        <div className="grid-task-left">
-                                          <div className="grid-task-badge-row">
-                                            <span className="grid-task-badge">
-                                              {translateCategory(task.category, language)}
-                                            </span>
-                                            {isBoosted && (
-                                              <span className="grid-task-boost">
-                                                ★ ×1.25
-                                              </span>
-                                            )}
-                                          </div>
-                                          <h4 className="grid-task-title">
-                                            {task.title}
-                                          </h4>
-                                          <div className="grid-task-meta">
-                                            <span>
-                                              {task.timeHint || hourLabel}
-                                            </span>
-                                          </div>
-                                        </div>
+                                  <th key={hour} className="timetable-th timetable-th-col">
+                                    <div className="timetable-col-header-text">
+                                      {hourLabel}
+                                    </div>
+                                  </th>
+                                );
+                              })}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Trục Y: Việc 1 .. Việc 5 */}
+                            {COLUMNS_5.map((colIdx) => (
+                              <tr key={colIdx} className="timetable-row">
+                                <td className="timetable-td timetable-td-time">
+                                  <span className="timetable-time-text">
+                                    {isEn ? `Task ${colIdx + 1}` : `Việc ${colIdx + 1}`}
+                                  </span>
+                                </td>
+                                {HOURS_24.map((hour) => {
+                                  const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+                                  const task = taskGridMap.get(`${hour}_${colIdx}`);
 
+                                  if (task) {
+                                    const isTaskChecked =
+                                      (tasksMap[task.id] || 'NONE') !== 'NONE';
+                                    const isBoosted = isTaskBoostedByProfile(
+                                      task,
+                                      userProfile
+                                    );
+
+                                    return (
+                                      <td
+                                        key={hour}
+                                        className={`timetable-td timetable-td-task-cell ${
+                                          isTaskChecked
+                                            ? 'cell-has-task-checked'
+                                            : 'cell-has-task'
+                                        }`}
+                                      >
                                         <div
-                                          className="grid-task-right"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleToggleTask(task.id);
-                                          }}
-                                          title={
+                                          className={`grid-task-card ${
                                             isTaskChecked
-                                              ? isEn
-                                                ? 'Unmark completion'
-                                                : 'Bỏ tích hoàn thành'
-                                              : isEn
-                                              ? 'Mark task as completed'
-                                              : 'Tích hoàn thành việc này'
+                                              ? 'grid-task-card-checked'
+                                              : ''
+                                          }`}
+                                          onClick={() => handleEditTaskClick(task)}
+                                          title={
+                                            isEn
+                                              ? 'Click to edit or delete this task'
+                                              : 'Nhấp để chỉnh sửa hoặc xoá đầu việc này'
                                           }
                                         >
-                                          <button
-                                            type="button"
-                                            className={`timetable-checkbox ${
-                                              isTaskChecked ? 'checked' : ''
-                                            }`}
-                                          >
-                                            {isTaskChecked && (
-                                              <Check
-                                                size={14}
-                                                strokeWidth={3}
-                                              />
-                                            )}
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                );
-                              }
+                                          <div className="grid-task-top">
+                                            <div className="grid-task-left">
+                                              <div className="grid-task-badge-row">
+                                                <span className="grid-task-badge">
+                                                  {translateCategory(task.category, language)}
+                                                </span>
+                                                {isBoosted && (
+                                                  <span className="grid-task-boost">
+                                                    ★ ×1.25
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <h4 className="grid-task-title">
+                                                {task.title}
+                                              </h4>
+                                              <div className="grid-task-meta">
+                                                <span>
+                                                  {task.timeHint || hourLabel}
+                                                </span>
+                                              </div>
+                                            </div>
 
-                              return (
-                                <td
-                                  key={hour}
-                                  className="timetable-td timetable-td-empty-cell"
-                                  onClick={() =>
-                                    handleEmptyCellClick(hour, colIdx)
+                                            <div
+                                              className="grid-task-right"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleTask(task.id);
+                                              }}
+                                              title={
+                                                isTaskChecked
+                                                  ? isEn
+                                                    ? 'Unmark completion'
+                                                    : 'Bỏ tích hoàn thành'
+                                                  : isEn
+                                                  ? 'Mark task as completed'
+                                                  : 'Tích hoàn thành việc này'
+                                              }
+                                            >
+                                              <button
+                                                type="button"
+                                                className={`timetable-checkbox ${
+                                                  isTaskChecked ? 'checked' : ''
+                                                }`}
+                                              >
+                                                {isTaskChecked && (
+                                                  <Check
+                                                    size={14}
+                                                    strokeWidth={3}
+                                                  />
+                                                )}
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    );
                                   }
-                                  title={
-                                    isEn
-                                      ? `Click to add task at ${hourLabel} (Row Task ${colIdx + 1})`
-                                      : `Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`
-                                  }
-                                >
-                                  <div className="grid-empty-target">
-                                    <Plus
-                                      size={14}
-                                      className="grid-empty-plus-icon"
-                                    />
-                                  </div>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+
+                                  return (
+                                    <td
+                                      key={hour}
+                                      className="timetable-td timetable-td-empty-cell"
+                                      onClick={() =>
+                                        handleEmptyCellClick(hour, colIdx)
+                                      }
+                                      title={
+                                        isEn
+                                          ? `Click to add task at ${hourLabel} (Row Task ${colIdx + 1})`
+                                          : `Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`
+                                      }
+                                    >
+                                      <div className="grid-empty-target">
+                                        <Plus
+                                          size={14}
+                                          className="grid-empty-plus-icon"
+                                        />
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

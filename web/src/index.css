@@ -75,6 +75,8 @@
 html {
   font-size: 16px; /* Thu nhỏ cỡ chữ 2px (từ 18px về 16px) theo yêu cầu */
   overflow-y: scroll; /* Cố định thanh cuộn để tránh giật layout/nhảy chiều ngang 17px khi chuyển trang */
+  overflow-x: hidden;
+  max-width: 100%;
   scrollbar-gutter: stable; /* Chuẩn CSS hiện đại giữ chỗ cố định cho scrollbar */
 }
 
@@ -95,6 +97,8 @@ body {
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.5;
+  overflow-x: hidden;
+  max-width: 100%;
   -webkit-font-smoothing: antialiased;
   padding-top: var(--safe-area-top);
   padding-bottom: var(--safe-area-bottom);
@@ -1316,6 +1320,248 @@ input {
   .day-split-container {
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+}
+
+/* ============================================================================
+   CHẾ ĐỘ XEM TO-DO LIST (DANH SÁCH THẺ VS BẢNG 24H) - HỖ TRỢ CẢ PC & MOBILE
+   ============================================================================ */
+.tasks-display-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.task-view-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1.5px solid var(--border-subtle);
+  gap: 12px;
+}
+
+.task-count-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.task-count-num {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.task-count-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.task-view-toggle-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* Khoảng cách rõ ràng giữa 2 nút Danh sách và Bảng 24h */
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn:hover {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  background-color: var(--bg-mixed);
+}
+
+.view-toggle-btn.active {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* LƯỚI THẺ CÔNG VIỆC: TỐI ĐA 3 THẺ TRÊN 1 HÀNG TRÊN PC */
+.tasks-list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* Tối đa 3 thẻ trên 1 hàng */
+  gap: 14px;
+  width: 100%;
+}
+
+/* THẺ CÔNG VIỆC TRONG DANH SÁCH - ĐỒNG BỘ THIẾT KẾ VỚI THẺ TRONG BẢNG (GRID-TASK-CARD) */
+.task-card-item {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-height: 96px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.task-card-item:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.task-card-item.task-card-checked {
+  background-color: var(--bg-mixed-subtle);
+  border-color: var(--border-color);
+  opacity: 0.88;
+}
+
+.task-card-item.task-card-checked .task-card-title {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.task-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.task-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.task-badge-cat {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-mixed);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.task-badge-boost {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.task-badge-time {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-mixed-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.task-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-edit-task {
+  padding: 4px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-edit-task:hover {
+  color: var(--text-primary);
+  background: var(--bg-mixed);
+}
+
+.task-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin: 0;
+  word-break: break-word;
+}
+
+.task-card-target {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.btn-add-task-list-bottom {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border: 1.5px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.btn-add-task-list-bottom:hover {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  background-color: var(--bg-mixed-subtle);
+}
+
+@media (max-width: 1100px) {
+  .tasks-list-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -5463,5 +5709,1144 @@ input {
 
   .ai-metrics-ribbon {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Helper responsive classes */
+.month-text-mobile,
+.nav-tab-text-mobile,
+.header-btn-icon-label,
+.state-label-mobile {
+  display: none;
+}
+
+/* ============================================================================
+   COMPREHENSIVE MOBILE RESPONSIVE OVERHAUL (<= 768px & <= 480px)
+   Tối ưu toàn diện bố cục, cấu trúc, cỡ chữ, độ to khối, chống tràn ngang
+   ============================================================================ */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px !important; /* Thu nhỏ cỡ chữ nền để toàn bộ rem tự động thu gọn 12.5% */
+  }
+
+  /* 1. KHUNG CHUNG & HEADER (TOP NAVBAR) */
+  .top-navbar {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .top-navbar-row-top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .brand-block {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .brand-logo-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0;
+  }
+
+  .brand-subtitle,
+  .brand-user-name {
+    display: none !important; /* Lược bỏ chữ mô tả rườm rà trên điện thoại */
+  }
+
+  /* Hàng 2 của header: Month switcher bên trái, Nav tabs bên phải */
+  .top-navbar-row-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .navbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    margin-left: auto;
+  }
+
+  .month-switcher {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 2px;
+    min-width: 0;
+    flex: 0 1 auto;
+    border-radius: var(--radius-sm);
+  }
+
+  .month-display {
+    padding: 0 4px;
+    font-size: 0.72rem;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .month-text-desktop {
+    display: none !important;
+  }
+
+  .month-text-mobile {
+    display: inline !important;
+    font-weight: 700;
+  }
+
+  .btn-icon {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+  }
+
+  /* Nút thao tác trên header: rút gọn chỉ dùng icon */
+  .header-btn-text {
+    display: none !important;
+  }
+
+  .header-btn-icon-label {
+    display: inline-block !important;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .btn-today-header,
+  .btn-add-header,
+  .btn-profile-header,
+  .btn-settings-header {
+    padding: 4px 6px !important;
+    font-size: 0.72rem !important;
+    min-width: 28px;
+    height: 28px;
+    justify-content: center;
+    gap: 0 !important;
+  }
+
+  .btn-shortcuts-header {
+    display: none !important;
+  }
+
+  /* 2 Tab chuyển trang 📊 Tháng / 📅 Ngày */
+  .page-nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .nav-tab-btn {
+    padding: 4px 7px !important;
+    font-size: 0.72rem !important;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .nav-tab-text-desktop {
+    display: none !important;
+  }
+
+  .nav-tab-text-mobile {
+    display: inline !important;
+    font-weight: 600;
+  }
+
+  .main-container {
+    padding: 8px 8px 32px;
+    gap: 10px;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* 2. TRANG TỔNG QUAN THÁNG (DASHBOARD) - TỐI ƯU THỨ TỰ & THỐNG KÊ GỌN */
+  .overview-split-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .overview-split-left-col,
+  .overview-split-right-col {
+    display: contents; /* Cho phép sắp xếp thứ tự trực tiếp */
+  }
+
+  .overview-left-header {
+    order: 1;
+    margin-bottom: 0;
+    gap: 4px;
+  }
+
+  .section-subtext {
+    display: none !important; /* Lược bỏ dòng mô tả thang điểm rườm rà */
+  }
+
+  .section-header-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+
+  .section-title {
+    font-size: 0.86rem;
+    line-height: 1.2;
+  }
+
+  .month-rank-pill {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    width: auto;
+    gap: 4px;
+  }
+
+  /* 4 Thẻ thống kê: siêu gọn gàng, dạng lưới 2x2 */
+  .stats-cards-grid-split {
+    order: 2;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .stat-card {
+    padding: 7px 9px;
+    gap: 2px;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .stat-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+
+  .stat-big-number {
+    font-size: 1.15rem;
+    line-height: 1.1;
+  }
+
+  .stat-unit {
+    font-size: 0.65rem;
+  }
+
+  .stat-tag {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+
+  .stat-footnote {
+    display: none !important; /* Ẩn các dòng chữ giải thích rườm rà */
+  }
+
+  /* ĐƯA LỊCH CÁC NGÀY TRONG THÁNG LÊN VỊ TRÍ SỐ 3 - KHÔNG CẦN LƯỚT SÂU */
+  .month-days-section {
+    order: 3;
+    padding: 8px !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .month-days-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .day-cell {
+    padding: 6px 6px;
+    min-height: 56px;
+    gap: 3px;
+  }
+
+  .day-number {
+    font-size: 0.78rem;
+  }
+
+  .day-weekday {
+    font-size: 0.6rem;
+    padding: 1px 3px;
+  }
+
+  .day-score-num {
+    font-size: 0.68rem;
+  }
+
+  .day-tasks-ratio {
+    font-size: 0.6rem;
+  }
+
+  /* 2 Biểu đồ đẩy xuống cuối cùng để không chiếm chỗ */
+  .charts-split-stack {
+    order: 4;
+    gap: 8px;
+  }
+
+  .chart-box {
+    padding: 8px 10px;
+  }
+
+  .chart-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .chart-title {
+    font-size: 0.8rem;
+  }
+
+  .chart-active-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    width: auto;
+  }
+
+  .line-chart-wrapper {
+    height: 120px;
+  }
+
+  .donut-chart-layout {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    gap: 8px;
+    min-height: 0;
+    padding: 2px 0;
+  }
+
+  .donut-svg-container {
+    width: 105px;
+    height: 105px;
+  }
+
+  .donut-center-value {
+    font-size: 0.95rem;
+  }
+
+  .donut-legend {
+    width: auto;
+    gap: 4px;
+  }
+
+  .legend-item {
+    font-size: 0.68rem;
+  }
+
+  /* 3. TRANG CHI TIẾT NGÀY - TỔNG HỢP SIÊU GỌN GÀNG */
+  .day-split-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .day-split-left-col {
+    padding: 8px;
+    border-radius: var(--radius-md);
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .day-page-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-bottom: 0;
+  }
+
+  .day-date-switcher {
+    gap: 3px;
+  }
+
+  .day-detail-date {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+  }
+
+  .day-detail-weekday,
+  .today-pill {
+    font-size: 0.66rem;
+    padding: 2px 5px;
+  }
+
+  .day-score-summary-card {
+    padding: 8px;
+    gap: 6px;
+    min-width: 0 !important;
+    max-width: 100%;
+    border-radius: var(--radius-sm);
+  }
+
+  .day-score-main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .day-score-big-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .day-score-big {
+    font-size: 1.25rem;
+  }
+
+  .score-mod-pill {
+    font-size: 0.62rem;
+    padding: 1px 4px;
+  }
+
+  .day-rank-box {
+    padding: 3px 6px;
+    min-width: 0;
+    width: auto;
+    gap: 3px;
+  }
+
+  .day-rank-label {
+    display: none !important; /* Lược bỏ chữ "Xếp hạng ngày" */
+  }
+
+  .day-rank-val {
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .day-state-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .day-state-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .state-mini-card {
+    padding: 4px 4px;
+    min-width: 0;
+    overflow: hidden;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: auto;
+  }
+
+  .state-label-desktop {
+    display: none !important;
+  }
+
+  .state-label-mobile {
+    display: inline !important;
+    font-size: 0.72rem;
+  }
+
+  .state-text-val {
+    font-size: 0.68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .state-sleep-banner {
+    padding: 3px 6px;
+    font-size: 0.68rem;
+    gap: 4px;
+    height: auto;
+  }
+
+  .progress-bar-track {
+    height: 4px;
+  }
+
+  /* Nút thao tác nhanh: icon-only trên mobile */
+  .day-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .day-quick-actions .btn-minimal {
+    padding: 5px 3px;
+    font-size: 0.7rem;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .quick-action-text {
+    display: none !important; /* Rút gọn chỉ dùng icon */
+  }
+
+  /* 4. TRANG CHI TIẾT NGÀY - TABS & CHẾ ĐỘ XEM DANH SÁCH VIỆC */
+  .day-split-right-col {
+    padding: 8px;
+    border-radius: var(--radius-md);
+    gap: 8px;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .day-split-right-col .day-mode-tab-bar,
+  .day-mode-tab-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding-bottom: 6px;
+    margin: 0;
+  }
+
+  .day-mode-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 6px 3px;
+    font-size: 0.68rem;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .day-mode-btn svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Thanh chuyển đổi View Danh sách vs Bảng 24h */
+  .task-view-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .task-count-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+  }
+
+  .task-view-switch-row {
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .task-count-pill {
+    font-size: 0.74rem;
+  }
+
+  .task-count-num {
+    font-size: 0.88rem;
+  }
+
+  .task-view-toggle-btns {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .view-toggle-btn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    gap: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .view-toggle-btn.active {
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-weight: 700;
+  }
+
+  /* CHẾ ĐỘ XEM DANH SÁCH VIỆC TRÊN MOBILE: 1 THẺ / HÀNG */
+  .tasks-list-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .task-card-item {
+    padding: 9px 10px;
+    min-height: 0;
+    gap: 6px;
+  }
+
+  .task-card-title {
+    font-size: 0.82rem;
+  }
+
+  .task-badge-cat,
+  .task-badge-boost,
+  .task-badge-time {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  /* Bảng timetable 24h nếu người dùng muốn xem */
+  .timetable-corner-th,
+  .timetable-td-time {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+    padding: 5px 2px;
+  }
+
+  .timetable-corner-label {
+    font-size: 0.55rem;
+  }
+
+  .timetable-row-badge {
+    font-size: 0.62rem;
+    padding: 2px 2px;
+  }
+
+  .timetable-th-col,
+  .timetable-td-task-cell,
+  .timetable-td-empty-cell {
+    width: 110px;
+    min-width: 110px;
+    max-width: 110px;
+  }
+
+  .timetable-td-task-cell,
+  .timetable-td-empty-cell {
+    height: 62px;
+    padding: 4px;
+  }
+
+  .grid-task-title {
+    font-size: 0.7rem;
+  }
+
+  .grid-empty-target {
+    opacity: 0.45;
+  }
+
+  /* Ghi chú ngày */
+  .day-note-box {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .day-note-hint {
+    display: none !important; /* Lược bỏ câu hướng dẫn rườm rà của AI */
+  }
+
+  .day-note-label {
+    font-size: 0.7rem;
+  }
+
+  .day-note-textarea {
+    font-size: 0.76rem;
+    min-height: 52px;
+    padding: 6px 8px;
+  }
+
+  /* 5. THEO DÕI NƯỚC UỐNG & CALORIES DINH DƯỠNG */
+  .water-tracker-card {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .water-card-header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .water-card-title {
+    font-size: 0.78rem;
+  }
+
+  .water-card-sub {
+    font-size: 0.66rem;
+  }
+
+  .water-current-big {
+    font-size: 1.2rem;
+  }
+
+  .water-stats-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .water-quick-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .water-quick-btn {
+    padding: 5px 2px;
+    font-size: 0.68rem;
+  }
+
+  .water-quick-sub {
+    font-size: 0.55rem;
+  }
+
+  .water-card-footer {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .calories-unified-card {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .meal-sessions-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .meal-session-card {
+    padding: 10px;
+    min-height: 0;
+    gap: 8px;
+  }
+
+  .inline-form-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .input-dish-name {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .input-dish-weight,
+  .input-dish-time {
+    flex: 1 1 calc(50% - 2px);
+    width: auto;
+    min-width: 0;
+  }
+
+  .food-item-row {
+    padding: 6px 8px;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .food-item-main {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .food-item-title-line {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .food-item-name {
+    font-size: 0.76rem;
+    word-break: break-word;
+  }
+
+  .food-item-macros {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.65rem;
+  }
+
+  .nutrition-ai-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .nutrition-ai-header-right {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: stretch;
+  }
+
+  .nutrition-ai-header-right .unsaved-badge {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nutrition-ai-header-right .btn-minimal {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 7px 8px;
+    font-size: 0.72rem;
+  }
+
+  .nutrition-macros-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .nutrition-macros-grid .macro-stat-card:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .macro-stat-card {
+    padding: 8px 10px;
+    min-width: 0;
+  }
+
+  .macro-card-value strong {
+    font-size: 1.15rem;
+  }
+
+  .nutrition-ai-feedback-box {
+    padding: 10px;
+  }
+
+  .feedback-content-row {
+    gap: 8px;
+  }
+
+  .feedback-paragraph {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  /* 6. THEO DÕI TẬP LUYỆN (GYM / WORKOUT TRACKER) */
+  .workout-muscle-selector-card,
+  .workout-active-exercises-card,
+  .workout-ai-coach-card {
+    padding: 10px;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .workout-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .muscle-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .muscle-group-btn {
+    padding: 8px 4px;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .muscle-icon {
+    font-size: 1.1rem;
+  }
+
+  .muscle-name {
+    font-size: 0.7rem;
+    text-align: center;
+  }
+
+  .exercise-picker-shelf {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .shelf-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .shelf-search-bar {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .custom-exercise-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 4px;
+  }
+
+  .custom-exercise-input {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .active-exercise-card {
+    padding: 8px;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .exercise-name-title {
+    font-size: 0.78rem;
+  }
+
+  /* Bảng Sets co giãn vừa khít 100% thẻ bài tập */
+  .sets-table-wrapper {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  .sets-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .sets-table th,
+  .sets-table td {
+    padding: 3px 2px;
+    font-size: 0.68rem;
+  }
+
+  .sets-table .col-set {
+    width: 26px;
+  }
+
+  .sets-table .col-weight {
+    width: 28%;
+  }
+
+  .sets-table .col-reps {
+    width: 20%;
+  }
+
+  .sets-table .col-rir {
+    width: calc(52% - 52px);
+  }
+
+  .sets-table .col-action {
+    width: 26px;
+  }
+
+  .set-num-pill {
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 0.65rem;
+  }
+
+  .set-input,
+  .set-select {
+    padding: 4px 4px;
+    font-size: 0.72rem;
+  }
+
+  .weight-input {
+    padding-right: 16px;
+  }
+
+  .input-with-unit .unit-label {
+    right: 3px;
+    font-size: 0.6rem;
+  }
+
+  .workout-bottom-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .workout-bottom-actions .btn-save-workout {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+  }
+
+  .ai-metrics-ribbon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .ai-coach-message-body {
+    font-size: 0.76rem;
+    padding: 8px 10px;
+  }
+
+  /* 7. MODALS, AUTH PAGES & FLOATING AI COACH */
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .modal-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 10px 12px;
+  }
+
+  .modal-title {
+    font-size: 0.88rem;
+  }
+
+  .modal-body,
+  .daily-state-modal-body,
+  .profile-modal-body,
+  .settings-modal-body {
+    padding: 12px 10px;
+    gap: 12px;
+  }
+
+  .daily-state-modal-footer,
+  .profile-modal-footer {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .profile-section-block {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  .profile-inputs-grid-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .profile-inputs-grid-5 > .form-group:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .scope-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .scope-option-card {
+    padding: 8px 10px;
+  }
+
+  .settings-action-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .settings-action-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .settings-action-card .btn-minimal {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .auth-page-wrapper {
+    padding: 10px;
+  }
+
+  .auth-card {
+    padding: 18px 14px;
+    gap: 14px;
+  }
+
+  .auth-card-title {
+    font-size: 1rem;
+  }
+
+  .auth-otp-input {
+    font-size: 1.25rem;
+    letter-spacing: 5px;
+    padding: 8px;
+  }
+
+  .Toastify__toast-container {
+    padding: 8px;
+    width: 100%;
+    max-width: 100vw;
+    left: 0;
+    right: 0;
+  }
+
+  .ai-floating-coach {
+    bottom: 10px;
+    right: 10px;
+    gap: 6px;
+  }
+
+  .ai-floating-bubble {
+    width: calc(100vw - 20px);
+    max-width: 320px;
+    padding: 10px 12px;
+  }
+
+  .ai-floating-avatar-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* MÀN HÌNH ĐIỆN THOẠI NHỎ (<= 420px) */
+@media (max-width: 420px) {
+  .month-days-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .muscle-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat-big-number {
+    font-size: 1.05rem;
+  }
+
+  .day-mode-btn {
+    font-size: 0.64rem;
+    padding: 5px 2px;
+  }
+
+  .day-mode-btn svg {
+    display: none;
   }
 }
