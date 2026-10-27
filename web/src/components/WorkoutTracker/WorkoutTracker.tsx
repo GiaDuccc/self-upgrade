@@ -2,18 +2,17 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Dumbbell,
   Plus,
+  Minus,
   Trash2,
   Sparkles,
-  Search,
-  Flame,
   Zap,
   TrendingUp,
   ShieldCheck,
   HelpCircle,
   CheckCircle2,
+  Edit2,
 } from 'lucide-react';
 import {
-  ExerciseSet,
   WorkoutData,
   WorkoutExercise,
   WorkoutSummary,
@@ -27,10 +26,24 @@ import {
 } from '~/constants/workoutLibrary';
 import { useLanguage } from '~/utils/i18n';
 
+export interface UIExerciseSet {
+  setNumber: number;
+  weightKg: number | string;
+  reps: number | string;
+  rir: number;
+}
+
+export interface UIWorkoutExercise {
+  id: string;
+  name: string;
+  category: string;
+  sets: UIExerciseSet[];
+}
+
 // Helper chuẩn hóa dữ liệu workout để so sánh sự thay đổi chính xác
 const serializeWorkout = (
   muscles: string[] = [],
-  exs: WorkoutExercise[] = []
+  exs: Array<{ name: string; category?: string; sets: Array<{ weightKg: number | string; reps: number | string; rir: number }> }> = []
 ): string => {
   return JSON.stringify({
     muscles: [...muscles].sort(),
@@ -38,8 +51,8 @@ const serializeWorkout = (
       name: (e.name || '').trim().toLowerCase(),
       category: e.category || 'gym',
       sets: (e.sets || []).map((s) => ({
-        weightKg: Number(s.weightKg) || 0,
-        reps: Number(s.reps) || 0,
+        weightKg: s.weightKg === '' ? 0 : Number(s.weightKg) || 0,
+        reps: s.reps === '' ? 0 : Number(s.reps) || 0,
         rir: Number(s.rir) || 0,
       })),
     })),
@@ -69,15 +82,35 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(
     () => initialWorkoutData?.targetMuscles || []
   );
-  const [exercises, setExercises] = useState<WorkoutExercise[]>(
-    () => initialWorkoutData?.exercises || []
+  const [exercises, setExercises] = useState<UIWorkoutExercise[]>(() =>
+    (initialWorkoutData?.exercises || []).map((e) => ({
+      id: e.id,
+      name: e.name,
+      category: e.category,
+      sets: e.sets.map((s) => ({
+        setNumber: s.setNumber,
+        weightKg: s.weightKg,
+        reps: s.reps,
+        rir: s.rir,
+      })),
+    }))
   );
 
-  // Ô tìm kiếm & thêm bài tập nhanh
-  const [exerciseSearchTerm, setExerciseSearchTerm] = useState('');
-  const [customExerciseName, setCustomExerciseName] = useState('');
-  const [isAddingCustom, setIsAddingCustom] = useState(false);
+  // Exercise ID đang được chọn để nhập / sửa tên
+  const [focusedExId, setFocusedExId] = useState<string | null>(null);
   const [showRirTooltip, setShowRirTooltip] = useState(false);
+
+  // Đóng popover gợi ý khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.exercise-title-container')) {
+        setFocusedExId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Kiểm tra xem người dùng có thực hiện thay đổi nào so với dữ liệu ban đầu/đã lưu không
   const isChanged = useMemo(() => {
@@ -96,15 +129,38 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     if (lastDateKeyRef.current !== dateKey) {
       lastDateKeyRef.current = dateKey;
       setSelectedMuscles(initialWorkoutData?.targetMuscles || []);
-      setExercises(initialWorkoutData?.exercises || []);
-      setExerciseSearchTerm('');
-      setIsAddingCustom(false);
+      setExercises(
+        (initialWorkoutData?.exercises || []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          category: e.category,
+          sets: e.sets.map((s) => ({
+            setNumber: s.setNumber,
+            weightKg: s.weightKg,
+            reps: s.reps,
+            rir: s.rir,
+          })),
+        }))
+      );
+      setFocusedExId(null);
       return;
     }
 
     if (!isChanged) {
       setSelectedMuscles(initialWorkoutData?.targetMuscles || []);
-      setExercises(initialWorkoutData?.exercises || []);
+      setExercises(
+        (initialWorkoutData?.exercises || []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          category: e.category,
+          sets: e.sets.map((s) => ({
+            setNumber: s.setNumber,
+            weightKg: s.weightKg,
+            reps: s.reps,
+            rir: s.rir,
+          })),
+        }))
+      );
     }
   }, [dateKey, initialWorkoutData, isChanged]);
 
@@ -116,38 +172,28 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     });
   };
 
-  // Danh sách bài tập gợi ý dựa theo các nhóm cơ đã chọn
-  const filteredPresets = useMemo(() => {
-    const list = getPresetExercisesForMuscles(selectedMuscles);
-    if (!exerciseSearchTerm.trim()) return list;
-    const term = exerciseSearchTerm.toLowerCase().trim();
-    return list.filter(
-      (ex) =>
-        ex.name.toLowerCase().includes(term) ||
-        ex.nameEn.toLowerCase().includes(term) ||
-        ex.primaryMuscle.toLowerCase().includes(term)
-    );
-  }, [selectedMuscles, exerciseSearchTerm]);
-
-  // Thêm một bài tập mới từ Preset hoặc Custom
-  const handleAddExercise = (name: string, category = 'gym') => {
-    const cleanName = name.trim();
-    if (!cleanName) return;
-
-    // Kiểm tra xem bài này đã có trong danh sách chưa
-    const existing = exercises.find(
-      (e) => e.name.toLowerCase() === cleanName.toLowerCase()
-    );
-    if (existing) {
-      // Nếu đã có thì thêm 1 set mới vào bài đó
-      handleAddSet(existing.id);
-      return;
+  // Lấy gợi ý bài tập theo tên đang nhập & nhóm cơ đã chọn
+  const getSuggestions = (searchTerm: string): PresetExercise[] => {
+    const cleanTerm = (searchTerm || '').trim().toLowerCase();
+    if (!cleanTerm) {
+      const muscleList = getPresetExercisesForMuscles(selectedMuscles);
+      return muscleList.slice(0, 8);
     }
+    return PRESET_EXERCISES_DATABASE.filter(
+      (item) =>
+        item.name.toLowerCase().includes(cleanTerm) ||
+        item.nameEn.toLowerCase().includes(cleanTerm) ||
+        item.primaryMuscle.toLowerCase().includes(cleanTerm)
+    ).slice(0, 8);
+  };
 
-    const newEx: WorkoutExercise = {
-      id: `ex_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name: cleanName,
-      category,
+  // Thêm một thẻ bài tập mới (chưa có tên)
+  const handleAddNewExerciseCard = () => {
+    const newId = `ex_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newEx: UIWorkoutExercise = {
+      id: newId,
+      name: '',
+      category: 'gym',
       sets: [
         {
           setNumber: 1,
@@ -157,16 +203,52 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         },
       ],
     };
-
     setExercises((prev) => [...prev, newEx]);
-    setExerciseSearchTerm('');
-    setCustomExerciseName('');
-    setIsAddingCustom(false);
+    // Không bắt buộc phải mở ngay dropdown mà để hiện ra bình thường như người dùng yêu cầu,
+    // hoặc có thể người dùng nhấn vào để nhập tên
+    setFocusedExId(newId);
+
+    setTimeout(() => {
+      const el = document.getElementById(`exercise-card-${newId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const inputEl = el.querySelector<HTMLInputElement>('.exercise-title-input');
+        if (inputEl) {
+          inputEl.focus();
+        }
+      }
+    }, 60);
+  };
+
+  // Cập nhật tên bài tập khi người dùng gõ phím
+  const handleUpdateExerciseName = (exerciseId: string, name: string) => {
+    setExercises((prev) =>
+      prev.map((ex) => (ex.id === exerciseId ? { ...ex, name } : ex))
+    );
+  };
+
+  // Chọn một bài tập từ danh sách gợi ý
+  const handleSelectSuggestion = (
+    exerciseId: string,
+    selectedName: string,
+    category: string
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === exerciseId
+          ? { ...ex, name: selectedName, category: category || ex.category }
+          : ex
+      )
+    );
+    setFocusedExId(null);
   };
 
   // Xóa bài tập
   const handleDeleteExercise = (exerciseId: string) => {
     setExercises((prev) => prev.filter((e) => e.id !== exerciseId));
+    if (focusedExId === exerciseId) {
+      setFocusedExId(null);
+    }
   };
 
   // Thêm set cho một bài tập (tự động clone trọng lượng & rep từ set trước đó)
@@ -175,7 +257,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
         const lastSet = ex.sets[ex.sets.length - 1];
-        const newSet: ExerciseSet = {
+        const newSet: UIExerciseSet = {
           setNumber: ex.sets.length + 1,
           weightKg: lastSet ? lastSet.weightKg : 20,
           reps: lastSet ? lastSet.reps : 10,
@@ -205,27 +287,109 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     );
   };
 
-  // Cập nhật giá trị của một set
-  const handleUpdateSet = (
+  // Cập nhật tạ (cho phép xóa trống "")
+  const handleUpdateWeight = (
     exerciseId: string,
     setIndex: number,
-    field: keyof ExerciseSet,
-    val: number
+    rawVal: string
   ) => {
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
-        const updatedSets = ex.sets.map((s, idx) => {
-          if (idx !== setIndex) return s;
-          return {
-            ...s,
-            [field]: Math.max(0, val),
-          };
-        });
-        return {
-          ...ex,
-          sets: updatedSets,
-        };
+        const updatedSets = [...ex.sets];
+        if (rawVal === '') {
+          updatedSets[setIndex] = { ...updatedSets[setIndex], weightKg: '' };
+        } else {
+          const num = parseFloat(rawVal);
+          if (!isNaN(num) && num >= 0) {
+            updatedSets[setIndex] = { ...updatedSets[setIndex], weightKg: rawVal };
+          }
+        }
+        return { ...ex, sets: updatedSets };
+      })
+    );
+  };
+
+  // Nút custom tăng / giảm tạ với bước nhảy ± 2.5 kg
+  const handleStepWeight = (
+    exerciseId: string,
+    setIndex: number,
+    stepDelta: number
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        const updatedSets = [...ex.sets];
+        const currentVal =
+          updatedSets[setIndex].weightKg === ''
+            ? 0
+            : parseFloat(String(updatedSets[setIndex].weightKg)) || 0;
+        const nextVal = Math.max(
+          0,
+          Math.round((currentVal + stepDelta) * 10) / 10
+        );
+        updatedSets[setIndex] = { ...updatedSets[setIndex], weightKg: nextVal };
+        return { ...ex, sets: updatedSets };
+      })
+    );
+  };
+
+  // Cập nhật rep (cho phép xóa trống "")
+  const handleUpdateReps = (
+    exerciseId: string,
+    setIndex: number,
+    rawVal: string
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        const updatedSets = [...ex.sets];
+        if (rawVal === '') {
+          updatedSets[setIndex] = { ...updatedSets[setIndex], reps: '' };
+        } else {
+          const num = parseInt(rawVal, 10);
+          if (!isNaN(num) && num >= 0) {
+            updatedSets[setIndex] = { ...updatedSets[setIndex], reps: num };
+          }
+        }
+        return { ...ex, sets: updatedSets };
+      })
+    );
+  };
+
+  // Nút custom tăng / giảm reps với bước nhảy ± 1
+  const handleStepReps = (
+    exerciseId: string,
+    setIndex: number,
+    stepDelta: number
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        const updatedSets = [...ex.sets];
+        const currentVal =
+          updatedSets[setIndex].reps === ''
+            ? 0
+            : parseInt(String(updatedSets[setIndex].reps), 10) || 0;
+        const nextVal = Math.max(0, currentVal + stepDelta);
+        updatedSets[setIndex] = { ...updatedSets[setIndex], reps: nextVal };
+        return { ...ex, sets: updatedSets };
+      })
+    );
+  };
+
+  // Cập nhật RIR
+  const handleUpdateRir = (
+    exerciseId: string,
+    setIndex: number,
+    rir: number
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        const updatedSets = [...ex.sets];
+        updatedSets[setIndex] = { ...updatedSets[setIndex], rir };
+        return { ...ex, sets: updatedSets };
       })
     );
   };
@@ -236,9 +400,10 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     const userW = parseFloat(userProfile?.weightKg || '70') || 70;
     exercises.forEach((ex) => {
       ex.sets.forEach((s) => {
-        const w = Number(s.weightKg) || 0;
+        const w = s.weightKg === '' ? 0 : Number(s.weightKg) || 0;
         const effW = w > 0 ? w : Math.round(userW * 0.6);
-        vol += effW * (Number(s.reps) || 0);
+        const r = s.reps === '' ? 0 : Number(s.reps) || 0;
+        vol += effW * r;
       });
     });
     return vol;
@@ -248,10 +413,47 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     return exercises.reduce((acc, e) => acc + e.sets.length, 0);
   }, [exercises]);
 
+  // Lưu: Các ô trống tự động chuyển về 0
   const handleSave = async () => {
+    const sanitizedExercises: WorkoutExercise[] = exercises.map((ex, exIdx) => ({
+      id: ex.id,
+      name:
+        ex.name.trim() ||
+        (isEn ? `Exercise #${exIdx + 1}` : `Bài tập #${exIdx + 1}`),
+      category: ex.category || 'gym',
+      sets: ex.sets.map((s, sIdx) => ({
+        setNumber: sIdx + 1,
+        weightKg:
+          s.weightKg === '' || s.weightKg === null || isNaN(Number(s.weightKg))
+            ? 0
+            : Math.max(0, parseFloat(String(s.weightKg))),
+        reps:
+          s.reps === '' || s.reps === null || isNaN(Number(s.reps))
+            ? 0
+            : Math.max(0, parseInt(String(s.reps), 10)),
+        rir: typeof s.rir === 'number' ? s.rir : 2,
+      })),
+    }));
+
+    setExercises(
+      sanitizedExercises.map((e) => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        sets: e.sets.map((s) => ({
+          setNumber: s.setNumber,
+          weightKg: s.weightKg,
+          reps: s.reps,
+          rir: s.rir,
+        })),
+      }))
+    );
+
+    setFocusedExId(null);
+
     await onSaveWorkout({
       targetMuscles: selectedMuscles,
-      exercises,
+      exercises: sanitizedExercises,
     });
   };
 
@@ -264,7 +466,11 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         <div className="workout-card-header">
           <div className="workout-header-title">
             <Dumbbell size={18} />
-            <span>{isEn ? 'TARGET MUSCLE GROUPS / SPLIT' : 'NHÓM CƠ / LỊCH TẬP HÔM NAY'}</span>
+            <span>
+              {isEn
+                ? 'TARGET MUSCLE GROUPS / SPLIT'
+                : 'NHÓM CƠ / LỊCH TẬP HÔM NAY'}
+            </span>
           </div>
           <span className="workout-header-hint">
             {isEn
@@ -284,110 +490,16 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                 onClick={() => handleToggleMuscle(m.id)}
               >
                 <span>{isEn ? m.labelEn : m.label}</span>
-                {isSelected && <CheckCircle2 size={13} className="pill-check-icon" />}
+                {isSelected && (
+                  <CheckCircle2 size={13} className="pill-check-icon" />
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* 2. THƯ VIỆN BÀI TẬP GỢI Ý NHANH (PRESET EXERCISES SHELF) */}
-      <div className="workout-preset-shelf-card">
-        <div className="shelf-header">
-          <div className="shelf-title-row">
-            <strong>
-              {isEn ? 'QUICK EXERCISE PICKER' : 'CHỌN NHANH BÀI TẬP'}
-            </strong>
-            <span className="shelf-badge">
-              {filteredPresets.length} {isEn ? 'exercises' : 'bài tập'}
-            </span>
-          </div>
-
-          <div className="shelf-search-bar">
-            <Search size={14} className="search-icon" />
-            <input
-              type="text"
-              className="shelf-search-input"
-              placeholder={
-                isEn
-                  ? 'Search exercises (e.g. Bench, Squat, Pull-up)...'
-                  : 'Tìm kiếm bài tập (VD: Bench Press, Squat, Kéo xô)...'
-              }
-              value={exerciseSearchTerm}
-              onChange={(e) => setExerciseSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="preset-chips-scrollable">
-          {filteredPresets.slice(0, 16).map((preset) => {
-            const isAdded = exercises.some(
-              (e) => e.name.toLowerCase() === preset.name.toLowerCase()
-            );
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                className={`preset-chip-btn ${isAdded ? 'is-added' : ''}`}
-                onClick={() => handleAddExercise(preset.name, preset.category)}
-                title={isEn ? `Add ${preset.nameEn}` : `Thêm bài ${preset.name}`}
-              >
-                <Plus size={12} />
-                <span>{isEn ? preset.nameEn : preset.name}</span>
-                <span className="preset-muscle-tag">
-                  {isEn ? preset.primaryMuscleEn : preset.primaryMuscle}
-                </span>
-              </button>
-            );
-          })}
-
-          {!isAddingCustom ? (
-            <button
-              type="button"
-              className="preset-chip-btn chip-custom-trigger"
-              onClick={() => setIsAddingCustom(true)}
-            >
-              <Plus size={12} />
-              <span>{isEn ? 'Custom Exercise' : 'Thêm bài riêng'}</span>
-            </button>
-          ) : (
-            <div className="custom-exercise-inline-form">
-              <input
-                type="text"
-                className="custom-ex-input"
-                placeholder={isEn ? 'Exercise name...' : 'Nhập tên bài tập...'}
-                value={customExerciseName}
-                onChange={(e) => setCustomExerciseName(e.target.value)}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddExercise(customExerciseName);
-                  } else if (e.key === 'Escape') {
-                    setIsAddingCustom(false);
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="btn-minimal btn-sm"
-                onClick={() => handleAddExercise(customExerciseName)}
-                disabled={!customExerciseName.trim()}
-              >
-                {isEn ? 'Add' : 'Thêm'}
-              </button>
-              <button
-                type="button"
-                className="btn-minimal btn-sm"
-                onClick={() => setIsAddingCustom(false)}
-              >
-                {isEn ? 'Cancel' : 'Hủy'}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 3. DANH SÁCH BÀI TẬP ĐÃ TẬP & CÁC HIỆP (LOGGED EXERCISES & SETS) */}
+      {/* 2. DANH SÁCH BÀI TẬP ĐÃ TẬP & CÁC HIỆP (LOGGED EXERCISES & SETS) */}
       <div className="workout-exercises-list-section">
         <div className="exercises-list-header">
           <div className="list-title">
@@ -395,7 +507,9 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
               {isEn ? 'TODAY WORKOUT LOG' : 'BẢNG THEO DÕI CÁC HIỆP TẬP'}
             </strong>
             <span className="live-metrics-pill">
-              🔥 Total Volume: <strong>{currentTotalVolume.toLocaleString()} kg</strong> ({totalSetsCount} sets)
+              🔥 Total Volume:{' '}
+              <strong>{currentTotalVolume.toLocaleString()} kg</strong> (
+              {totalSetsCount} sets)
             </span>
           </div>
 
@@ -415,10 +529,22 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
           <div className="rir-explainer-banner">
             <strong>RIR (Reps in Reserve — Số rep dự trữ):</strong>
             <ul>
-              <li><strong>RIR 0:</strong> Chạm ngưỡng thất bại hoàn toàn (Failure) — không thể làm thêm dù chỉ 1 rep.</li>
-              <li><strong>RIR 1:</strong> Còn cố được đúng 1 rep nữa là tạch (Ngưỡng kích thích tăng cơ tối ưu 🔥).</li>
-              <li><strong>RIR 2:</strong> Còn có thể đẩy thêm 2 rep (Vùng vàng Hypertrophy an toàn).</li>
-              <li><strong>RIR 3 - 4:</strong> Hiệp khởi động hoặc rèn kỹ thuật, chưa chạm vùng căng thẳng sợi cơ.</li>
+              <li>
+                <strong>RIR 0:</strong> Chạm ngưỡng thất bại hoàn toàn (Failure)
+                — không thể làm thêm dù chỉ 1 rep.
+              </li>
+              <li>
+                <strong>RIR 1:</strong> Còn cố được đúng 1 rep nữa là tạch
+                (Ngưỡng kích thích tăng cơ tối ưu 🔥).
+              </li>
+              <li>
+                <strong>RIR 2:</strong> Còn có thể đẩy thêm 2 rep (Vùng vàng
+                Hypertrophy an toàn).
+              </li>
+              <li>
+                <strong>RIR 3 - 4:</strong> Hiệp khởi động hoặc rèn kỹ thuật,
+                chưa chạm vùng căng thẳng sợi cơ.
+              </li>
             </ul>
           </div>
         )}
@@ -428,25 +554,144 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
             <Dumbbell size={32} className="empty-icon" />
             <p>
               {isEn
-                ? 'No exercises added yet. Pick from the quick shelf above or create a custom exercise to start logging!'
-                : 'Chưa có bài tập nào. Hãy chọn nhanh từ danh mục ở trên hoặc nhấn "+ Thêm bài riêng" để bắt đầu ghi nhận!'}
+                ? 'No exercises added yet. Click "+ Add Exercise" below to start logging!'
+                : 'Chưa có bài tập nào. Hãy nhấn nút "+ Thêm bài tập" bên dưới để bắt đầu ghi nhận!'}
             </p>
+            <button
+              type="button"
+              className="btn-minimal btn-add-exercise-bottom"
+              onClick={handleAddNewExerciseCard}
+            >
+              <Plus size={15} />
+              <span>{isEn ? 'Add Exercise' : 'Thêm bài tập'}</span>
+            </button>
           </div>
         ) : (
           <div className="exercise-cards-stack">
             {exercises.map((ex, exIdx) => {
               const exVol = ex.sets.reduce((sum, s) => {
-                const w = Number(s.weightKg) || 0;
-                const effW = w > 0 ? w : Math.round((parseFloat(userProfile?.weightKg || '70') || 70) * 0.6);
-                return sum + effW * (Number(s.reps) || 0);
+                const w = s.weightKg === '' ? 0 : Number(s.weightKg) || 0;
+                const effW =
+                  w > 0
+                    ? w
+                    : Math.round(
+                        (parseFloat(userProfile?.weightKg || '70') || 70) * 0.6
+                      );
+                const r = s.reps === '' ? 0 : Number(s.reps) || 0;
+                return sum + effW * r;
               }, 0);
 
+              const suggestionsList = getSuggestions(ex.name);
+
               return (
-                <div key={ex.id} className="exercise-card">
+                <div
+                  key={ex.id}
+                  id={`exercise-card-${ex.id}`}
+                  className="exercise-card"
+                >
                   <div className="exercise-card-top">
                     <div className="exercise-name-badge-group">
                       <span className="exercise-index">#{exIdx + 1}</span>
-                      <strong className="exercise-title">{ex.name}</strong>
+
+                      {/* KHU VỰC NHẬP / CHỌN TÊN BÀI TẬP VỚI AUTOCOMPLETE */}
+                      <div className="exercise-title-container">
+                        {focusedExId === ex.id ? (
+                          <div className="exercise-title-input-wrapper">
+                            <input
+                              type="text"
+                              className="exercise-title-input"
+                              placeholder={
+                                isEn
+                                  ? 'Type exercise name...'
+                                  : 'Nhập tên bài tập...'
+                              }
+                              value={ex.name}
+                              onChange={(e) =>
+                                handleUpdateExerciseName(ex.id, e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === 'Escape') {
+                                  setFocusedExId(null);
+                                }
+                              }}
+                              autoFocus
+                            />
+
+                            {/* Dropdown gợi ý bài tập */}
+                            <div className="exercise-suggestions-popover">
+                              <div className="suggestions-header">
+                                <span>
+                                  {isEn
+                                    ? 'Exercise suggestions'
+                                    : 'Gợi ý bài tập'}
+                                </span>
+                                <span className="suggestions-sub">
+                                  {isEn
+                                    ? 'Click to select or keep typing custom name'
+                                    : 'Nhấn để chọn hoặc tự gõ tên riêng'}
+                                </span>
+                              </div>
+                              <div className="suggestions-list">
+                                {suggestionsList.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="suggestion-item"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleSelectSuggestion(
+                                        ex.id,
+                                        isEn ? item.nameEn : item.name,
+                                        item.category
+                                      );
+                                    }}
+                                  >
+                                    <span className="suggestion-name">
+                                      {isEn ? item.nameEn : item.name}
+                                    </span>
+                                    <span className="suggestion-muscle">
+                                      {isEn
+                                        ? item.primaryMuscleEn
+                                        : item.primaryMuscle}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className={`exercise-title-pill ${!ex.name.trim() ? 'is-empty' : ''}`}
+                            onClick={() => setFocusedExId(ex.id)}
+                            role="button"
+                            tabIndex={0}
+                            title={
+                              isEn
+                                ? 'Click to enter/edit exercise name'
+                                : 'Nhấn để nhập hoặc sửa tên bài tập'
+                            }
+                          >
+                            {ex.name.trim() ? (
+                              <>
+                                <strong className="exercise-title">
+                                  {ex.name}
+                                </strong>
+                                <Edit2
+                                  size={12}
+                                  className="exercise-title-edit-icon"
+                                />
+                              </>
+                            ) : (
+                              <span className="exercise-title-unnamed">
+                                ✍️{' '}
+                                {isEn
+                                  ? 'Click to enter exercise name...'
+                                  : 'Chưa có tên — Nhấn để nhập tên'}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
                       <span className="exercise-vol-tag">
                         Volume: {exVol.toLocaleString()} kg
                       </span>
@@ -468,8 +713,12 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                       <thead>
                         <tr>
                           <th className="col-set">SET</th>
-                          <th className="col-weight">{isEn ? 'WEIGHT (KG)' : 'TRỌNG LƯỢNG (KG)'}</th>
-                          <th className="col-reps">{isEn ? 'REPS' : 'SỐ REP'}</th>
+                          <th className="col-weight">
+                            {isEn ? 'WEIGHT (KG)' : 'TRỌNG LƯỢNG (KG)'}
+                          </th>
+                          <th className="col-reps">
+                            {isEn ? 'REPS' : 'SỐ REP'}
+                          </th>
                           <th className="col-rir">
                             RIR <span className="th-hint">(0-5)</span>
                           </th>
@@ -480,55 +729,122 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                         {ex.sets.map((s, sIdx) => (
                           <tr key={sIdx} className="set-row">
                             <td className="col-set">
-                              <span className="set-num-pill">{s.setNumber}</span>
+                              <span className="set-num-pill">
+                                {s.setNumber}
+                              </span>
                             </td>
+                            {/* Ô NHẬP TẠ VỚI CUSTOM STEPPER BUTTONS (± 2.5 KG) & CHO PHÉP XÓA TRỐNG SỐ 0 */}
                             <td className="col-weight">
-                              <div className="input-with-unit">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={500}
-                                  step={0.5}
-                                  className="set-input weight-input"
-                                  value={s.weightKg}
-                                  onChange={(e) =>
-                                    handleUpdateSet(
-                                      ex.id,
-                                      sIdx,
-                                      'weightKg',
-                                      parseFloat(e.target.value) || 0
-                                    )
+                              <div className="stepper-input-group">
+                                <button
+                                  type="button"
+                                  className="stepper-btn stepper-btn-minus"
+                                  onClick={() =>
+                                    handleStepWeight(ex.id, sIdx, -2.5)
                                   }
-                                />
-                                <span className="unit-label">kg</span>
+                                  title={
+                                    isEn
+                                      ? 'Decrease by 2.5 kg'
+                                      : 'Giảm 2.5 kg'
+                                  }
+                                  aria-label="Decrease weight"
+                                >
+                                  <Minus size={11} strokeWidth={2.5} />
+                                </button>
+                                <div className="stepper-field-wrapper">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={500}
+                                    step={0.5}
+                                    className="set-input stepper-input weight-input"
+                                    value={s.weightKg}
+                                    placeholder="0"
+                                    onChange={(e) =>
+                                      handleUpdateWeight(
+                                        ex.id,
+                                        sIdx,
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                  <span className="unit-label">kg</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="stepper-btn stepper-btn-plus"
+                                  onClick={() =>
+                                    handleStepWeight(ex.id, sIdx, 2.5)
+                                  }
+                                  title={
+                                    isEn
+                                      ? 'Increase by 2.5 kg'
+                                      : 'Tăng 2.5 kg'
+                                  }
+                                  aria-label="Increase weight"
+                                >
+                                  <Plus size={11} strokeWidth={2.5} />
+                                </button>
                               </div>
                             </td>
+
+                            {/* Ô NHẬP REPS VỚI CUSTOM STEPPER BUTTONS (± 1 REP) */}
                             <td className="col-reps">
-                              <input
-                                type="number"
-                                min={1}
-                                max={100}
-                                className="set-input reps-input"
-                                value={s.reps}
-                                onChange={(e) =>
-                                  handleUpdateSet(
-                                    ex.id,
-                                    sIdx,
-                                    'reps',
-                                    parseInt(e.target.value, 10) || 0
-                                  )
-                                }
-                              />
+                              <div className="stepper-input-group">
+                                <button
+                                  type="button"
+                                  className="stepper-btn stepper-btn-minus"
+                                  onClick={() =>
+                                    handleStepReps(ex.id, sIdx, -1)
+                                  }
+                                  title={
+                                    isEn ? 'Decrease by 1 rep' : 'Giảm 1 rep'
+                                  }
+                                  aria-label="Decrease reps"
+                                >
+                                  <Minus size={11} strokeWidth={2.5} />
+                                </button>
+                                <div className="stepper-field-wrapper">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={200}
+                                    className="set-input stepper-input reps-input"
+                                    value={s.reps}
+                                    placeholder="0"
+                                    onChange={(e) =>
+                                      handleUpdateReps(
+                                        ex.id,
+                                        sIdx,
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="stepper-btn stepper-btn-plus"
+                                  onClick={() =>
+                                    handleStepReps(ex.id, sIdx, 1)
+                                  }
+                                  title={
+                                    isEn ? 'Increase by 1 rep' : 'Tăng 1 rep'
+                                  }
+                                  aria-label="Increase reps"
+                                >
+                                  <Plus size={11} strokeWidth={2.5} />
+                                </button>
+                              </div>
                             </td>
+
                             <td className="col-rir">
                               <select
                                 className="set-select rir-select"
                                 value={s.rir}
                                 onChange={(e) =>
-                                  handleUpdateSet(
+                                  handleUpdateRir(
                                     ex.id,
                                     sIdx,
-                                    'rir',
                                     parseInt(e.target.value, 10) || 0
                                   )
                                 }
@@ -574,8 +890,17 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
           </div>
         )}
 
-        {/* 4. THANH HÀNH ĐỘNG DƯỚI CÙNG (LƯU & PHÂN TÍCH) */}
+        {/* 3. THANH HÀNH ĐỘNG DƯỚI CÙNG: NÚT THÊM BÀI TẬP VÀ NÚT LƯU CÙNG HÀNG */}
         <div className="workout-bottom-actions">
+          <button
+            type="button"
+            className="btn-minimal btn-add-exercise-bottom"
+            onClick={handleAddNewExerciseCard}
+          >
+            <Plus size={15} />
+            <span>{isEn ? 'Add Exercise' : 'Thêm bài tập'}</span>
+          </button>
+
           <button
             type="button"
             className="btn-minimal btn-save-workout"
@@ -592,7 +917,9 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
             {isSaving ? (
               <>
                 <span className="spinner-sm" />
-                <span>{isEn ? 'Analyzing Workout...' : 'AI Đang phân tích...'}</span>
+                <span>
+                  {isEn ? 'Analyzing Workout...' : 'AI Đang phân tích...'}
+                </span>
               </>
             ) : (
               <>
@@ -608,14 +935,16 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         </div>
       </div>
 
-      {/* 5. KHUNG NHẬN XÉT AI WORKOUT COACH (AI PROGRESSIVE OVERLOAD INSIGHT) */}
+      {/* 4. KHUNG NHẬN XÉT AI WORKOUT COACH (AI PROGRESSIVE OVERLOAD INSIGHT) */}
       {summary && exercises.length > 0 && (
         <div className="workout-ai-coach-card">
           <div className="ai-coach-header">
             <div className="ai-coach-title">
               <Sparkles size={18} className="ai-sparkle-icon" />
               <strong>
-                {isEn ? 'AI WORKOUT COACH INSIGHT' : 'AI HUẤN LUYỆN VIÊN PHÂN TÍCH TIẾN ĐỘ'}
+                {isEn
+                  ? 'AI WORKOUT COACH INSIGHT'
+                  : 'AI HUẤN LUYỆN VIÊN PHÂN TÍCH TIẾN ĐỘ'}
               </strong>
             </div>
 
@@ -626,25 +955,41 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                 {summary.progressiveOverloadStatus === 'OVERLOAD_ACHIEVED' && (
                   <>
                     <TrendingUp size={13} />
-                    <span>{isEn ? 'OVERLOAD ACHIEVED 🔥' : 'TĂNG TẢI THÀNH CÔNG 🔥'}</span>
+                    <span>
+                      {isEn
+                        ? 'OVERLOAD ACHIEVED 🔥'
+                        : 'TĂNG TẢI THÀNH CÔNG 🔥'}
+                    </span>
                   </>
                 )}
                 {summary.progressiveOverloadStatus === 'MAINTAINED' && (
                   <>
                     <Zap size={13} />
-                    <span>{isEn ? 'PERFORMANCE MAINTAINED ⚡' : 'DUY TRÌ PHONG ĐỘ ⚡'}</span>
+                    <span>
+                      {isEn
+                        ? 'PERFORMANCE MAINTAINED ⚡'
+                        : 'DUY TRÌ PHONG ĐỘ ⚡'}
+                    </span>
                   </>
                 )}
                 {summary.progressiveOverloadStatus === 'DELOAD_FATIGUED' && (
                   <>
                     <ShieldCheck size={13} />
-                    <span>{isEn ? 'DELOAD / SYSTEMIC REST 🛌' : 'HỒI PHỤC / DELOAD 🛌'}</span>
+                    <span>
+                      {isEn
+                        ? 'DELOAD / SYSTEMIC REST 🛌'
+                        : 'HỒI PHỤC / DELOAD 🛌'}
+                    </span>
                   </>
                 )}
                 {summary.progressiveOverloadStatus === 'FIRST_SESSION' && (
                   <>
                     <CheckCircle2 size={13} />
-                    <span>{isEn ? 'BASELINE ESTABLISHED 🎯' : 'MỐC CƠ SỞ BAN ĐẦU 🎯'}</span>
+                    <span>
+                      {isEn
+                        ? 'BASELINE ESTABLISHED 🎯'
+                        : 'MỐC CƠ SỞ BAN ĐẦU 🎯'}
+                    </span>
                   </>
                 )}
               </span>
@@ -653,45 +998,56 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
 
           <div className="ai-metrics-ribbon">
             <div className="ribbon-metric">
-              <span className="metric-label">{isEn ? 'Total Volume' : 'Tổng Volume'}</span>
-              <strong className="metric-val">{summary.totalVolumeKg.toLocaleString()} kg</strong>
+              <span className="metric-label">
+                {isEn ? 'Total Volume' : 'Tổng Volume'}
+              </span>
+              <strong className="metric-val">
+                {summary.totalVolumeKg.toLocaleString()} kg
+              </strong>
             </div>
 
             <div className="ribbon-metric">
-              <span className="metric-label">{isEn ? 'Sets & Reps' : 'Tổng Hiệp & Rep'}</span>
+              <span className="metric-label">
+                {isEn ? 'Sets & Reps' : 'Tổng Hiệp & Rep'}
+              </span>
               <strong className="metric-val">
                 {summary.totalSets} sets • {summary.totalReps} reps
               </strong>
             </div>
 
             <div className="ribbon-metric">
-              <span className="metric-label">{isEn ? 'Average RIR' : 'RIR Trung bình'}</span>
+              <span className="metric-label">
+                {isEn ? 'Average RIR' : 'RIR Trung bình'}
+              </span>
               <strong className="metric-val">
                 {summary.avgRir} <span className="metric-sub">(Dự trữ)</span>
               </strong>
             </div>
 
-            {summary.comparedDateKey && typeof summary.volumeChangePct === 'number' && (
-              <div className="ribbon-metric">
-                <span className="metric-label">
-                  {isEn ? 'Volume vs Prev Session' : 'So với buổi trước'}
-                </span>
-                <strong
-                  className={`metric-val ${
-                    summary.volumeChangePct >= 0 ? 'gain-pos' : 'gain-neg'
-                  }`}
-                >
-                  {summary.volumeChangePct >= 0
-                    ? `+${summary.volumeChangePct}%`
-                    : `${summary.volumeChangePct}%`}
-                </strong>
-              </div>
-            )}
+            {summary.comparedDateKey &&
+              typeof summary.volumeChangePct === 'number' && (
+                <div className="ribbon-metric">
+                  <span className="metric-label">
+                    {isEn ? 'Volume vs Prev Session' : 'So với buổi trước'}
+                  </span>
+                  <strong
+                    className={`metric-val ${
+                      summary.volumeChangePct >= 0 ? 'gain-pos' : 'gain-neg'
+                    }`}
+                  >
+                    {summary.volumeChangePct >= 0
+                      ? `+${summary.volumeChangePct}%`
+                      : `${summary.volumeChangePct}%`}
+                  </strong>
+                </div>
+              )}
           </div>
 
           <div className="ai-coach-message-body">
             <p className="ai-feedback-text">
-              {isEn ? summary.aiFeedbackEn || summary.aiFeedback : summary.aiFeedback}
+              {isEn
+                ? summary.aiFeedbackEn || summary.aiFeedback
+                : summary.aiFeedback}
             </p>
           </div>
         </div>
