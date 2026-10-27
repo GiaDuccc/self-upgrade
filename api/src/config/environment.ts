@@ -23,6 +23,8 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+  BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL || '',
   ADMIN_SENDER_EMAIL:
     process.env.ADMIN_SENDER_EMAIL || 'Self Upgrade <onboarding@resend.dev>',
 

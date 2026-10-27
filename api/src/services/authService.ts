@@ -15,6 +15,9 @@ const generateSixDigitCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+const EMAIL_FAILED_MESSAGE =
+  'Tài khoản đã được tạo nhưng hệ thống chưa gửi được email xác nhận. Vui lòng bấm "Gửi lại mã" sau ít phút!';
+
 const sendVerificationEmail = async (
   email: string,
   verifyCode: string,
@@ -58,14 +61,52 @@ const sendVerificationEmail = async (
     </div>
   `;
 
-  // 1. Thử gửi qua Resend REST API trước (Port 443 HTTPS - Cực nhanh ~0.3s, không bao giờ bị Render chặn cổng)
+  const subject = `[Self Upgrade] Mã xác nhận (${verifyCode}) kích hoạt tài khoản của bạn`;
+
+  // 1. Brevo HTTP API (HTTPS 443 - Render không chặn). Gửi được tới MỌI email
+  //    chỉ cần xác minh 1 địa chỉ người gửi (Gmail), KHÔNG cần sở hữu tên miền.
+  const brevoApiKey = env.BREVO_API_KEY.trim();
+  const brevoSender = (env.BREVO_SENDER_EMAIL || env.SMTP_USER).trim();
+  if (brevoApiKey && brevoSender) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoApiKey,
+          'Content-Type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'Self Upgrade', email: brevoSender },
+          to: [{ email }],
+          subject,
+          htmlContent: emailHtml,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        console.log(`[Brevo API] Đã gửi email xác nhận thành công tới: ${email}`);
+        return true;
+      }
+      console.warn(`[Brevo API Warning] HTTP ${res.status}:`, await res.text());
+    } catch (brevoError) {
+      console.warn('[Brevo API Warning] Không thể gửi qua Brevo:', brevoError);
+    }
+  }
+
+  // 2. Resend REST API (HTTPS 443). Lưu ý: với sender onboarding@resend.dev,
+  //    Resend CHỈ cho gửi tới email chủ tài khoản. Muốn gửi cho mọi người phải verify domain.
   if (env.RESEND_API_KEY && env.RESEND_API_KEY.trim() !== '') {
     try {
       const resend = new Resend(env.RESEND_API_KEY.trim());
       const { data, error } = await resend.emails.send({
         from: env.ADMIN_SENDER_EMAIL || 'Self Upgrade <onboarding@resend.dev>',
         to: email,
-        subject: `[Self Upgrade] Mã xác nhận (${verifyCode}) kích hoạt tài khoản của bạn`,
+        subject,
         html: emailHtml,
       });
 
@@ -73,15 +114,14 @@ const sendVerificationEmail = async (
         console.log(`[Resend API] Đã gửi email xác nhận thành công tới: ${email}`);
         return true;
       }
+      console.warn('[Resend API Warning] Resend từ chối gửi:', error?.message || error);
     } catch (resendError) {
-      console.warn(
-        '[Resend API Warning] Không thể gửi qua Resend, tự động chuyển sang Gmail SMTP:',
-        resendError
-      );
+      console.warn('[Resend API Warning] Không thể gửi qua Resend:', resendError);
     }
   }
 
-  // 2. Fallback sang Gmail SMTP (Tối ưu hóa ép buộc IPv4 và timeout ngắn để tránh bị treo trên Render)
+  // 3. Fallback Gmail SMTP (chỉ hoạt động ở Local / Render gói trả phí.
+  //    Render Free CHẶN toàn bộ cổng SMTP 25/465/587 -> sẽ timeout sau 7s)
   const smtpUser = env.SMTP_USER.trim();
   const smtpPass = env.SMTP_PASS.replace(/\s+/g, '').trim();
 
@@ -152,8 +192,9 @@ const signUp = async (reqBody: { email: string; password: string }) => {
       user: pickUser(updatedUser),
       emailSent,
       devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
-      message:
-        'Tài khoản chưa xác thực đã được cập nhật. Vui lòng kiểm tra email để lấy mã xác nhận!',
+      message: emailSent
+        ? 'Tài khoản chưa xác thực đã được cập nhật. Vui lòng kiểm tra email để lấy mã xác nhận!'
+        : EMAIL_FAILED_MESSAGE,
     };
   }
 
@@ -181,8 +222,9 @@ const signUp = async (reqBody: { email: string; password: string }) => {
     user: pickUser(getNewUser),
     emailSent,
     devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
-    message:
-      'Đăng ký thành công! Vui lòng kiểm tra hộp thư email để nhập mã xác nhận 6 số.',
+    message: emailSent
+      ? 'Đăng ký thành công! Vui lòng kiểm tra hộp thư email để nhập mã xác nhận 6 số.'
+      : EMAIL_FAILED_MESSAGE,
   };
 };
 
@@ -272,7 +314,7 @@ const resendVerification = async (reqBody: { email: string }) => {
   return {
     emailSent,
     devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
-    message: 'Đã gửi lại mã xác nhận mới tới email của bạn!',
+    message: emailSent ? 'Đã gửi lại mã xác nhận mới tới email của bạn!' : EMAIL_FAILED_MESSAGE,
   };
 };
 

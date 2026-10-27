@@ -75,7 +75,11 @@ export const VerifyEmail: React.FC = () => {
       if (res.devVerifyCode) {
         setDevCodeHint(res.devVerifyCode);
       }
-      toast.info(res.message || 'Đã gửi lại mã xác nhận mới!');
+      if (res.emailSent) {
+        toast.info(res.message || 'Đã gửi lại mã xác nhận mới!');
+      } else {
+        toast.warning(res.message || 'Chưa gửi được email, vui lòng thử lại sau ít phút!');
+      }
     } catch (error: any) {
       toast.error(
         error?.response?.data?.message || 'Không thể gửi lại mã xác nhận!'

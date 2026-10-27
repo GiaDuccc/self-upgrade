@@ -71,7 +71,11 @@ export const SignUp: React.FC = () => {
         password,
       });
 
-      toast.success(res.message || 'Đăng ký thành công! Vui lòng xác nhận email.');
+      if (res.emailSent) {
+        toast.success(res.message || 'Đăng ký thành công! Vui lòng xác nhận email.');
+      } else {
+        toast.warning(res.message || 'Chưa gửi được email xác nhận, vui lòng bấm Gửi lại mã!');
+      }
 
       const verifyParams = new URLSearchParams({ email: cleanEmail });
       if (res.devVerifyCode) {
