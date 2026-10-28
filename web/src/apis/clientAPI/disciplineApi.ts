@@ -113,6 +113,7 @@ export const saveTaskAPI = async (payload: {
   dateKey: string;
   hour?: number;
   columnIndex?: number;
+  isAllDay?: boolean;
 }): Promise<DayDataResponse> => {
   const res = await axiosClient.post('/disciplines/task', payload);
   return res.data;

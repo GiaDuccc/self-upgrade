@@ -326,6 +326,7 @@ export const ClientPage: React.FC = () => {
     dateKey: string;
     hour?: number;
     columnIndex?: number;
+    isAllDay?: boolean;
   }) => {
     try {
       await saveTaskAPI({
@@ -340,6 +341,7 @@ export const ClientPage: React.FC = () => {
         dateKey: payload.dateKey,
         hour: payload.hour,
         columnIndex: payload.columnIndex,
+        isAllDay: payload.isAllDay,
       });
       toast.success(
         payload.id ? 'Đã cập nhật đầu việc!' : 'Đã thêm đầu việc mới!'

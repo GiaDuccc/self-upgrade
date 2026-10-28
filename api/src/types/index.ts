@@ -19,6 +19,7 @@ export interface TaskItem {
   monthKey?: string;
   hour?: number;
   columnIndex?: number;
+  isAllDay?: boolean;
 }
 
 export type CustomTaskItem = TaskItem;
@@ -32,6 +33,7 @@ export interface TaskOverride {
   target?: string;
   hour?: number;
   columnIndex?: number;
+  isAllDay?: boolean;
 }
 
 export interface TaskConfig {

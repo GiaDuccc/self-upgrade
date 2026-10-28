@@ -361,12 +361,29 @@ const saveTask = async (
     dateKey: string;
     hour?: number;
     columnIndex?: number;
+    isAllDay?: boolean;
   }
 ) => {
-  const { mode, taskId, title, category, scope, dateKey, hour, columnIndex, startTime, endTime } = payload;
+  const {
+    mode,
+    taskId,
+    title,
+    category,
+    scope,
+    dateKey,
+    hour,
+    columnIndex,
+    startTime,
+    endTime,
+    isAllDay,
+  } = payload;
   const timeHint =
     payload.timeHint ||
-    (startTime && endTime ? `${startTime} - ${endTime}` : startTime || payload.target || '');
+    (isAllDay
+      ? 'Cả ngày'
+      : startTime && endTime
+      ? `${startTime} - ${endTime}`
+      : startTime || payload.target || '');
   const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const prev = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
@@ -386,10 +403,11 @@ const saveTask = async (
       title,
       category,
       timeHint,
-      startTime,
-      endTime,
-      hour,
-      columnIndex,
+      startTime: isAllDay ? undefined : startTime,
+      endTime: isAllDay ? undefined : endTime,
+      hour: isAllDay ? undefined : hour,
+      columnIndex: isAllDay ? undefined : columnIndex,
+      isAllDay: Boolean(isAllDay),
     };
 
     if (scope === 'all') {
@@ -403,12 +421,21 @@ const saveTask = async (
       next.customTasks.push({ ...newTaskObj, scope: 'month', monthKey });
     }
   } else if (mode === 'edit' && taskId) {
-    const extraFields = {
-      ...(hour !== undefined ? { hour } : {}),
-      ...(columnIndex !== undefined ? { columnIndex } : {}),
-      ...(startTime !== undefined ? { startTime } : {}),
-      ...(endTime !== undefined ? { endTime } : {}),
-    };
+    const extraFields = isAllDay
+      ? {
+          startTime: undefined,
+          endTime: undefined,
+          hour: undefined,
+          columnIndex: undefined,
+          isAllDay: true,
+        }
+      : {
+          isAllDay: false,
+          ...(hour !== undefined ? { hour } : {}),
+          ...(columnIndex !== undefined ? { columnIndex } : {}),
+          ...(startTime !== undefined ? { startTime } : {}),
+          ...(endTime !== undefined ? { endTime } : {}),
+        };
     if (scope === 'all') {
       next.globalTasks = next.globalTasks.map((t) =>
         t.id === taskId ? { ...t, title, category, timeHint, ...extraFields } : t

@@ -25,6 +25,7 @@ export interface TaskItem {
   monthKey?: string;
   hour?: number;
   columnIndex?: number;
+  isAllDay?: boolean;
 }
 
 export type MealSession = 'morning' | 'afternoon' | 'evening';

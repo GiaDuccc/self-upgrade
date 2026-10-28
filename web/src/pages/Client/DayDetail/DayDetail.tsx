@@ -17,6 +17,7 @@ import {
   List,
   Grid,
   Clock,
+  Sun,
 } from 'lucide-react';
 import {
   clearDayAPI,
@@ -56,10 +57,11 @@ import {
   formatDecToTime,
   timeToDec,
   ParsedTaskTimes,
+  isTaskAllDay,
 } from '~/utils/taskTimeUtils';
 
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
-const COLUMNS_5 = Array.from({ length: 5 }, (_, i) => i);
+const COLUMNS_8 = Array.from({ length: 8 }, (_, i) => i);
 
 const DEFAULT_TASK_HOURS: Record<string, number> = {
   wake_5am: 5,
@@ -68,14 +70,13 @@ const DEFAULT_TASK_HOURS: Record<string, number> = {
   learn_code: 9,
   play_2_games: 11,
   nap: 13,
-  drink_3l_water: 15,
   gym: 17,
-  no_junk_food: 19,
   sleep_before_11pm: 22,
 };
 
 function resolveTaskHour(task: TaskItem): number {
-  if (typeof task.hour === 'number' && task.hour >= 0 && task.hour <= 24) {
+  if (isTaskAllDay(task)) return -1;
+  if (typeof task.hour === 'number' && task.hour >= 0 && task.hour <= 23) {
     return task.hour;
   }
   return parseTaskTimes(task).startHour;
@@ -88,7 +89,9 @@ export interface ScheduledTimelineTask {
 }
 
 export function buildTaskTimelineSchedule(tasks: TaskItem[]) {
-  const parsed = tasks.map((t) => ({
+  // Chỉ lập lịch cho các công việc có khung giờ cố định (loại trừ các việc cả ngày)
+  const timedTasks = tasks.filter((t) => !isTaskAllDay(t));
+  const parsed = timedTasks.map((t) => ({
     task: t,
     span: parseTaskTimes(t),
   }));
@@ -103,7 +106,7 @@ export function buildTaskTimelineSchedule(tasks: TaskItem[]) {
   const scheduledTasks: ScheduledTimelineTask[] = [];
   const tasksStartingMap = new Map<string, ScheduledTimelineTask[]>();
 
-  let maxRow = 4; // Tối thiểu 5 hàng (Việc 1 .. Việc 5)
+  let maxRow = 7; // Mở rộng tối thiểu 8 hàng (Việc 1 .. Việc 8) theo yêu cầu
 
   parsed.forEach(({ task, span }) => {
     const preferredRow =
@@ -539,8 +542,11 @@ export const DayDetail: React.FC = () => {
   useEffect(() => {
     const container = tableContainerRef.current;
     if (!container || currentTasksList.length === 0) return;
-    const hours = currentTasksList.map((t) => resolveTaskHour(t));
-    const minHour = Math.max(0, Math.min(...hours) - 1);
+    const hours = currentTasksList
+      .filter((t) => !isTaskAllDay(t))
+      .map((t) => resolveTaskHour(t))
+      .filter((h) => h >= 0);
+    const minHour = hours.length > 0 ? Math.max(0, Math.min(...hours) - 1) : 7;
     container.scrollLeft = minHour * 160;
   }, [activeDateKey, isLoading, activeDayTab, taskViewMode, currentTasksList.length]);
 
@@ -1115,8 +1121,15 @@ export const DayDetail: React.FC = () => {
                       {currentTasksList.map((task) => {
                         const isTaskChecked = (tasksMap[task.id] || 'NONE') !== 'NONE';
                         const isBoosted = isTaskBoostedByProfile(task, userProfile);
-                        const span = parseTaskTimes(task);
-                        const timeFormatted = `${span.startTime} – ${span.endTime}`;
+                        const isAllDay = isTaskAllDay(task);
+                        const span = !isAllDay ? parseTaskTimes(task) : null;
+                        const timeFormatted = isAllDay
+                          ? task.timeHint && !task.timeHint.includes(':')
+                            ? task.timeHint
+                            : isEn
+                            ? 'All day'
+                            : 'Cả ngày'
+                          : `${span!.startTime} – ${span!.endTime}`;
 
                         return (
                           <div
@@ -1130,8 +1143,8 @@ export const DayDetail: React.FC = () => {
                                   {translateCategory(task.category, language)}
                                 </span>
                                 {isBoosted && <span className="task-badge-boost">★ ×1.25</span>}
-                                <span className="task-badge-time">
-                                  <Clock size={11} />
+                                <span className={`task-badge-time ${isAllDay ? 'task-badge-allday' : ''}`}>
+                                  {isAllDay ? <Sun size={11} /> : <Clock size={11} />}
                                   <span>{timeFormatted}</span>
                                 </span>
                               </div>

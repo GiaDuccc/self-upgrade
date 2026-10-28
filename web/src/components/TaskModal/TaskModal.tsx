@@ -7,6 +7,7 @@ import {
   Sparkles,
   Info,
   Clock,
+  Sun,
 } from 'lucide-react';
 import { TaskItem, TaskScope } from '~/interface/discipline.interface';
 import { TASK_CATEGORIES } from '~/utils/constants';
@@ -18,6 +19,7 @@ import {
   addMinutesToTime,
   formatDurationText,
   sanitize24hTime,
+  isTaskAllDay,
   HOURS_24_SUGGESTIONS,
 } from '~/utils/taskTimeUtils';
 
@@ -39,6 +41,7 @@ interface TaskModalProps {
     dateKey: string;
     hour?: number;
     columnIndex?: number;
+    isAllDay?: boolean;
   }) => Promise<boolean | void> | boolean | void;
   onDeleteTask?: (payload: {
     id: string;
@@ -60,6 +63,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(TASK_CATEGORIES[0]);
   const [customCategory, setCustomCategory] = useState('');
+  const [isAllDay, setIsAllDay] = useState(false);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('09:00');
   const [scope, setScope] = useState<TaskScope>('all');
@@ -92,17 +96,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           setCategory('Khác');
           setCustomCategory(initialTask.category || '');
         }
+        const taskIsAllDay = isTaskAllDay(initialTask);
+        setIsAllDay(taskIsAllDay);
         const parsed = parseTaskTimes(initialTask);
-        setStartTime(parsed.startTime);
-        setEndTime(parsed.endTime);
+        setStartTime(parsed.startTime || '08:00');
+        setEndTime(parsed.endTime || '09:00');
         setScope(initialTask.scope || 'all');
       } else {
         setTitle('');
         setCategory(TASK_CATEGORIES[0]);
         setCustomCategory('');
+        const taskIsAllDay = Boolean(initialTask && isTaskAllDay(initialTask));
+        setIsAllDay(taskIsAllDay);
         const parsed = parseTaskTimes(initialTask);
-        setStartTime(parsed.startTime);
-        setEndTime(parsed.endTime);
+        setStartTime(parsed.startTime || '08:00');
+        setEndTime(parsed.endTime || '09:00');
         setScope(initialTask?.scope || 'all');
       }
       setErrorMsg('');
@@ -142,6 +150,27 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         ? customCategory.trim()
         : category;
 
+    if (isAllDay) {
+      const saved = await onSaveTask({
+        id: mode === 'edit' && initialTask?.id ? initialTask.id : undefined,
+        title: trimmedCurrentTitle,
+        category: finalCategory,
+        timeHint: isEn ? 'All day' : 'Cả ngày',
+        startTime: undefined,
+        endTime: undefined,
+        isAllDay: true,
+        scope,
+        dateKey: currentDateKey,
+        hour: undefined,
+        columnIndex: undefined,
+      });
+
+      if (saved !== false) {
+        onClose();
+      }
+      return;
+    }
+
     const cleanStart = sanitize24hTime(startTime, '08:00');
     let cleanEnd = sanitize24hTime(endTime, addMinutesToTime(cleanStart, 60));
     const sDec = timeToDec(cleanStart);
@@ -163,6 +192,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       timeHint: finalTimeHint,
       startTime: finalStart,
       endTime: finalEnd,
+      isAllDay: false,
       scope,
       dateKey: currentDateKey,
       hour: hourVal,
@@ -339,111 +369,155 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             )}
           </div>
 
-          <div className="form-group">
-            <div className="form-label-with-hint">
-              <label className="form-label">
-                {isEn
-                  ? 'EXECUTION TIME (00:00 – 23:59)'
-                  : 'THỜI GIAN THỰC HIỆN (00:00 – 23:59)'}{' '}
-                <span className="required-star">*</span>
+          {/* CHỌN CHẾ ĐỘ: CẢ NGÀY (KHÔNG CỐ ĐỊNH GIỜ, CHỈ HIỆN Ở DANH SÁCH) vs KHUNG GIỜ CỤ THỂ TRÊN BẢNG 24H */}
+          <div className="form-group task-schedule-mode-group">
+            <div className={`task-allday-switch-box ${isAllDay ? 'active' : ''}`}>
+              <label className="task-allday-switch-label" htmlFor="task-allday-toggle">
+                <div className="task-allday-switch-left">
+                  <div className="task-allday-title-row">
+                    <Sun size={15} className="task-allday-icon" />
+                    <span className="task-allday-title">
+                      {isEn
+                        ? 'All-day task (No specific time)'
+                        : 'Thực hiện cả ngày (không cố định giờ)'}
+                    </span>
+                  </div>
+                  <span className="task-allday-desc">
+                    {isEn
+                      ? 'Only shows in List view (e.g. Drink 3L water, No junk food), excluded from the 24h timetable grid.'
+                      : 'Chỉ hiển thị ở mục Danh sách (VD: Uống 3L nước, Không ăn vặt), không hiển thị trên bảng 24h.'}
+                  </span>
+                </div>
+                <div className="toggle-switch-container">
+                  <input
+                    id="task-allday-toggle"
+                    type="checkbox"
+                    className="toggle-switch-input"
+                    checked={isAllDay}
+                    onChange={(e) => setIsAllDay(e.target.checked)}
+                  />
+                  <span className="toggle-switch-slider" />
+                </div>
               </label>
-              <span className="form-hint">
-                <Clock size={13} />
-                {isEn
-                  ? 'Start time and end time (24h format: 00:00 to 23:59)'
-                  : '2 ô thời gian bắt đầu và kết thúc (chuẩn 24h: 00:00 đến 23:59)'}
-              </span>
-            </div>
-
-            <div className="task-time-range-inputs">
-              <div className="time-field-box">
-                <label htmlFor="task-start-time" className="time-field-label">
-                  {isEn ? 'Start Time (00:00 – 23:59)' : 'Giờ bắt đầu (00:00 – 23:59)'}
-                </label>
-                <input
-                  id="task-start-time"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={5}
-                  className="form-input form-time-field"
-                  placeholder="08:00"
-                  list="task-24h-options"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  onBlur={() => {
-                    const clean = sanitize24hTime(startTime, '08:00');
-                    handleStartTimeChange(clean);
-                  }}
-                  required
-                />
-              </div>
-
-              <div className="time-range-separator">
-                <span>→</span>
-              </div>
-
-              <div className="time-field-box">
-                <label htmlFor="task-end-time" className="time-field-label">
-                  {isEn ? 'End Time (00:00 – 23:59)' : 'Giờ kết thúc (00:00 – 23:59)'}
-                </label>
-                <input
-                  id="task-end-time"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={5}
-                  className="form-input form-time-field"
-                  placeholder="09:00"
-                  list="task-24h-options"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  onBlur={() => {
-                    const clean = sanitize24hTime(
-                      endTime,
-                      addMinutesToTime(startTime, 60)
-                    );
-                    handleEndTimeChange(clean);
-                  }}
-                  required
-                />
-              </div>
-            </div>
-
-            <datalist id="task-24h-options">
-              {HOURS_24_SUGGESTIONS.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
-
-            {/* Thông tin thời lượng & nút bấm tăng nhanh thời lượng */}
-            <div className="duration-quick-row">
-              <span className="duration-badge">
-                ⏱ {isEn ? 'Duration:' : 'Thời lượng:'}{' '}
-                <strong>{formatDurationText(startTime, endTime, isEn)}</strong>
-              </span>
-              <div className="duration-presets">
-                {[
-                  { label: '+30p', mins: 30 },
-                  { label: '+1h', mins: 60 },
-                  { label: '+1h30', mins: 90 },
-                  { label: '+2h', mins: 120 },
-                ].map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    className="duration-preset-btn"
-                    onClick={() => handleAddDuration(p.mins)}
-                    title={
-                      isEn
-                        ? `Set duration to ${p.label}`
-                        : `Đặt thời lượng kéo dài ${p.label}`
-                    }
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
+
+          {!isAllDay ? (
+            <div className="form-group task-fixed-time-group">
+              <div className="form-label-with-hint">
+                <label className="form-label">
+                  {isEn
+                    ? 'EXECUTION TIME (00:00 – 23:59)'
+                    : 'THỜI GIAN THỰC HIỆN (00:00 – 23:59)'}{' '}
+                  <span className="required-star">*</span>
+                </label>
+                <span className="form-hint">
+                  <Clock size={13} />
+                  {isEn
+                    ? 'Start time and end time (24h format: 00:00 to 23:59)'
+                    : '2 ô thời gian bắt đầu và kết thúc (chuẩn 24h: 00:00 đến 23:59)'}
+                </span>
+              </div>
+
+              <div className="task-time-range-inputs">
+                <div className="time-field-box">
+                  <label htmlFor="task-start-time" className="time-field-label">
+                    {isEn ? 'Start Time (00:00 – 23:59)' : 'Giờ bắt đầu (00:00 – 23:59)'}
+                  </label>
+                  <input
+                    id="task-start-time"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    className="form-input form-time-field"
+                    placeholder="08:00"
+                    list="task-24h-options"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    onBlur={() => {
+                      const clean = sanitize24hTime(startTime, '08:00');
+                      handleStartTimeChange(clean);
+                    }}
+                    required={!isAllDay}
+                  />
+                </div>
+
+                <div className="time-range-separator">
+                  <span>→</span>
+                </div>
+
+                <div className="time-field-box">
+                  <label htmlFor="task-end-time" className="time-field-label">
+                    {isEn ? 'End Time (00:00 – 23:59)' : 'Giờ kết thúc (00:00 – 23:59)'}
+                  </label>
+                  <input
+                    id="task-end-time"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    className="form-input form-time-field"
+                    placeholder="09:00"
+                    list="task-24h-options"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    onBlur={() => {
+                      const clean = sanitize24hTime(
+                        endTime,
+                        addMinutesToTime(startTime, 60)
+                      );
+                      handleEndTimeChange(clean);
+                    }}
+                    required={!isAllDay}
+                  />
+                </div>
+              </div>
+
+              <datalist id="task-24h-options">
+                {HOURS_24_SUGGESTIONS.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+
+              {/* Thông tin thời lượng & nút bấm tăng nhanh thời lượng */}
+              <div className="duration-quick-row">
+                <span className="duration-badge">
+                  ⏱ {isEn ? 'Duration:' : 'Thời lượng:'}{' '}
+                  <strong>{formatDurationText(startTime, endTime, isEn)}</strong>
+                </span>
+                <div className="duration-presets">
+                  {[
+                    { label: '+30p', mins: 30 },
+                    { label: '+1h', mins: 60 },
+                    { label: '+1h30', mins: 90 },
+                    { label: '+2h', mins: 120 },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="duration-preset-btn"
+                      onClick={() => handleAddDuration(p.mins)}
+                      title={
+                        isEn
+                          ? `Set duration to ${p.label}`
+                          : `Đặt thời lượng kéo dài ${p.label}`
+                      }
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="task-allday-notice">
+              <Sun size={15} />
+              <span>
+                {isEn
+                  ? 'This task has no fixed time constraint. It will be tracked in your task list throughout the day.'
+                  : 'Đầu việc này được thực hiện linh hoạt trong ngày, sẽ xuất hiện ở mục Danh sách để theo dõi và không đưa vào bảng 24h.'}
+              </span>
+            </div>
+          )}
 
           <div className="form-group">
             <div className="form-label-with-hint">

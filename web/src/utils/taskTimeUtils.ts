@@ -8,6 +8,44 @@ export interface ParsedTaskTimes {
   durationHours: number; // 1.5
   startHour: number; // 9
   startMinuteFrac: number; // 0.0 (0.0 to < 1.0)
+  isAllDay?: boolean;
+}
+
+/**
+ * Kiểm tra xem một đầu việc có phải là việc làm cả ngày (không cố định khung giờ trên bảng 24h) hay không
+ */
+export function isTaskAllDay(task?: Partial<TaskItem> | null): boolean {
+  if (!task) return false;
+  // 1. Cờ rõ ràng
+  if (task.isAllDay === true) return true;
+  if (task.isAllDay === false) return false;
+
+  // 2. Nếu có startTime hoặc endTime cụ thể => việc có giờ cố định
+  if (task.startTime || task.endTime) return false;
+
+  // 3. Các đầu việc mặc định hệ thống thực hiện cả ngày (uống 3 lít nước, không ăn vặt)
+  if (task.id === 'drink_3l_water' || task.id === 'no_junk_food') {
+    return true;
+  }
+
+  // 4. Chuỗi timeHint có chứa từ khoá cả ngày / linh hoạt
+  const hint = (task.timeHint || '').trim().toLowerCase();
+  if (
+    hint.includes('cả ngày') ||
+    hint.includes('all day') ||
+    hint.includes('ca ngay') ||
+    hint.includes('hàng ngày') ||
+    hint.includes('linh hoạt')
+  ) {
+    return true;
+  }
+
+  // 5. Nếu không có timeHint hoặc timeHint không chứa giờ cụ thể và không có hour
+  if (!hint && typeof task.hour !== 'number') {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -144,6 +182,21 @@ export function parseTaskTimes(task?: Partial<TaskItem> | null): ParsedTaskTimes
       durationHours: 1,
       startHour: 8,
       startMinuteFrac: 0,
+      isAllDay: false,
+    };
+  }
+
+  // Trường hợp đầu việc cả ngày (không có khung giờ cố định)
+  if (isTaskAllDay(task)) {
+    return {
+      startTime: '',
+      endTime: '',
+      startDec: -1,
+      endDec: -1,
+      durationHours: 0,
+      startHour: -1,
+      startMinuteFrac: 0,
+      isAllDay: true,
     };
   }
 

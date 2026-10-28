@@ -93,9 +93,9 @@ export const DAILY_TASKS: TaskItem[] = [
   { id: 'learn_code', title: 'Học code', category: 'Kỹ năng', timeHint: '09:00', hour: 9, columnIndex: 0 },
   { id: 'play_2_games', title: 'Chơi game 2 ván', category: 'Giải trí giới hạn', timeHint: '11:00', hour: 11, columnIndex: 0 },
   { id: 'nap', title: 'Ngủ trưa', category: 'Phục hồi', timeHint: '13:00', hour: 13, columnIndex: 0 },
-  { id: 'drink_3l_water', title: 'Uống 3 lít nước', category: 'Sức khỏe', timeHint: '15:00', hour: 15, columnIndex: 0 },
+  { id: 'drink_3l_water', title: 'Uống 3 lít nước', category: 'Sức khỏe', timeHint: 'Cả ngày', isAllDay: true },
   { id: 'gym', title: 'Tập gym', category: 'Thể hình', timeHint: '17:00', hour: 17, columnIndex: 0 },
-  { id: 'no_junk_food', title: 'Không ăn vặt', category: 'Dinh dưỡng', timeHint: '19:00', hour: 19, columnIndex: 0 },
+  { id: 'no_junk_food', title: 'Không ăn vặt', category: 'Dinh dưỡng', timeHint: 'Cả ngày', isAllDay: true },
   { id: 'sleep_before_11pm', title: 'Ngủ trước 11h', category: 'Giấc ngủ', timeHint: '22:00', hour: 22, columnIndex: 0 },
 ];
 
