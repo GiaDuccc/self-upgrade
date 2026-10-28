@@ -204,6 +204,10 @@ export const DayDetail: React.FC = () => {
           counts: found.counts,
           rank: found.rank,
           note: found.note || '',
+          waterData: found.waterData,
+          sleepData: found.sleepData,
+          workoutData: found.workoutData,
+          caloriesData: found.caloriesData,
           tasksList: found.tasksList || [],
           tasksMap: found.tasksMap || {},
           taskHours: found.taskHours || {},
@@ -212,6 +216,10 @@ export const DayDetail: React.FC = () => {
           tasks: found.tasksMap || {},
           taskHours: found.taskHours || {},
           note: found.note || '',
+          waterData: found.waterData,
+          sleepData: found.sleepData,
+          workoutData: found.workoutData,
+          caloriesData: found.caloriesData,
         },
         profile: userProfile,
         isProfileSetup: true,
@@ -319,10 +327,11 @@ export const DayDetail: React.FC = () => {
   }, [isCaloriesEnabled, isWorkoutEnabled, activeDayTab, handleSelectDayTab]);
 
   // Hooks phải được gọi trước mọi câu lệnh return sớm (Rules of Hooks)
-  const rawCaloriesMeals = dayData?.dayRecord?.caloriesData?.meals;
+  const isDateDataCurrent = dayData?.dateKey === activeDateKey;
+  const rawCaloriesMeals = isDateDataCurrent ? dayData?.dayRecord?.caloriesData?.meals : undefined;
   const caloriesMeals = useMemo(() => rawCaloriesMeals || [], [rawCaloriesMeals]);
-  const caloriesSummary = dayData?.dayRecord?.caloriesData?.summary;
-  const workoutData = dayData?.dayRecord?.workoutData;
+  const caloriesSummary = isDateDataCurrent ? dayData?.dayRecord?.caloriesData?.summary : undefined;
+  const workoutData = isDateDataCurrent ? dayData?.dayRecord?.workoutData : undefined;
 
   const [isSavingWorkout, setIsSavingWorkout] = useState(false);
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
@@ -366,6 +375,7 @@ export const DayDetail: React.FC = () => {
           exercises: workout.exercises,
         });
         setDayData(updated);
+        refreshMonthStats();
         toast.success(
           workout.exercises.length === 0
             ? (isEn ? 'Workout cleared and saved!' : 'Đã xóa bài tập và lưu thành công!')
@@ -405,6 +415,7 @@ export const DayDetail: React.FC = () => {
         meals,
       });
       setDayData(updated);
+      refreshMonthStats();
       toast.success('Đã lưu thực đơn và cập nhật phân tích AI thành công!');
     } catch (error: any) {
       const msg =
@@ -1606,6 +1617,7 @@ export const DayDetail: React.FC = () => {
                 isSaving={isSavingWater}
               />
               <CaloriesTracker
+                key={activeDateKey}
                 dateKey={activeDateKey}
                 initialMeals={caloriesMeals}
                 initialSummary={caloriesSummary}
@@ -1616,6 +1628,7 @@ export const DayDetail: React.FC = () => {
           ) : (
             <div className="day-workout-pane">
               <WorkoutTracker
+                key={activeDateKey}
                 dateKey={activeDateKey}
                 initialWorkoutData={workoutData}
                 userProfile={userProfile}

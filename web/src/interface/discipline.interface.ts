@@ -163,6 +163,8 @@ export interface DayStats {
   note: string;
   waterData?: WaterData;
   sleepData?: SleepData;
+  workoutData?: WorkoutData;
+  caloriesData?: CaloriesData;
   tasksList: TaskItem[];
   tasksMap: Record<string, TaskLevelKey>;
   taskHours?: Record<string, number[]>;

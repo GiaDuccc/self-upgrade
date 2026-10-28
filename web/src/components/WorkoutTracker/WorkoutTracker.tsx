@@ -144,22 +144,24 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Kiểm tra xem người dùng có thực hiện thay đổi nào so với dữ liệu ban đầu/đã lưu không
-  const isChanged = useMemo(() => {
-    return (
-      serializeWorkout(selectedMuscles, exercises) !==
-      serializeWorkout(
-        initialWorkoutData?.targetMuscles,
-        initialWorkoutData?.exercises
-      )
-    );
-  }, [selectedMuscles, exercises, initialWorkoutData]);
-
   const lastDateKeyRef = useRef(dateKey);
+  const lastInitialJsonRef = useRef<string>(
+    serializeWorkout(initialWorkoutData?.targetMuscles, initialWorkoutData?.exercises)
+  );
 
+  // Đồng bộ khi dateKey đổi hoặc khi initialWorkoutData từ server thay đổi/tải xong
   useEffect(() => {
-    if (lastDateKeyRef.current !== dateKey) {
+    const nextInitialJson = serializeWorkout(
+      initialWorkoutData?.targetMuscles,
+      initialWorkoutData?.exercises
+    );
+
+    const isDateChanged = lastDateKeyRef.current !== dateKey;
+    const isInitialDataChanged = lastInitialJsonRef.current !== nextInitialJson;
+
+    if (isDateChanged || isInitialDataChanged) {
       lastDateKeyRef.current = dateKey;
+      lastInitialJsonRef.current = nextInitialJson;
       setSelectedMuscles(initialWorkoutData?.targetMuscles || []);
       setExercises(
         (initialWorkoutData?.exercises || []).map((e) => ({
@@ -175,26 +177,19 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
         }))
       );
       setFocusedExId(null);
-      return;
     }
+  }, [dateKey, initialWorkoutData]);
 
-    if (!isChanged) {
-      setSelectedMuscles(initialWorkoutData?.targetMuscles || []);
-      setExercises(
-        (initialWorkoutData?.exercises || []).map((e) => ({
-          id: e.id,
-          name: e.name,
-          category: e.category,
-          sets: e.sets.map((s) => ({
-            setNumber: s.setNumber,
-            weightKg: s.weightKg,
-            reps: s.reps,
-            rir: s.rir,
-          })),
-        }))
-      );
-    }
-  }, [dateKey, initialWorkoutData, isChanged]);
+  // Kiểm tra xem người dùng có thực hiện thay đổi nào so với dữ liệu ban đầu/đã lưu không
+  const isChanged = useMemo(() => {
+    return (
+      serializeWorkout(selectedMuscles, exercises) !==
+      serializeWorkout(
+        initialWorkoutData?.targetMuscles,
+        initialWorkoutData?.exercises
+      )
+    );
+  }, [selectedMuscles, exercises, initialWorkoutData]);
 
   // Toggle chọn nhóm cơ
   const handleToggleMuscle = (muscleId: string) => {

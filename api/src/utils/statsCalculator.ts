@@ -208,6 +208,8 @@ export function calculateDayStats(
     note: dayRecord?.note || '',
     waterData: dayRecord?.waterData,
     sleepData: dayRecord?.sleepData,
+    workoutData: dayRecord?.workoutData,
+    caloriesData: dayRecord?.caloriesData,
     tasksList,
     tasksMap,
     taskHours: dayRecord?.taskHours || {},
