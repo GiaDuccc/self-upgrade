@@ -125,11 +125,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <h4 className="settings-section-title">
                 {isEn ? 'Color Theme Mode' : 'Chế độ hiển thị màu sắc'}
               </h4>
-              <p className="settings-section-desc">
+              {/* <p className="settings-section-desc">
                 {isEn
                   ? 'Choose classic Light Kraft paper theme or eye-friendly Dark mode'
                   : 'Chọn giao diện nền Sáng (Light) cổ điển hoặc Tối (Dark) dịu mắt ban đêm'}
-              </p>
+              </p> */}
             </div>
 
             <div className="theme-options-grid">
@@ -196,11 +196,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <h4 className="settings-section-title">
                 {isEn ? 'Interface Language' : 'Ngôn ngữ giao diện màn hình'}
               </h4>
-              <p className="settings-section-desc">
+              {/* <p className="settings-section-desc">
                 {isEn
                   ? 'Applies only to screen labels. User inputs and API payloads remain unchanged.'
                   : 'Chỉ đổi nhãn hiển thị trên màn hình, giữ nguyên nội dung người dùng nhập và dữ liệu gửi API.'}
-              </p>
+              </p> */}
             </div>
 
             <div className="theme-options-grid">
@@ -249,7 +249,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span className="theme-card-desc">
                     {isEn
                       ? 'Clean English UI for discipline tracking & analytics'
-                      : 'Giao diện tiếng Anh tối giản cho theo dõi kỷ luật & thống kê'}
+                      : 'Giao diện tiếng Anh cho theo dõi kỷ luật & thống kê'}
                   </span>
                 </div>
               </button>
@@ -265,11 +265,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <h4 className="settings-section-title">
                 {isEn ? 'System Modules Management' : 'Quản lý các module hệ thống'}
               </h4>
-              <p className="settings-section-desc">
+              {/* <p className="settings-section-desc">
                 {isEn
                   ? 'Enable or disable modules based on your tracking preferences'
                   : 'Bật hoặc tắt các tính năng phù hợp với nhu cầu theo dõi của bạn'}
-              </p>
+              </p> */}
             </div>
 
             <div className="settings-features-grid">
@@ -301,8 +301,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                   <p className="feature-item-desc">
                     {isEn
-                      ? 'Show meal logging tab, 5 macro metrics and AI Nutritionist in Day Detail. Disable to focus purely on your To-do list.'
-                      : 'Hiển thị tab ghi nhận bữa ăn, tính toán 5 chỉ số đa lượng và AI dinh dưỡng trong trang Chi tiết ngày. Tắt đi nếu bạn chỉ muốn tập trung hoàn toàn vào To-do list.'}
+                      ? 'Show meal logging tab, 5 macro metrics and AI Nutritionist in Day Detail.'
+                      : 'Hiển thị tab ghi nhận bữa ăn, tính toán 5 chỉ số đa lượng và AI dinh dưỡng trong trang Chi tiết ngày.'}
                   </p>
                 </div>
 
@@ -358,8 +358,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                   <p className="feature-item-desc">
                     {isEn
-                      ? 'Log gym sessions, sets, reps, RIR and analyze Progressive Overload with AI Coach in Day Detail.'
-                      : 'Ghi chép buổi tập gym, set, rep, RIR và phân tích Progressive Overload cùng AI Huấn Luyện Viên trong Chi tiết ngày.'}
+                      ? 'Log gym sessions and analyze Progressive Overload with AI Coach in Day Detail.'
+                      : 'Ghi chép buổi tập và phân tích Progressive Overload cùng AI Huấn Luyện Viên trong Chi tiết ngày.'}
                   </p>
                 </div>
 
@@ -399,11 +399,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <h4 className="settings-section-title">
                   {isEn ? 'Keyboard Shortcuts Guide' : 'Bảng tra cứu phím tắt nhanh'}
                 </h4>
-                <p className="settings-section-desc">
+                {/* <p className="settings-section-desc">
                   {isEn
                     ? 'Boost your workflow efficiency with instant hotkeys for navigation, habits, and water tracking'
                     : 'Tăng tốc thao tác quản lý kỷ luật với các phím tắt nhanh chuyển ngày, tích việc và nạp nước'}
-                </p>
+                </p> */}
               </div>
 
               <div className="settings-shortcuts-btn-wrap">

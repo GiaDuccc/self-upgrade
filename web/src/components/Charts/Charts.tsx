@@ -68,11 +68,11 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
               ? 'LINE CHART — DAILY PERFORMANCE (%)'
               : 'BIỂU ĐỒ ĐƯỜNG — HIỆU SUẤT THEO NGÀY (%)'}
           </h3>
-          <p className="chart-subtitle">
+          {/* <p className="chart-subtitle">
             {isEn
               ? 'Click any point on the chart to open that day’s detail & check-in page'
               : 'Nhấn vào điểm bất kỳ trên biểu đồ để mở trang chi tiết & tích việc ngày đó'}
-          </p>
+          </p> */}
           {activePoint && (
             <div className="chart-active-badge">
               <span>
@@ -408,8 +408,8 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
               <span className="legend-pts">
                 ({isDayScope
                   ? isEn
-                    ? `${Math.max(0, (selectedDayStats.totalTasks || 5) - selectedDayStats.checkedCount)} tasks left`
-                    : `${Math.max(0, (selectedDayStats.totalTasks || 5) - selectedDayStats.checkedCount)} việc còn lại`
+                    ? `${Math.max(0, (selectedDayStats.totalTasks || 5) - selectedDayStats.checkedCount)} tasks`
+                    : `${Math.max(0, (selectedDayStats.totalTasks || 5) - selectedDayStats.checkedCount)} việc`
                   : isEn
                   ? `${Math.max(0, monthStats.totalDays - monthStats.activeDaysCount)} unlogged days`
                   : `${Math.max(0, monthStats.totalDays - monthStats.activeDaysCount)} ngày chưa ghi`})

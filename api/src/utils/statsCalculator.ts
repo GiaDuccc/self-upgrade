@@ -270,8 +270,8 @@ export function calculateMonthStats(
       monthCounts.NONE += stats.counts.NONE;
     }
 
-    if (stats.percentage >= 90) perfectDaysCount += 1;
-    if (stats.percentage >= 70) goodOrAboveDaysCount += 1;
+    if (stats.percentage > 85) perfectDaysCount += 1;
+    if (stats.percentage >= 60) goodOrAboveDaysCount += 1;
   }
 
   sumPoints = Math.round(sumPoints * 10) / 10;

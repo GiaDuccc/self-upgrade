@@ -112,25 +112,25 @@ export function getDailyRank(percentage: number, completedCount = 0): DailyRank 
   if (completedCount === 0 && percentage === 0) {
     return {
       code: 'UNRATED',
-      title: 'Chưa ghi nhận',
+      title: 'Chưa ghi',
       description: 'Hãy bắt đầu tích các việc đã làm trong ngày',
     };
   }
-  if (percentage >= 90) {
+  if (percentage > 85) {
     return {
       code: 'S',
       title: 'Hoàn Hảo',
       description: 'Kỷ luật thép! Một ngày nâng cấp bản thân xuất sắc.',
     };
   }
-  if (percentage >= 70) {
+  if (percentage >= 60) {
     return {
       code: 'A',
       title: 'Tốt',
       description: 'Duy trì nhịp độ rất tốt, hoàn thành phần lớn mục tiêu.',
     };
   }
-  if (percentage >= 45) {
+  if (percentage >= 40) {
     return {
       code: 'B',
       title: 'Trung Bình',

@@ -47,11 +47,11 @@ export const Dashboard: React.FC = () => {
                 ? `MONTHLY OVERVIEW — ${currentMonth}/${currentYear}`
                 : `TỔNG QUAN THỐNG KÊ THÁNG ${currentMonth}/${currentYear}`}
             </h2>
-            <p className="section-subtext">
+            {/* <p className="section-subtext">
               {isEn
                 ? 'Scoring Scale: Unselected (0pt) • Poor (1pt) • Good (5pts) • Perfect (10pts)'
                 : 'Thang điểm: Chưa chọn (0đ) • Tệ (1đ) • Tốt (5đ) • Hoàn Hảo (10đ)'}
-            </p>
+            </p> */}
           </div>
           <div className="month-rank-pill">
             <span>{isEn ? 'Monthly Rank:' : 'Đánh giá tháng:'}</span>
@@ -112,8 +112,8 @@ export const Dashboard: React.FC = () => {
             </div>
             <span className="stat-footnote">
               {isEn
-                ? `${monthStats.perfectDaysCount} days reached Perfect rank (≥90%)`
-                : `${monthStats.perfectDaysCount} ngày đạt mức Hoàn Hảo (≥90%)`}
+                ? `${monthStats.perfectDaysCount} days reached Perfect rank (>85%)`
+                : `${monthStats.perfectDaysCount} ngày đạt mức Hoàn Hảo (>85%)`}
             </span>
           </div>
 

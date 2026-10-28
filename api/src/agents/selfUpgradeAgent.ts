@@ -361,7 +361,7 @@ export function runDisciplineCoachAgent(params: {
     const taskTitleEn = translateTaskTitle(recentChange?.task?.title);
 
     const pastCandidates: Array<{ vi: string; en: string }> =
-      pct >= 70
+      pct >= 60
         ? [
             {
               vi: `Ghi nhận cập nhật mục "${taskTitleVi}" cho ${dateCtx.relativeDayLabel} nhé ${callName}! Khép lại ngày cũ ở mức ấn tượng ${pct}% là bàn đạp tuyệt vời để hôm nay bạn tiếp tục bùng nổ với "${nextTaskVi}".`,

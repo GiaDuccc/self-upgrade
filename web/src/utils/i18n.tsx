@@ -71,6 +71,7 @@ const RANK_TITLE_EN_MAP: Record<string, string> = {
   'tệ': 'Poor',
   'chưa đánh giá': 'Unrated',
   'chưa ghi nhận': 'Unrated',
+  'chưa ghi': 'Unrated',
   'chưa chọn': 'Unselected',
   'unrated': 'Unrated',
   'unselected': 'Unselected',
@@ -79,6 +80,7 @@ const RANK_TITLE_EN_MAP: Record<string, string> = {
   'trung Bình': 'Average',
   'chưa Đánh Giá': 'Unrated',
   'chưa Ghi Nhận': 'Unrated',
+  'chưa Ghi': 'Unrated',
   'chưa Chọn': 'Unselected',
 };
 

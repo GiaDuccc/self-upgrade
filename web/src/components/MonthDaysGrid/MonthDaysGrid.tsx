@@ -30,25 +30,25 @@ export const MonthDaysGrid: React.FC<MonthDaysGridProps> = ({
               ? `DAYS IN MONTH ${month}/${year}`
               : `DANH SÁCH CÁC NGÀY TRONG THÁNG ${month}/${year}`}
           </h2>
-          <p className="section-subtext">
+          {/* <p className="section-subtext">
             {isEn
               ? 'Click any day below to open its detailed schedule & task check-in page'
               : 'Nhấn vào bất kỳ ngày nào bên dưới để chuyển sang trang chi tiết & tích công việc của ngày đó'}
-          </p>
+          </p> */}
         </div>
 
         <div className="grid-legend-pills">
           <span className="legend-pill">
             <span className="dot dot-perfect" />{' '}
-            {isEn ? 'Perfect (≥90%)' : 'Hoàn Hảo (≥90%)'}
+            {isEn ? 'Perfect (>85%)' : 'Hoàn Hảo (>85%)'}
           </span>
           <span className="legend-pill">
             <span className="dot dot-good" />{' '}
-            {isEn ? 'Good (70–89%)' : 'Tốt (70–89%)'}
+            {isEn ? 'Good (60–85%)' : 'Tốt (60–85%)'}
           </span>
           <span className="legend-pill">
             <span className="dot dot-mid" />{' '}
-            {isEn ? 'Average / Poor (<70%)' : 'Trung bình / Tệ (<70%)'}
+            {isEn ? 'Average / Poor (<60%)' : 'Trung bình / Tệ (<60%)'}
           </span>
         </div>
       </div>

@@ -355,7 +355,7 @@ input {
 
 .section-header-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
@@ -367,6 +367,8 @@ input {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  margin: 0;
+  line-height: 1.25;
 }
 
 .section-subtext {
@@ -679,7 +681,7 @@ input {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 8px;
+  margin: 0;
 }
 
 .legend-pill {
@@ -692,6 +694,7 @@ input {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
+  line-height: 1.25;
 }
 
 .dot {
@@ -712,20 +715,23 @@ input {
 
 .month-days-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(134px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   gap: 10px;
 }
 
 .day-cell-card {
   text-align: left;
-  padding: 12px;
+  padding: 10px 10px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background-color: var(--bg-primary);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
   transition: background-color 0.16s ease, color 0.16s ease,
     border-color 0.16s ease, transform 0.12s ease;
 }
@@ -804,24 +810,33 @@ input {
 
 .day-cell-middle {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 4px;
+  min-width: 0;
+  width: 100%;
 }
 
 .day-cell-percent {
   font-family: var(--font-mono);
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .day-cell-rank-tag {
-  font-size: 0.68rem;
-  padding: 1px 6px;
+  font-size: 0.62rem;
+  padding: 1.5px 6px;
   border-radius: 999px;
   background-color: var(--bg-mixed);
   border: 1px solid var(--border-subtle);
   white-space: nowrap;
+  line-height: 1.25;
+  flex-shrink: 0;
+  text-align: center;
 }
 
 .today-calendar-icon {
@@ -6621,6 +6636,49 @@ input {
     font-size: 0.6rem;
   }
 
+  .day-cell-card {
+    padding: 8px 6px !important;
+    gap: 4px !important;
+    min-height: 60px !important;
+    box-sizing: border-box !important;
+  }
+
+  .day-cell-num {
+    font-size: 0.92rem !important;
+  }
+
+  .day-cell-weekday {
+    font-size: 0.65rem !important;
+  }
+
+  .day-cell-today-tag {
+    font-size: 0.58rem !important;
+    padding: 1px 4px !important;
+  }
+
+  .day-cell-middle {
+    gap: 2px !important;
+  }
+
+  .day-cell-percent {
+    font-size: 0.88rem !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .day-cell-rank-tag {
+    font-size: 0.56rem !important;
+    padding: 1px 4px !important;
+    line-height: 1.2 !important;
+  }
+
+  .day-cell-bar {
+    height: 4px !important;
+  }
+
+  .day-cell-footer {
+    font-size: 0.64rem !important;
+  }
+
   /* 2 Biểu đồ đẩy xuống cuối cùng để không chiếm chỗ */
   .charts-split-stack {
     order: 4;
@@ -7517,8 +7575,8 @@ input {
   }
 }
 
-/* MÀN HÌNH ĐIỆN THOẠI NHỎ (<= 420px) */
-@media (max-width: 420px) {
+/* MÀN HÌNH ĐIỆN THOẠI NHỎ (<= 480px) */
+@media (max-width: 480px) {
   .month-days-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
