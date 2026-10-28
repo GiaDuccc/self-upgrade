@@ -93,7 +93,11 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           <button
             type="button"
             className={`btn-minimal nav-tab-btn ${isDayDetailPage ? 'active' : ''}`}
-            onClick={() => navigate(`/day/${targetDayKey}`)}
+            onClick={() => {
+              const savedTab = localStorage.getItem('activeDayTab');
+              const query = savedTab && savedTab !== 'todolist' ? `?tab=${savedTab}` : '';
+              navigate(`/day/${targetDayKey}${query}`);
+            }}
           >
             <CheckSquare size={15} />
             <span className="nav-tab-text-desktop">

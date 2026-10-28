@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   Calendar,
@@ -229,7 +229,59 @@ export const DayDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(() => {
     return !buildInitialDayData(activeDateKey);
   });
-  const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories' | 'workout'>('todolist');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const getInitialDayTab = (): 'todolist' | 'calories' | 'workout' => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'calories' || tabParam === 'workout' || tabParam === 'todolist') {
+      return tabParam;
+    }
+    try {
+      const saved = localStorage.getItem('activeDayTab');
+      if (saved === 'calories' || saved === 'workout' || saved === 'todolist') {
+        return saved;
+      }
+    } catch {}
+    return 'todolist';
+  };
+
+  const [activeDayTab, setActiveDayTab] = useState<'todolist' | 'calories' | 'workout'>(getInitialDayTab);
+
+  const handleSelectDayTab = useCallback(
+    (tab: 'todolist' | 'calories' | 'workout') => {
+      setActiveDayTab(tab);
+      try {
+        localStorage.setItem('activeDayTab', tab);
+      } catch {}
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (tab === 'todolist') {
+            next.delete('tab');
+          } else {
+            next.set('tab', tab);
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  // Đồng bộ activeDayTab khi searchParams thay đổi (ví dụ: Back/Forward của trình duyệt)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'calories' || tabParam === 'workout' || tabParam === 'todolist') {
+      if (tabParam !== activeDayTab) {
+        setActiveDayTab(tabParam);
+        try {
+          localStorage.setItem('activeDayTab', tabParam);
+        } catch {}
+      }
+    }
+  }, [searchParams, activeDayTab]);
+
   const [taskViewMode, setTaskViewMode] = useState<'list' | 'grid'>(() => {
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
       return 'list';
@@ -257,12 +309,12 @@ export const DayDetail: React.FC = () => {
 
   useEffect(() => {
     if (!isCaloriesEnabled && activeDayTab === 'calories') {
-      setActiveDayTab('todolist');
+      handleSelectDayTab('todolist');
     }
     if (!isWorkoutEnabled && activeDayTab === 'workout') {
-      setActiveDayTab('todolist');
+      handleSelectDayTab('todolist');
     }
-  }, [isCaloriesEnabled, isWorkoutEnabled, activeDayTab]);
+  }, [isCaloriesEnabled, isWorkoutEnabled, activeDayTab, handleSelectDayTab]);
 
   // Hooks phải được gọi trước mọi câu lệnh return sớm (Rules of Hooks)
   const rawCaloriesMeals = dayData?.dayRecord?.caloriesData?.meals;
@@ -538,17 +590,46 @@ export const DayDetail: React.FC = () => {
     };
   }, [isLoading, activeDayTab, taskViewMode]);
 
+  const initialScrollDoneDateRef = useRef<string | null>(null);
+
   // Tự động đưa tầm nhìn ngang của bảng tới khung giờ có công việc đầu tiên trong ngày
+  // (CHỈ chạy 1 lần khi người dùng chuyển sang ngày mới hoặc lần đầu mở bảng, không chạy khi thêm/sửa việc)
   useEffect(() => {
     const container = tableContainerRef.current;
-    if (!container || currentTasksList.length === 0) return;
-    const hours = currentTasksList
-      .filter((t) => !isTaskAllDay(t))
-      .map((t) => resolveTaskHour(t))
-      .filter((h) => h >= 0);
-    const minHour = hours.length > 0 ? Math.max(0, Math.min(...hours) - 1) : 7;
-    container.scrollLeft = minHour * 160;
-  }, [activeDateKey, isLoading, activeDayTab, taskViewMode, currentTasksList.length]);
+    if (!container || isLoading || activeDayTab !== 'todolist' || taskViewMode !== 'grid') return;
+
+    if (initialScrollDoneDateRef.current !== activeDateKey && currentTasksList.length > 0) {
+      initialScrollDoneDateRef.current = activeDateKey;
+      const hours = currentTasksList
+        .filter((t) => !isTaskAllDay(t))
+        .map((t) => resolveTaskHour(t))
+        .filter((h) => h >= 0);
+      const minHour = hours.length > 0 ? Math.max(0, Math.min(...hours) - 1) : 7;
+      container.scrollLeft = minHour * 160;
+    }
+  }, [activeDateKey, isLoading, activeDayTab, taskViewMode, currentTasksList]);
+
+  // Khi vừa thêm/sửa một đầu việc: bảo toàn vị trí cuộn hiện tại; nếu ô công việc mới nằm ngoài tầm nhìn, cuộn mượt tới đó
+  useEffect(() => {
+    const lastHourStr = sessionStorage.getItem('last_saved_task_hour');
+    if (lastHourStr !== null) {
+      sessionStorage.removeItem('last_saved_task_hour');
+      const targetHour = parseInt(lastHourStr, 10);
+      const container = tableContainerRef.current;
+      if (!isNaN(targetHour) && container) {
+        const targetPx = targetHour * 160;
+        const isVisible =
+          targetPx >= container.scrollLeft &&
+          targetPx + 160 <= container.scrollLeft + container.clientWidth;
+        if (!isVisible) {
+          container.scrollTo({
+            left: Math.max(0, (targetHour - 1) * 160),
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [dayData]);
 
   const handleToggleTask = async (taskId: string) => {
     const currentLevel = dayData?.dayRecord?.tasks?.[taskId] || 'NONE';
@@ -694,7 +775,8 @@ export const DayDetail: React.FC = () => {
       dt.getMonth() + 1,
       dt.getDate()
     );
-    navigate(`/day/${nextKey}`);
+    const query = activeDayTab && activeDayTab !== 'todolist' ? `?tab=${activeDayTab}` : '';
+    navigate(`/day/${nextKey}${query}`);
   };
 
   if (isLoading || !dayData) {
@@ -1020,7 +1102,7 @@ export const DayDetail: React.FC = () => {
               <button
                 type="button"
                 className={`btn-minimal day-mode-btn ${activeDayTab === 'todolist' ? 'active' : ''}`}
-                onClick={() => setActiveDayTab('todolist')}
+                onClick={() => handleSelectDayTab('todolist')}
               >
                 <CheckSquare size={15} />
                 <span>To-do List ({currentTasksList.length})</span>
@@ -1029,7 +1111,7 @@ export const DayDetail: React.FC = () => {
                 <button
                   type="button"
                   className={`btn-minimal day-mode-btn ${activeDayTab === 'calories' ? 'active' : ''}`}
-                  onClick={() => setActiveDayTab('calories')}
+                  onClick={() => handleSelectDayTab('calories')}
                 >
                   <Flame size={15} />
                   <span>
@@ -1041,7 +1123,7 @@ export const DayDetail: React.FC = () => {
                 <button
                   type="button"
                   className={`btn-minimal day-mode-btn ${activeDayTab === 'workout' ? 'active' : ''}`}
-                  onClick={() => setActiveDayTab('workout')}
+                  onClick={() => handleSelectDayTab('workout')}
                 >
                   <Dumbbell size={15} />
                   <span>

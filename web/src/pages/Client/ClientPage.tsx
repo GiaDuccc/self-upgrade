@@ -346,6 +346,9 @@ export const ClientPage: React.FC = () => {
       toast.success(
         payload.id ? 'Đã cập nhật đầu việc!' : 'Đã thêm đầu việc mới!'
       );
+      if (typeof payload.hour === 'number' && payload.hour >= 0 && !payload.isAllDay) {
+        sessionStorage.setItem('last_saved_task_hour', String(payload.hour));
+      }
       await fetchMonthData();
       setDayRefreshTrigger((c) => c + 1);
       return true;
