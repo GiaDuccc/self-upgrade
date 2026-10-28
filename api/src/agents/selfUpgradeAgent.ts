@@ -86,23 +86,37 @@ const TASK_TITLE_EN_MAP: Record<string, string> = {
   'Chuẩn bị To-do list cho ngày mai': 'Plan tomorrow’s To-do list',
 };
 
+export function removeVietnameseAccents(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
 function translateTaskTitle(title: string | undefined): string {
-  if (!title) return 'your goal';
+  if (!title) return 'your objective';
   const cleanTitle = title.replace(/\s*\(lúc.*?\)\s*$/i, '').trim();
   if (TASK_TITLE_EN_MAP[cleanTitle]) return TASK_TITLE_EN_MAP[cleanTitle];
   const lower = cleanTitle.toLowerCase();
-  if (lower.includes('thức dậy') || lower.includes('5h')) return 'Wake up at 05:00';
-  if (lower.includes('tiếng anh') || lower.includes('ngoại ngữ')) return 'Learn English';
-  if (lower.includes('học code') || lower.includes('lập trình')) return 'Learn to Code';
-  if (lower.includes('làm việc') || lower.includes('deep work')) return 'Focused Work';
-  if (lower.includes('chơi game') || lower.includes('game')) return 'Limit Gaming';
-  if (lower.includes('thể dục') || lower.includes('gym')) return 'Gym Workout';
-  if (lower.includes('ăn vặt') || lower.includes('đồ ngọt')) return 'No Junk Food';
-  if (lower.includes('đọc sách')) return 'Reading session';
-  if (lower.includes('nước')) return 'Drink Water';
+  if (lower.includes('thức dậy') || lower.includes('5h') || lower.includes('dậy sớm')) return 'Wake up at 05:00';
+  if (lower.includes('tiếng anh') || lower.includes('ngoại ngữ') || lower.includes('english')) return 'Learn English';
+  if (lower.includes('học code') || lower.includes('lập trình') || lower.includes('coding')) return 'Code & Tech Skills';
+  if (lower.includes('làm việc') || lower.includes('deep work') || lower.includes('công việc')) return 'Deep Focused Work';
+  if (lower.includes('chơi game') || lower.includes('game')) return 'Limit Gaming to 2 Matches';
+  if (lower.includes('thể dục') || lower.includes('gym') || lower.includes('workout')) return 'Gym Workout';
+  if (lower.includes('chạy bộ') || lower.includes('jogging') || lower.includes('run')) return 'Running & Cardio';
+  if (lower.includes('thiền') || lower.includes('meditation')) return 'Mindfulness Meditation';
+  if (lower.includes('ăn vặt') || lower.includes('đồ ngọt') || lower.includes('junk food')) return 'Clean Nutrition / No Junk Food';
+  if (lower.includes('đọc sách') || lower.includes('reading')) return 'Read for 30 Minutes';
+  if (lower.includes('nước') || lower.includes('water')) return 'Drink 3L of Water';
   if (lower.includes('ngủ trước') || lower.includes('đi ngủ') || lower.includes('23h') || lower.includes('23:00')) return 'Sleep before 23:00';
-  if (lower.includes('ngủ trưa')) return 'Midday Power Nap';
-  return cleanTitle;
+  if (lower.includes('ngủ trưa') || lower.includes('nap')) return 'Midday Power Nap';
+  if (lower.includes('nhật ký') || lower.includes('journal')) return 'Daily Journal & Review';
+  if (lower.includes('dọn dẹp') || lower.includes('dọn phòng')) return 'Clean Living Space';
+  if (lower.includes('nấu ăn') || lower.includes('meal')) return 'Healthy Meal Prep';
+  if (lower.includes('đi bộ') || lower.includes('walk')) return 'Walking Target';
+  return removeVietnameseAccents(cleanTitle);
 }
 
 function pickNonRepeating(
@@ -175,7 +189,7 @@ export function runDisciplineCoachAgent(params: {
   } = params;
 
   const history = getEpisodicHistory(userId);
-  const nameEn = callName === 'bạn' ? 'friend' : callName;
+  const nameEn = callName === 'bạn' ? 'friend' : removeVietnameseAccents(callName);
 
   const nextTaskVi =
     actionableNow[0] || pendingTasks[0] || 'mục tiêu trọng tâm trong ngày';
@@ -430,19 +444,19 @@ export function runDisciplineCoachAgent(params: {
     const futureHourPool: Array<{ vi: string; en: string }> = [
       {
         vi: `Ủa ${callName} ơi, bây giờ mới có ${timeCtx.timeStr} thôi mà bạn đã tích hoàn thành "${taskTitleVi}" (lên lịch lúc ${scheduledTimeStr}) rồi thế? Bạn có nhấn nhầm ô không đấy, hay là vừa tranh thủ giải quyết sớm trước giờ vậy?`,
-        en: `Wait a second, ${nameEn}! It’s only ${timeCtx.timeStr} right now, but you’ve already checked off "${taskTitleEn}" scheduled for ${scheduledTimeStr}? Did you accidentally tap the wrong task, or did you genuinely knock it out early ahead of schedule?`,
+        en: `Hold on a second, ${nameEn}! The clock is showing ${timeCtx.timeStr}, but you’ve already checked off "${taskTitleEn}" scheduled for ${scheduledTimeStr}. Did your finger slip on the box, or did you genuinely hustle and finish it early ahead of schedule? If you crushed it early, respect! If it was an accident, double-check to keep your progress tracking 100% accurate.`,
       },
       {
         vi: `Khoan đã ${callName}, đồng hồ mới chỉ ${timeCtx.timeStr} mà bạn đã đánh dấu xong "${taskTitleVi}" dự kiến cho khung ${scheduledTimeStr} rồi à? Nếu bạn làm sớm thật thì quá đỉnh, còn nếu lỡ tay bấm nhầm thì nhớ kiểm tra lại kẻo lệch bảng theo dõi nhé!`,
-        en: `Hold on ${nameEn}, it's just ${timeCtx.timeStr} and you already marked "${taskTitleEn}" (scheduled at ${scheduledTimeStr}) as complete! If you truly crushed it early, kudos to you! But if it was a slip of the finger, make sure to double-check!`,
+        en: `Wait a moment, ${nameEn}! It’s only ${timeCtx.timeStr} right now, yet "${taskTitleEn}" (planned for ${scheduledTimeStr}) is marked done. True self-mastery is anchored in honest time-tracking—make sure you didn’t click by mistake so today’s ${pct}% score reflects your genuine actions.`,
       },
       {
         vi: `Ủa alo ${callName}! Bây giờ mới ${timeCtx.timeStr} mà mục "${taskTitleVi}" (khung ${scheduledTimeStr}) đã thấy tích ${lvl === 'PERFECT' ? 'Hoàn Hảo' : 'xong'} rồi. Bạn có vô tình chạm nhầm nút không, hay là hôm nay đổi lịch làm việc này sớm hơn thế?`,
-        en: `Hey ${nameEn}! Clock says ${timeCtx.timeStr}, yet "${taskTitleEn}" (set for ${scheduledTimeStr}) is already checked. Did you tap it by mistake, or did you shuffle your schedule to finish it early today?`,
+        en: `Quick check-in, ${nameEn}! Current time is ${timeCtx.timeStr}, but "${taskTitleEn}" (slotted for ${scheduledTimeStr}) is already marked complete. Did you accidentally tap the button, or did you adjust your daily flow to tackle this ahead of time?`,
       },
       {
         vi: `Thấy ${callName} tích "${taskTitleVi}" sớm hơn lịch trình (${scheduledTimeStr}) khi mới ${timeCtx.timeStr}. Bạn có lỡ tay ấn nhầm không nè? Kỷ luật tự giác là trung thực với từng mốc giờ, xác nhận lại giúp mình nha!`,
-        en: `Noticed you checked "${taskTitleEn}" earlier than its scheduled ${scheduledTimeStr} time slot while it's only ${timeCtx.timeStr}, ${nameEn}. Was that a misclick? True discipline means honest tracking—double check when you get a moment!`,
+        en: `Noticed you logged "${taskTitleEn}" earlier than its scheduled ${scheduledTimeStr} window while it's currently ${timeCtx.timeStr}, ${nameEn}. Was that a misclick? Daily discipline thrives on authentic accountability—take a second to verify your board!`,
       },
     ];
     const chosen = pickNonRepeating(futureHourPool, history);
@@ -494,11 +508,11 @@ export function runDisciplineCoachAgent(params: {
     const waterPool: Array<{ vi: string; en: string }> = [
       {
         vi: `Nạp thêm nước lên mức ${ml}ml/${targetMl}ml (${waterPct}%) là thói quen cực tốt để giữ não bộ tỉnh táo đấy ${callName}! Giờ thì thừa thắng xông lên giải quyết gọn mục "${nextTaskVi}" để kéo điểm kỷ luật ${pct}% lên cao hơn nữa nhé.`,
-        en: `Hydrating up to ${ml}ml/${targetMl}ml (${waterPct}%) is a great way to keep your brain sharp, ${nameEn}! Now ride that clarity and knock out "${nextTaskEn}" to push your ${pct}% score even higher.`,
+        en: `Hydrating up to ${ml}ml/${targetMl}ml (${waterPct}%) is essential cellular fuel for razor-sharp cognitive stamina, ${nameEn}! Ride this wave of mental clarity straight into conquering "${nextTaskEn}" and elevating your ${pct}% discipline score.`,
       },
       {
         vi: `Ghi nhận ${callName} vừa bổ sung nước (${ml}ml)—cơ thể đủ nước thì hiệu suất tập trung mới đạt đỉnh được! Hiện bảng việc đang ở mức ${pct}%, hãy tiếp tục dứt điểm "${nextTaskVi}" trong ${timeCtx.periodLabel.toLowerCase()} này nào.`,
-        en: `Noted your ${ml}ml water intake, ${nameEn}—staying hydrated keeps your focus at peak performance! With your board at ${pct}%, let’s tackle "${nextTaskEn}" this ${timeCtx.periodLabelEn.toLowerCase()}.`,
+        en: `Recorded your ${ml}ml water intake, ${nameEn}—proper hydration is non-negotiable for sustained energy and brain performance! With the board at ${pct}%, let’s channel this alertness into crushing "${nextTaskEn}" during this ${timeCtx.periodLabelEn.toLowerCase()}.`,
       },
     ];
     const chosen = pickNonRepeating(waterPool, history);
@@ -513,17 +527,17 @@ export function runDisciplineCoachAgent(params: {
       ? [
           {
             vi: `Đọc dòng ghi chú "${noteSnippet}" mới thấy sự tự nhìn nhận nghiêm túc của ${callName}! Đang ở mức ${pct}% điểm kỷ luật hôm nay, hãy biến những suy nghĩ đó thành hành động cụ thể với "${nextTaskVi}" ngay nhé.`,
-            en: `Reading your note "${noteSnippet}" shows real self-awareness, ${nameEn}! Sitting at ${pct}% today, turn that reflection into concrete action by tackling "${nextTaskEn}" next.`,
+            en: `Reading your reflection "${noteSnippet}" shows genuine self-awareness and accountability, ${nameEn}! Sitting at ${pct}% discipline today, bridge thought into execution by tackling "${nextTaskEn}" immediately.`,
           },
           {
             vi: `Viết nhật ký phản tư là thói quen của những người có tư duy phát triển mạnh mẽ đấy ${callName}! Tiến độ hôm nay đang đạt ${pct}%, tiếp tục giữ vững nhịp độ với "${nextTaskVi}" để khép lại ngày thật trọn vẹn nào.`,
-            en: `Journaling and self-reflection are hallmarks of a strong growth mindset, ${nameEn}! You’re at ${pct}% today—keep the rhythm going with "${nextTaskEn}" for a strong finish.`,
+            en: `Intentional journaling is the hallmark of relentless growth and self-correction, ${nameEn}! Your day stands at ${pct}%—maintain this purposeful rhythm with "${nextTaskEn}" to finish today with flying colors.`,
           },
         ]
       : [
           {
             vi: `Đã cập nhật lại phần ghi chú trong ngày rồi nhé ${callName}. Tiến độ hiện tại đang là ${pct}%, hãy dồn sự tập trung vào "${nextTaskVi}" tiếp theo nào!`,
-            en: `Updated your daily note, ${nameEn}. Current progress stands at ${pct}%—channel your focus into "${nextTaskEn}" next!`,
+            en: `Updated your daily reflection, ${nameEn}. Current progress stands at ${pct}%—channel all your mental focus into conquering "${nextTaskEn}" next!`,
           },
         ];
     const chosen = pickNonRepeating(notePool, history);
@@ -536,11 +550,11 @@ export function runDisciplineCoachAgent(params: {
     const profilePool: Array<{ vi: string; en: string }> = [
       {
         vi: `Cập nhật trạng thái mới: thể chất ${physLabel.toLowerCase()}, tinh thần ${mentLabel.toLowerCase()} rồi đấy ${callName}! Hệ thống đã điều chỉnh trọng số cá nhân hóa, giờ hãy chinh phục ngay "${nextTaskVi}" để nâng mức ${pct}% lên tầm cao mới nhé.`,
-        en: `Profile updated: ${physLabelEn.toLowerCase()} body and ${mentLabelEn.toLowerCase()} mind, ${nameEn}! Personalization weights are tuned—now conquer "${nextTaskEn}" to elevate your ${pct}% score.`,
+        en: `State updated: feeling ${physLabelEn.toLowerCase()} in body and ${mentLabelEn.toLowerCase()} in mind, ${nameEn}! Your personalized difficulty weights are calibrated—now direct that energy into conquering "${nextTaskEn}" and elevating your ${pct}% score.`,
       },
       {
         vi: `Lắng nghe cơ thể (${physLabel.toLowerCase()}) và tâm trí (${mentLabel.toLowerCase()}) giúp ${callName} phân bổ sức lực thông minh hơn nhiều đấy! Cùng giữ đà ${pct}% hiện tại và tiến thẳng tới mục tiêu "${nextTaskVi}" nào.`,
-        en: `Listening to your body (${physLabelEn.toLowerCase()}) and mind (${mentLabelEn.toLowerCase()}) helps you pace your energy smartly, ${nameEn}! Build on your ${pct}% progress and take down "${nextTaskEn}" next.`,
+        en: `Attuning to your physical state (${physLabelEn.toLowerCase()}) and mental focus (${mentLabelEn.toLowerCase()}) empowers you to pace your cognitive stamina with strategic precision, ${nameEn}! Keep driving today’s ${pct}% momentum straight into "${nextTaskEn}".`,
       },
     ];
     const chosen = pickNonRepeating(profilePool, history);
@@ -631,11 +645,11 @@ export function runDisciplineCoachAgent(params: {
     const uncheckPool: Array<{ vi: string; en: string }> = [
       {
         vi: `Ủa sao lại bỏ tích mục "${taskTitleVi}" khiến điểm số lùi về ${pct}% thế kia ${callName}? Trung thực với bản thân là rất tốt, nhưng đừng để mục tiêu này bị bỏ quên—hãy bắt tay làm thật rồi tích lại đầy tự hào nhé!`,
-        en: `Unchecked "${taskTitleEn}" and dropped back to ${pct}%, ${nameEn}? Honesty with yourself is great, but don’t leave it unfinished—do it for real and check it back off with pride!`,
+        en: `Notice you unchecked "${taskTitleEn}", dialing back your score to ${pct}%, ${nameEn}? Radical honesty with yourself is admirable, but don’t let this goal slide into oblivion—execute it thoroughly and earn that checkmark back with pride!`,
       },
       {
         vi: `Thấy ${callName} vừa rút lại dấu tích ở việc "${taskTitleVi}" (tiến độ hiện tại: ${pct}%). Không sao cả, thà chậm mà chắc—hãy xốc lại tinh thần và hoàn thành "${nextTaskVi}" ngay bây giờ nào!`,
-        en: `Noticed you unchecked "${taskTitleEn}" (current progress: ${pct}%), ${nameEn}. No worries—quality over speed; rally your focus and knock out "${nextTaskEn}" right now!`,
+        en: `Saw you retracted the completion on "${taskTitleEn}" (current progress stands at ${pct}%), ${nameEn}. Quality and integrity always beat superficial rush—regroup your determination and conquer "${nextTaskEn}" right away!`,
       },
     ];
     const chosen = pickNonRepeating(uncheckPool, history);
@@ -648,11 +662,11 @@ export function runDisciplineCoachAgent(params: {
     const badPool: Array<{ vi: string; en: string }> = [
       {
         vi: `Mục "${taskTitleVi}"${hourSuffixVi} hôm nay chỉ đạt mức Tệ thôi sao ${callName}? Điểm kỷ luật đang ở mức ${pct}%, đừng dễ dãi thỏa hiệp với bản thân nữa mà hãy gỡ gạc lại ngay bằng mức Hoàn Hảo ở việc "${nextTaskVi}" đi!`,
-        en: `Only a "Bad" rating on "${taskTitleEn}"${hourSuffixEn} today, ${nameEn}? With your score at ${pct}%, stop settling for less and bounce back with a Perfect execution on "${nextTaskEn}"!`,
+        en: `Only a "Bad" rating on "${taskTitleEn}"${hourSuffixEn} today, ${nameEn}? Sitting at ${pct}%, refuse to negotiate with self-doubt—reclaim full control right now with an uncompromising Perfect run on "${nextTaskEn}"!`,
       },
       {
         vi: `Thẳng thắn nhé ${callName}: hoàn thành "${taskTitleVi}" ở mức Tệ là lời cảnh báo sự tập trung đang đi xuống đấy! Hiện bạn đạt ${pct}%, hãy chấn chỉnh lại ngay và dồn 100% tâm sức vào "${nextTaskVi}" tiếp theo nào.`,
-        en: `Let’s be honest, ${nameEn}: logging "Bad" on "${taskTitleEn}" is a warning sign that your focus is slipping! You’re at ${pct}%—tighten up your discipline and give 100% to "${nextTaskEn}" next.`,
+        en: `Direct feedback, ${nameEn}: logging "Bad" on "${taskTitleEn}" signals that focus is slipping! At ${pct}% today, reset your mindset immediately and channel 100% of your energy into dominating "${nextTaskEn}" next.`,
       },
     ];
     const chosen = pickNonRepeating(badPool, history);
@@ -664,12 +678,12 @@ export function runDisciplineCoachAgent(params: {
     // Tích mức TỐT
     const goodPool: Array<{ vi: string; en: string }> = [
       {
-        vi: `Ghi nhận ${callName} đã hoàn thành "${taskTitleVi}"${hourSuffixVi} ở mức Tốt, đưa tổng tiến độ lên ${pct}%! Chỉ cần rướn thêm một chút sự tỉ mỉ nữa là chạm chuẩn Hoàn Hảo rồi—${nextStepAdviceVi}`,
-        en: `Solid job completing "${taskTitleEn}"${hourSuffixEn} at a Good level, pushing your score to ${pct}%, ${nameEn}! Just a bit more precision gets you to Perfect—${nextStepAdviceEn}`,
+        vi: `Ghi nhận ${callName} đã hoàn thành "${taskTitleVi}"${hourSuffixVi} ở mức Tốt, đưa tổng tiến độ lên ${pct}%! Chỉ cần rướn thêm một chút sự tỉ mỉ nữa là chạm chuẩn Hoàn Hảo rồi. ${memClause ? memClause.vi + '. ' : ''}${nextStepAdviceVi}`,
+        en: `Solid progress completing "${taskTitleEn}"${hourSuffixEn} at a commendable Good level, lifting your overall score to ${pct}%, ${nameEn}! Just a slight nudge in precision will push you to Perfect. ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
       },
       {
-        vi: `Xử lý xong "${taskTitleVi}" ở mức Tốt là bước tiến vững chắc đấy ${callName} (${pct}% điểm kỷ luật). ${memClause ? memClause.vi + ' — ' : ''}${nextStepAdviceVi}`,
-        en: `Checking off "${taskTitleEn}" at a Good level is steady progress, ${nameEn} (${pct}% discipline score). ${memClause ? memClause.en + ' — ' : ''}${nextStepAdviceEn}`,
+        vi: `Xử lý xong "${taskTitleVi}" ở mức Tốt là bước tiến vững chắc đấy ${callName} (${pct}% điểm kỷ luật). ${memClause ? memClause.vi + '. ' : ''}${nextStepAdviceVi}`,
+        en: `Checking off "${taskTitleEn}" at a solid Good level keeps your momentum strong, ${nameEn} (${pct}% discipline achieved). ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
       },
     ];
     const chosen = pickNonRepeating(goodPool, history);
@@ -680,20 +694,20 @@ export function runDisciplineCoachAgent(params: {
   // Tích mức HOÀN HẢO (PERFECT) hoặc làm mới nhận xét chung
   const perfectPool: Array<{ vi: string; en: string }> = [
     {
-      vi: `Khét đấy ${callName}! Chốt hạ "${taskTitleVi}"${hourSuffixVi} ở mức Hoàn Hảo giúp bảng kỷ luật vọt lên ${pct}% cực kỳ thuyết phục. ${nextStepAdviceVi}`,
-      en: `Sharp execution, ${nameEn}! Locking in "${taskTitleEn}"${hourSuffixEn} at Perfect propels your discipline score to an impressive ${pct}%. ${nextStepAdviceEn}`,
+      vi: `Khét đấy ${callName}! Chốt hạ "${taskTitleVi}"${hourSuffixVi} ở mức Hoàn Hảo giúp bảng kỷ luật vọt lên ${pct}% cực kỳ thuyết phục. ${memClause ? memClause.vi + '. ' : ''}${nextStepAdviceVi}`,
+      en: `Phenomenal focus, ${nameEn}! Locking in "${taskTitleEn}"${hourSuffixEn} with flawless execution elevates your daily discipline to a stellar ${pct}%. ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
     },
     {
       vi: `Một cú tích Hoàn Hảo cho "${taskTitleVi}"${hourSuffixVi} không chê vào đâu được, ${callName} đang nắm giữ ${pct}% điểm kỷ luật hôm nay! ${memClause ? memClause.vi + '. ' : ''}${nextStepAdviceVi}`,
-      en: `A flawless Perfect completion on "${taskTitleEn}"${hourSuffixEn}, ${nameEn}—you now hold a ${pct}% discipline score today! ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
+      en: `Absolute mastery on "${taskTitleEn}"${hourSuffixEn}, ${nameEn}—you’re operating at peak efficiency with a commanding ${pct}% discipline score today! ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
     },
     {
-      vi: `Đúng chất chiến binh kỷ luật! Dứt điểm "${taskTitleVi}"${hourSuffixVi} gọn gàng đưa tiến độ hôm nay cán mốc ${pct}% rồi đấy ${callName}. ${nextStepAdviceVi}`,
-      en: `True warrior discipline! Knocking out "${taskTitleEn}"${hourSuffixEn} cleanly brings today’s progress to ${pct}%, ${nameEn}. ${nextStepAdviceEn}`,
+      vi: `Đúng chất chiến binh kỷ luật! Dứt điểm "${taskTitleVi}"${hourSuffixVi} gọn gàng đưa tiến độ hôm nay cán mốc ${pct}% rồi đấy ${callName}. ${memClause ? memClause.vi + '. ' : ''}${nextStepAdviceVi}`,
+      en: `True warrior discipline in action! Crushing "${taskTitleEn}"${hourSuffixEn} cleanly propels your progress forward to an impressive ${pct}%, ${nameEn}. ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
     },
     {
-      vi: `Sự kiên định của ${callName} thể hiện rõ qua việc hoàn thành xuất sắc "${taskTitleVi}"${hourSuffixVi} (tổng đạt ${pct}%). ${nextStepAdviceVi}`,
-      en: `Your consistency shines through with an excellent completion of "${taskTitleEn}"${hourSuffixEn} (now at ${pct}%), ${nameEn}. ${nextStepAdviceEn}`,
+      vi: `Sự kiên định của ${callName} thể hiện rõ qua việc hoàn thành xuất sắc "${taskTitleVi}"${hourSuffixVi} (tổng đạt ${pct}%). ${memClause ? memClause.vi + '. ' : ''}${nextStepAdviceVi}`,
+      en: `Relentless consistency defines elite performers, ${nameEn}—knocking out "${taskTitleEn}"${hourSuffixEn} flawlessly cements today’s score at ${pct}%. ${memClause ? memClause.en + '. ' : ''}${nextStepAdviceEn}`,
     },
   ];
 
@@ -757,7 +771,7 @@ export function runNutritionistAgent(params: {
   // BƯỚC 3: GỌI TOOL TÍNH NHU CẦU DINH DƯỠNG CÁ NHÂN HÓA (BMR / TDEE / TARGETS)
   const targets = calculateUserNutritionTargets(profile);
   const callName = profile.name?.trim() ? profile.name.trim() : 'bạn';
-  const nameEn = callName === 'bạn' ? 'you' : callName;
+  const nameEn = callName === 'bạn' ? 'you' : removeVietnameseAccents(callName);
 
   // BƯỚC 4: PHÂN TÍCH BIẾN ĐỘNG SO VỚI LẦN LƯU TRƯỚC & CÁCH CHẾ BIẾN
   let comparisonVi = '';
@@ -870,7 +884,7 @@ export function runWorkoutAgent(params: {
 }): WorkoutSummary {
   const { profile, dateKey, targetMuscles, exercises, allRecords } = params;
   const callName = profile.name?.trim() || 'bạn';
-  const nameEn = callName === 'bạn' ? 'friend' : callName;
+  const nameEn = callName === 'bạn' ? 'friend' : removeVietnameseAccents(callName);
   const userWeight = parseFloat(profile.weightKg || '70') || 70;
   const workoutGoal = profile.workoutGoal || 'HYPERTROPHY';
 

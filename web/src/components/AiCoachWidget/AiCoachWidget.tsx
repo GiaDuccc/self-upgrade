@@ -39,13 +39,23 @@ const sanitizeAiMessage = (msg: unknown): string => {
 };
 
 const VIET_ACCENT_REGEX =
-  /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ]/i;
 
 const isRealEnglish = (text: unknown): boolean => {
   if (!text || typeof text !== 'string') return false;
   const trimmed = text.trim();
   if (trimmed.length < 5) return false;
-  if (VIET_ACCENT_REGEX.test(trimmed)) return false;
+  // Loại bỏ phần văn bản trong dấu ngoặc kép hoặc nháy đơn (như tên việc hoặc tên riêng)
+  const stripped = trimmed
+    .replace(/"[^"]*"/g, '')
+    .replace(/“[^”]*”/g, '')
+    .replace(/'[^']*'/g, '');
+  // Đếm số ký tự có dấu tiếng Việt còn lại
+  const matches = stripped.match(
+    /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ]/gi
+  );
+  // Nếu chỉ có 1-2 ký tự đặc thù hoặc không có, câu tiếng Anh vẫn hợp lệ
+  if (matches && matches.length > 2) return false;
   return true;
 };
 
@@ -56,12 +66,27 @@ const DEFAULT_EN_GREETINGS = [
   'Today’s discipline shapes tomorrow’s excellence. Stay focused and consistent!',
 ];
 
-const normalizeMessagePair = (rawVi?: string, rawEn?: string): { vi: string; en: string } => {
+const DEFAULT_EN_FEEDBACKS = [
+  'Solid execution! Every completed task builds relentless momentum towards your daily goals.',
+  'Great discipline on this task! Keep your focus sharp and conquer the rest of your day.',
+  'Excellent consistency! Turn this victory into momentum for your upcoming objectives.',
+  'Well done staying accountable! Keep pushing your limits with high standards today.',
+];
+
+const normalizeMessagePair = (
+  rawVi?: string,
+  rawEn?: string,
+  isFeedback = false
+): { vi: string; en: string } => {
   let vi = sanitizeAiMessage(rawVi);
   let en = sanitizeAiMessage(rawEn);
 
-  const randomEnGreeting = () =>
-    DEFAULT_EN_GREETINGS[Math.floor(Math.random() * DEFAULT_EN_GREETINGS.length)];
+  const fallbackEn = () => {
+    if (isFeedback) {
+      return DEFAULT_EN_FEEDBACKS[Math.floor(Math.random() * DEFAULT_EN_FEEDBACKS.length)];
+    }
+    return DEFAULT_EN_GREETINGS[Math.floor(Math.random() * DEFAULT_EN_GREETINGS.length)];
+  };
 
   if (!vi && !en) {
     vi = '⚠️ Hết thời gian chờ phản hồi từ AI (Timeout 6s). Máy chủ đang phản hồi chậm, vui lòng thử lại!';
@@ -71,12 +96,12 @@ const normalizeMessagePair = (rawVi?: string, rawEn?: string): { vi: string; en:
   } else if (vi && !en) {
     en = vi.startsWith('⚠️')
       ? '⚠️ AI response timed out (6s). Server is responding slowly, please try again!'
-      : randomEnGreeting();
+      : fallbackEn();
   }
 
-  // Nếu 'en' bị rỗng hoặc chứa dấu tiếng Việt hoặc giống hệt 'vi', thay bằng câu tiếng Anh chuẩn
+  // Nếu 'en' bị rỗng hoặc là tiếng Việt hoặc giống hệt 'vi', thay bằng câu tiếng Anh chuẩn theo ngữ cảnh
   if (en && (!isRealEnglish(en) || en === vi)) {
-    en = randomEnGreeting();
+    en = fallbackEn();
   }
 
   return { vi, en };
@@ -281,7 +306,7 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
 
         // Chỉ cập nhật nội dung nếu đây vẫn là request mới nhất
         if (requestId === latestRequestIdRef.current && !controller.signal.aborted) {
-          const newMessages = normalizeMessagePair(res.message, res.messageEn);
+          const newMessages = normalizeMessagePair(res.message, res.messageEn, true);
           console.log(`✅ [AI Coach FE] Nhận phản hồi (#${requestId}):`, newMessages);
           setAiMessages(newMessages);
           setIsAiLoading(false);
