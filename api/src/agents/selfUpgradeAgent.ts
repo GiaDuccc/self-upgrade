@@ -1,6 +1,10 @@
 import {
   calculateWorkoutMetrics,
+  calculateSingleExerciseMetrics,
+  findPreviousExercisePerformance,
   findBestMatchingPreviousWorkout,
+  PreviousExerciseMatch,
+  ExerciseCalculatedMetrics,
 } from './tools/workoutKnowledgeTool';
 import { CaloriesSummary, DayRecord, FoodItem, TaskItem, UserProfile, WorkoutExercise, WorkoutSummary } from '~/types';
 import {
@@ -902,7 +906,6 @@ export function runWorkoutAgent(params: {
   }
 
   const currentMetrics = calculateWorkoutMetrics(exercises, userWeight);
-  const matched = findBestMatchingPreviousWorkout(targetMuscles, exercises, allRecords, dateKey);
 
   const GOAL_LABELS: Record<string, { vi: string; en: string }> = {
     HYPERTROPHY: { vi: 'Tăng cơ bắp tối đa (Hypertrophy)', en: 'Hypertrophy / Muscle Growth' },
@@ -914,104 +917,203 @@ export function runWorkoutAgent(params: {
 
   const goalInfo = GOAL_LABELS[workoutGoal] || GOAL_LABELS.HYPERTROPHY;
 
-  if (!matched) {
-    // Buổi tập đầu tiên (Chưa có buổi so sánh tương đương trong quá khứ)
-    const feedbackVi = `Chào ${callName}! Buổi tập hôm nay gồm ${exercises.length} bài (${currentMetrics.totalSets} sets, tổng volume ${currentMetrics.totalVolumeKg.toLocaleString()}kg, RIR trung bình ${currentMetrics.avgRir}) đã thiết lập mốc cơ sở (Baseline) cực kỳ chuẩn xác cho mục tiêu ${goalInfo.vi}. RIR ở mức ${currentMetrics.avgRir} cho thấy bạn đang kiểm soát tạ tốt—hãy duy trì form này và ở buổi tập tới hãy thử tăng thêm 1-2 rep hoặc thêm 2.5kg tạ để kích hoạt Progressive Overload nhé!`;
-
-    const feedbackEn = `Great work, ${nameEn}! Today’s session with ${exercises.length} exercises (${currentMetrics.totalSets} sets, total volume ${currentMetrics.totalVolumeKg.toLocaleString()}kg, average RIR ${currentMetrics.avgRir}) sets a rock-solid baseline for your ${goalInfo.en} goal. Controlling weights at RIR ${currentMetrics.avgRir} reflects clean form—in your next session, aim for 1-2 extra reps or add +2.5kg to drive Progressive Overload!`;
-
-    return {
-      totalVolumeKg: currentMetrics.totalVolumeKg,
-      totalSets: currentMetrics.totalSets,
-      totalReps: currentMetrics.totalReps,
-      avgRir: currentMetrics.avgRir,
-      progressiveOverloadStatus: 'FIRST_SESSION',
-      aiFeedback: feedbackVi,
-      aiFeedbackEn: feedbackEn,
-      updatedAt: new Date().toISOString(),
-    };
+  // ==========================================================================
+  // SO SÁNH TỪNG BÀI TẬP VỚI BUỔI GẦN NHẤT CÓ TẬP BÀI ĐÓ (PER-EXERCISE OVERLOAD)
+  // ==========================================================================
+  interface ExerciseAnalysis {
+    curEx: WorkoutExercise;
+    curMetrics: ExerciseCalculatedMetrics;
+    prevMatch: PreviousExerciseMatch | null;
+    weightDiff: number;
+    volumeDiff: number;
+    repsDiff: number;
+    status: 'INCREASED_WEIGHT' | 'INCREASED_VOLUME' | 'MAINTAINED' | 'DECREASED' | 'NEW';
+    clauseVi: string;
+    clauseEn: string;
   }
 
-  // Có buổi tập tương đồng trong quá khứ để so sánh
-  const prevMetrics = calculateWorkoutMetrics(matched.previousWorkout.exercises, userWeight);
-  const volumeChangeKg = currentMetrics.totalVolumeKg - prevMetrics.totalVolumeKg;
-  const volumeChangePct =
-    prevMetrics.totalVolumeKg > 0
-      ? Math.round((volumeChangeKg / prevMetrics.totalVolumeKg) * 1000) / 10
-      : 0;
+  const analyzedExercises: ExerciseAnalysis[] = [];
+  const matchedDates: string[] = [];
 
-  const [, prevM, prevD] = matched.previousDateKey.split('-');
-  const prevDateShort = `${prevD}/${prevM}`;
+  for (const curEx of exercises) {
+    const curMetrics = calculateSingleExerciseMetrics(curEx, userWeight);
+    const prevMatch = findPreviousExercisePerformance(curEx, allRecords, dateKey, userWeight);
 
-  // So sánh từng bài trùng nhau
-  const exerciseGains: string[] = [];
-  const exerciseGainsEn: string[] = [];
+    if (prevMatch) {
+      matchedDates.push(prevMatch.previousDateKey);
+      const prevMetrics = prevMatch.previousMetrics;
+      const weightDiff = curMetrics.maxWeightKg - prevMetrics.maxWeightKg;
+      const volumeDiff = curMetrics.totalVolumeKg - prevMetrics.totalVolumeKg;
+      const repsDiff = curMetrics.totalReps - prevMetrics.totalReps;
 
-  for (const curEx of currentMetrics.exerciseList) {
-    const prevEx = prevMetrics.exerciseMetricsMap.get(curEx.name.trim().toLowerCase());
-    if (prevEx) {
-      const weightDiff = curEx.maxWeightKg - prevEx.maxWeightKg;
-      const volDiff = curEx.totalVolumeKg - prevEx.totalVolumeKg;
       if (weightDiff > 0) {
-        exerciseGains.push(`"${curEx.name}" tăng mức tạ lên ${curEx.maxWeightKg}kg (+${weightDiff}kg)`);
-        exerciseGainsEn.push(`"${curEx.name}" increased top weight to ${curEx.maxWeightKg}kg (+${weightDiff}kg)`);
-      } else if (volDiff > 0) {
-        exerciseGains.push(`"${curEx.name}" tăng volume (+${volDiff}kg)`);
-        exerciseGainsEn.push(`"${curEx.name}" volume surged (+${volDiff}kg)`);
+        analyzedExercises.push({
+          curEx,
+          curMetrics,
+          prevMatch,
+          weightDiff,
+          volumeDiff,
+          repsDiff,
+          status: 'INCREASED_WEIGHT',
+          clauseVi: `Bài "${curEx.name}" tăng mức tạ lên ${curMetrics.maxWeightKg}kg (+${weightDiff}kg so với mức ${prevMetrics.maxWeightKg}kg ở buổi ${prevMatch.previousDateShort})`,
+          clauseEn: `"${curEx.name}" increased top weight to ${curMetrics.maxWeightKg}kg (+${weightDiff}kg vs ${prevMetrics.maxWeightKg}kg on ${prevMatch.previousDateShort})`,
+        });
+      } else if (volumeDiff > 0 || repsDiff > 0) {
+        analyzedExercises.push({
+          curEx,
+          curMetrics,
+          prevMatch,
+          weightDiff,
+          volumeDiff,
+          repsDiff,
+          status: 'INCREASED_VOLUME',
+          clauseVi: `Bài "${curEx.name}" giữ tạ ${curMetrics.maxWeightKg}kg và tăng volume lên ${curMetrics.totalVolumeKg.toLocaleString()}kg (+${volumeDiff.toLocaleString()}kg volume so với buổi ${prevMatch.previousDateShort})`,
+          clauseEn: `"${curEx.name}" held ${curMetrics.maxWeightKg}kg with volume up to ${curMetrics.totalVolumeKg.toLocaleString()}kg (+${volumeDiff.toLocaleString()}kg vs ${prevMatch.previousDateShort})`,
+        });
+      } else if (weightDiff === 0 && Math.abs(volumeDiff) <= Math.max(15, curMetrics.totalVolumeKg * 0.08)) {
+        analyzedExercises.push({
+          curEx,
+          curMetrics,
+          prevMatch,
+          weightDiff,
+          volumeDiff,
+          repsDiff,
+          status: 'MAINTAINED',
+          clauseVi: `Bài "${curEx.name}" duy trì phong độ ${curMetrics.maxWeightKg}kg (${curMetrics.totalVolumeKg.toLocaleString()}kg volume, tương đương buổi ${prevMatch.previousDateShort})`,
+          clauseEn: `"${curEx.name}" maintained ${curMetrics.maxWeightKg}kg (${curMetrics.totalVolumeKg.toLocaleString()}kg volume, matching ${prevMatch.previousDateShort})`,
+        });
+      } else {
+        const diffDescVi = weightDiff < 0 ? `${weightDiff}kg` : `${volumeDiff}kg volume`;
+        const diffDescEn = weightDiff < 0 ? `${weightDiff}kg` : `${volumeDiff}kg volume`;
+        analyzedExercises.push({
+          curEx,
+          curMetrics,
+          prevMatch,
+          weightDiff,
+          volumeDiff,
+          repsDiff,
+          status: 'DECREASED',
+          clauseVi: `Bài "${curEx.name}" mức tạ ${curMetrics.maxWeightKg}kg (${diffDescVi} so với buổi ${prevMatch.previousDateShort})`,
+          clauseEn: `"${curEx.name}" lifted ${curMetrics.maxWeightKg}kg (${diffDescEn} vs ${prevMatch.previousDateShort})`,
+        });
       }
+    } else {
+      analyzedExercises.push({
+        curEx,
+        curMetrics,
+        prevMatch: null,
+        weightDiff: 0,
+        volumeDiff: 0,
+        repsDiff: 0,
+        status: 'NEW',
+        clauseVi: `Bài "${curEx.name}" lần đầu ghi nhận (mốc ${curMetrics.maxWeightKg}kg, ${curMetrics.totalSets} sets)`,
+        clauseEn: `"${curEx.name}" first time logged (baseline ${curMetrics.maxWeightKg}kg, ${curMetrics.totalSets} sets)`,
+      });
     }
   }
 
+  const weightGainItems = analyzedExercises.filter((a) => a.status === 'INCREASED_WEIGHT');
+  const volumeGainItems = analyzedExercises.filter((a) => a.status === 'INCREASED_VOLUME');
+  const maintainedItems = analyzedExercises.filter((a) => a.status === 'MAINTAINED');
+  const decreasedItems = analyzedExercises.filter((a) => a.status === 'DECREASED');
+  const newItems = analyzedExercises.filter((a) => a.status === 'NEW');
+
+  // Đánh giá trạng thái tổng thể Progressive Overload
   let status: WorkoutSummary['progressiveOverloadStatus'] = 'MAINTAINED';
   let statusHeadlineVi = '';
   let statusHeadlineEn = '';
 
-  if (volumeChangePct >= 2.5 || exerciseGains.length > 0) {
+  if (weightGainItems.length > 0 || volumeGainItems.length > 0) {
     status = 'OVERLOAD_ACHIEVED';
-    statusHeadlineVi = `Chiến binh kỷ luật ${callName}! Bạn đã bứt phá Progressive Overload xuất sắc với tổng volume tăng ${volumeChangeKg >= 0 ? `+${volumeChangeKg.toLocaleString()}kg` : `${volumeChangeKg.toLocaleString()}kg`} (+${volumeChangePct}% so với buổi ${prevDateShort}).`;
-    statusHeadlineEn = `Outstanding Progressive Overload, ${nameEn}! Total training volume climbed ${volumeChangeKg >= 0 ? `+${volumeChangeKg.toLocaleString()}kg` : `${volumeChangeKg.toLocaleString()}kg`} (+${volumeChangePct}% compared to ${prevDateShort}).`;
-  } else if (volumeChangePct >= -3) {
-    status = 'MAINTAINED';
-    statusHeadlineVi = `Phong độ rất ổn định ${callName}! Buổi tập hôm nay duy trì mức volume tương đương buổi ${prevDateShort} (${currentMetrics.totalVolumeKg.toLocaleString()}kg so với ${prevMetrics.totalVolumeKg.toLocaleString()}kg), RIR trung bình ${currentMetrics.avgRir} kiểm soát tạ chuẩn chỉnh.`;
-    statusHeadlineEn = `Solid consistency, ${nameEn}! Today’s session maintained matching volume compared to ${prevDateShort} (${currentMetrics.totalVolumeKg.toLocaleString()}kg vs ${prevMetrics.totalVolumeKg.toLocaleString()}kg) with disciplined RIR at ${currentMetrics.avgRir}.`;
-  } else {
+    const gainCount = weightGainItems.length + volumeGainItems.length;
+    statusHeadlineVi = `Chiến binh kỷ luật ${callName}! Bạn đã bứt phá Progressive Overload xuất sắc ở ${gainCount} bài tập hôm nay!`;
+    statusHeadlineEn = `Outstanding Progressive Overload, ${nameEn}! You achieved strong progressive gains across ${gainCount} exercise(s) today!`;
+  } else if (newItems.length === exercises.length) {
+    status = 'FIRST_SESSION';
+    statusHeadlineVi = `Chào ${callName}! Buổi tập hôm nay gồm ${exercises.length} bài đã thiết lập mốc cơ sở (Baseline) ban đầu cực kỳ chuẩn xác cho mục tiêu ${goalInfo.vi}.`;
+    statusHeadlineEn = `Great work, ${nameEn}! Today's session with ${exercises.length} exercises sets a solid baseline for your ${goalInfo.en} goal.`;
+  } else if (decreasedItems.length > maintainedItems.length && decreasedItems.length > 0) {
     status = 'DELOAD_FATIGUED';
-    statusHeadlineVi = `Ghi nhận buổi tập ${callName}. Volume hôm nay (${currentMetrics.totalVolumeKg.toLocaleString()}kg) giảm ${Math.abs(volumeChangeKg).toLocaleString()}kg (${volumeChangePct}%) so với buổi ${prevDateShort}.`;
-    statusHeadlineEn = `Session recorded, ${nameEn}. Total volume (${currentMetrics.totalVolumeKg.toLocaleString()}kg) dropped by ${Math.abs(volumeChangeKg).toLocaleString()}kg (${volumeChangePct}%) compared to ${prevDateShort}.`;
+    statusHeadlineVi = `Ghi nhận buổi tập hôm nay của ${callName}. Mức tạ/volume ở một số bài giảm nhẹ so với lần tập gần nhất, hãy lắng nghe cơ thể để hồi phục tốt nhất.`;
+    statusHeadlineEn = `Session recorded, ${nameEn}. Output was slightly lower than previous sessions; treat this as an active deload/recovery day.`;
+  } else {
+    status = 'MAINTAINED';
+    statusHeadlineVi = `Phong độ rất vững vàng ${callName}! Bạn đã kiểm soát tạ chuẩn chỉnh và duy trì tốt mức tạ ở các bài tập so với lần tập gần nhất.`;
+    statusHeadlineEn = `Solid consistency, ${nameEn}! You maintained steady weights and controlled form compared to previous sessions.`;
   }
 
-  const highlightClauseVi =
-    exerciseGains.length > 0
-      ? ` Điểm sáng nổi bật: ${exerciseGains.slice(0, 2).join(', ')}.`
-      : '';
-  const highlightClauseEn =
-    exerciseGainsEn.length > 0
-      ? ` Notable gains: ${exerciseGainsEn.slice(0, 2).join(', ')}.`
-      : '';
+  // Tạo câu chi tiết từng bài
+  const detailPartsVi: string[] = [];
+  const detailPartsEn: string[] = [];
+
+  if (weightGainItems.length > 0) {
+    detailPartsVi.push(`Điểm sáng tăng tạ: ${weightGainItems.map((i) => i.clauseVi).join('; ')}`);
+    detailPartsEn.push(`Weight gains: ${weightGainItems.map((i) => i.clauseEn).join('; ')}`);
+  }
+  if (volumeGainItems.length > 0) {
+    detailPartsVi.push(`Tăng volume/rep: ${volumeGainItems.map((i) => i.clauseVi).join('; ')}`);
+    detailPartsEn.push(`Volume/rep gains: ${volumeGainItems.map((i) => i.clauseEn).join('; ')}`);
+  }
+  if (maintainedItems.length > 0) {
+    detailPartsVi.push(`Duy trì phong độ: ${maintainedItems.map((i) => i.clauseVi).join('; ')}`);
+    detailPartsEn.push(`Maintained: ${maintainedItems.map((i) => i.clauseEn).join('; ')}`);
+  }
+  if (decreasedItems.length > 0) {
+    detailPartsVi.push(`Cần lưu ý: ${decreasedItems.map((i) => i.clauseVi).join('; ')}`);
+    detailPartsEn.push(`Deload notice: ${decreasedItems.map((i) => i.clauseEn).join('; ')}`);
+  }
+  if (newItems.length > 0 && newItems.length < exercises.length) {
+    detailPartsVi.push(`Bài mới: ${newItems.map((i) => i.clauseVi).join('; ')}`);
+    detailPartsEn.push(`New exercises: ${newItems.map((i) => i.clauseEn).join('; ')}`);
+  }
+
+  const detailsClauseVi = detailPartsVi.length > 0 ? ` ${detailPartsVi.join('. ')}.` : '';
+  const detailsClauseEn = detailPartsEn.length > 0 ? ` ${detailPartsEn.join('. ')}.` : '';
+
+  // RIR & Lời khuyên
+  const rirClauseVi = ` RIR trung bình đạt ${currentMetrics.avgRir} cho thấy khả năng kiểm soát tạ rất tốt.`;
+  const rirClauseEn = ` Average RIR of ${currentMetrics.avgRir} reflects disciplined weight control.`;
 
   let adviceVi = '';
   let adviceEn = '';
-
   if (status === 'OVERLOAD_ACHIEVED') {
-    adviceVi = `Với mục tiêu ${goalInfo.vi}, việc kích thích liên tục này là chìa khóa vàng để nở cơ—hãy nạp đủ protein và ngủ trước 11h đêm nay để cơ bắp tổng hợp tối đa nhé!`;
-    adviceEn = `For your ${goalInfo.en} goal, this progressive stimulus is the ultimate hypertrophy trigger—fuel up with quality protein and get deep sleep tonight!`;
+    adviceVi = ` Với mục tiêu ${goalInfo.vi}, sự tăng tiến tạ liên tục này là chìa khóa vàng kích hoạt cơ bắp phát triển—hãy nạp đủ protein và ngủ trước 11h đêm nay để cơ bắp tổng hợp tối đa nhé!`;
+    adviceEn = ` For your ${goalInfo.en} goal, this progressive stimulus triggers muscle growth—fuel up with protein and get deep sleep tonight!`;
   } else if (status === 'MAINTAINED') {
-    adviceVi = `Buổi tới hãy thử tăng 1 rep ở set cuối của các bài compound chính để tiếp tục ép cơ bắp thích nghi.`;
-    adviceEn = `In your next session, push for +1 rep on the final set of compound lifts to force muscle adaptation.`;
+    adviceVi = ` Ở buổi tới, hãy thử tăng thêm 1-2 rep ở set cuối hoặc nâng thêm 1-2.5kg tạ ở bài tập chính để tiếp tục ép cơ bắp thích nghi.`;
+    adviceEn = ` In your next session, aim for +1-2 extra reps on the final set or add +1-2.5kg to continue forcing muscle adaptation.`;
+  } else if (status === 'DELOAD_FATIGUED') {
+    adviceVi = ` Hãy coi đây là buổi Deload chiến lược. Bổ sung dinh dưỡng, uống đủ nước và ngủ thật sâu để buổi sau lấy lại 100% phong độ nhé!`;
+    adviceEn = ` Treat this as a strategic recovery day. Prioritize nutrition and deep sleep to bounce back at 100% next time!`;
   } else {
-    adviceVi = `Nếu cảm thấy cơ bắp chưa kịp hồi phục, hãy coi đây là buổi Deload chiến lược. Bổ sung dinh dưỡng và ngủ thật sâu để buổi sau lấy lại 100% phong độ!`;
-    adviceEn = `If systemic fatigue was high, treat this as a strategic Deload. Prioritize nutrition and deep rest to bounce back at 100% next time!`;
+    adviceVi = ` Hãy duy trì form chuẩn chỉnh này và ở buổi tập tới hãy thử tăng thêm 1-2 rep hoặc thêm 2.5kg tạ để kích hoạt Progressive Overload nhé!`;
+    adviceEn = ` Keep up this clean execution, and aim for +1-2 reps or +2.5kg next session to drive Progressive Overload!`;
   }
 
-  const aiFeedback = `${statusHeadlineVi}${highlightClauseVi} ${adviceVi}`.trim();
-  const aiFeedbackEn = `${statusHeadlineEn}${highlightClauseEn} ${adviceEn}`.trim();
+  const aiFeedback = `${statusHeadlineVi}${detailsClauseVi}${rirClauseVi}${adviceVi}`.trim();
+  const aiFeedbackEn = `${statusHeadlineEn}${detailsClauseEn}${rirClauseEn}${adviceEn}`.trim();
+
+  // So sánh volume với các bài đã có lịch sử
+  const comparedExercises = analyzedExercises.filter((a) => a.prevMatch !== null);
+  matchedDates.sort((a, b) => b.localeCompare(a));
+  const comparedDateKey = matchedDates.length > 0 ? matchedDates[0] : undefined;
+
+  let volumeChangeKg: number | undefined = undefined;
+  let volumeChangePct: number | undefined = undefined;
+
+  if (comparedExercises.length > 0) {
+    const curVolTotal = comparedExercises.reduce((sum, a) => sum + a.curMetrics.totalVolumeKg, 0);
+    const prevVolTotal = comparedExercises.reduce((sum, a) => sum + (a.prevMatch?.previousMetrics.totalVolumeKg || 0), 0);
+    volumeChangeKg = curVolTotal - prevVolTotal;
+    volumeChangePct = prevVolTotal > 0 ? Math.round(((volumeChangeKg / prevVolTotal) * 100) * 10) / 10 : 0;
+  }
 
   return {
     totalVolumeKg: currentMetrics.totalVolumeKg,
     totalSets: currentMetrics.totalSets,
     totalReps: currentMetrics.totalReps,
     avgRir: currentMetrics.avgRir,
-    comparedDateKey: matched.previousDateKey,
+    comparedDateKey,
     volumeChangeKg,
     volumeChangePct,
     progressiveOverloadStatus: status,

@@ -138,6 +138,58 @@ export interface WorkoutCalculatedMetrics {
 /**
  * Tính toán số liệu kỹ thuật buổi tập (Volume, Sets, Reps, RIR)
  */
+/**
+ * Tính toán số liệu kỹ thuật cho từng bài tập đơn lẻ
+ */
+export function calculateSingleExerciseMetrics(
+  ex: WorkoutExercise,
+  userWeightKg = 70
+): ExerciseCalculatedMetrics {
+  let exVol = 0;
+  let exReps = 0;
+  let exMaxW = 0;
+  let exSumRir = 0;
+  let bestSet: ExerciseSet = { setNumber: 1, weightKg: 0, reps: 0, rir: 2 };
+  let bestSetScore = -1;
+
+  for (const s of ex.sets || []) {
+    const w = Number(s.weightKg) || 0;
+    const r = Number(s.reps) || 0;
+    const rir = typeof s.rir === 'number' && !isNaN(s.rir) ? s.rir : 2;
+
+    const effectiveWeight = w > 0 ? w : Math.round(userWeightKg * 0.6);
+    const setVol = effectiveWeight * r;
+
+    exVol += setVol;
+    exReps += r;
+    if (w > exMaxW) exMaxW = w;
+    exSumRir += rir;
+
+    const setScore = effectiveWeight * r * (10 - rir);
+    if (setScore > bestSetScore) {
+      bestSetScore = setScore;
+      bestSet = { ...s, weightKg: w, reps: r, rir };
+    }
+  }
+
+  const setsCount = ex.sets ? ex.sets.length : 0;
+  const exAvgRir = setsCount > 0 ? Math.round((exSumRir / setsCount) * 10) / 10 : 2;
+
+  return {
+    name: ex.name,
+    category: ex.category || 'gym',
+    totalSets: setsCount,
+    totalReps: exReps,
+    totalVolumeKg: Math.round(exVol),
+    maxWeightKg: exMaxW,
+    avgRir: exAvgRir,
+    bestSet,
+  };
+}
+
+/**
+ * Tính toán số liệu kỹ thuật toàn buổi tập (Volume, Sets, Reps, RIR)
+ */
 export function calculateWorkoutMetrics(
   exercises: WorkoutExercise[],
   userWeightKg = 70
@@ -151,56 +203,16 @@ export function calculateWorkoutMetrics(
   const exerciseMetricsMap = new Map<string, ExerciseCalculatedMetrics>();
   const exerciseList: ExerciseCalculatedMetrics[] = [];
 
-  for (const ex of exercises) {
-    let exVol = 0;
-    let exReps = 0;
-    let exMaxW = 0;
-    let exSumRir = 0;
-    let bestSet: ExerciseSet = { setNumber: 1, weightKg: 0, reps: 0, rir: 2 };
-    let bestSetScore = -1;
-
-    for (const s of ex.sets) {
-      const w = Number(s.weightKg) || 0;
-      const r = Number(s.reps) || 0;
-      const rir = typeof s.rir === 'number' && !isNaN(s.rir) ? s.rir : 2;
-
-      // Với bài bodyweight (weight = 0): quy đổi hỗ trợ theo 60% trọng lượng cơ thể
-      const effectiveWeight = w > 0 ? w : Math.round(userWeightKg * 0.6);
-      const setVol = effectiveWeight * r;
-
-      exVol += setVol;
-      exReps += r;
-      if (w > exMaxW) exMaxW = w;
-      exSumRir += rir;
-
-      const setScore = effectiveWeight * r * (10 - rir);
-      if (setScore > bestSetScore) {
-        bestSetScore = setScore;
-        bestSet = { ...s, weightKg: w, reps: r, rir };
-      }
-
-      totalSets++;
-      totalReps += r;
-      totalVolumeKg += setVol;
-      sumRir += rir;
-      rirCount++;
-    }
-
-    const exAvgRir = ex.sets.length > 0 ? Math.round((exSumRir / ex.sets.length) * 10) / 10 : 2;
-
-    const metrics: ExerciseCalculatedMetrics = {
-      name: ex.name,
-      category: ex.category || 'gym',
-      totalSets: ex.sets.length,
-      totalReps: exReps,
-      totalVolumeKg: Math.round(exVol),
-      maxWeightKg: exMaxW,
-      avgRir: exAvgRir,
-      bestSet,
-    };
-
+  for (const ex of exercises || []) {
+    const metrics = calculateSingleExerciseMetrics(ex, userWeightKg);
     exerciseMetricsMap.set(ex.name.trim().toLowerCase(), metrics);
     exerciseList.push(metrics);
+
+    totalVolumeKg += metrics.totalVolumeKg;
+    totalSets += metrics.totalSets;
+    totalReps += metrics.totalReps;
+    sumRir += metrics.avgRir * metrics.totalSets;
+    rirCount += metrics.totalSets;
   }
 
   const avgRir = rirCount > 0 ? Math.round((sumRir / rirCount) * 10) / 10 : 2;
@@ -215,8 +227,138 @@ export function calculateWorkoutMetrics(
   };
 }
 
+export function cleanExerciseName(name: string): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
- * Tìm kiếm buổi tập trong quá khứ có nhóm cơ hoặc bài tập tương đồng nhất
+ * Kiểm tra xem 2 tên bài tập có cùng 1 bài không (so sánh thông minh, đa ngôn ngữ)
+ */
+export function areExerciseNamesMatching(nameA: string, nameB: string): boolean {
+  if (!nameA || !nameB) return false;
+  const rawA = nameA.trim().toLowerCase();
+  const rawB = nameB.trim().toLowerCase();
+  if (rawA === rawB) return true;
+
+  const cleanA = cleanExerciseName(nameA);
+  const cleanB = cleanExerciseName(nameB);
+  if (cleanA === cleanB) return true;
+
+  // Chuẩn hóa đuôi từ số ít / số nhiều
+  const normalizeStems = (str: string) => {
+    return str.replace(/\b(biceps|curls|presses|raises|squats|extensions|dips|pullups|pushups)\b/g, (m) => {
+      if (m === 'biceps') return 'bicep';
+      if (m === 'presses') return 'press';
+      return m.replace(/s$/, '');
+    });
+  };
+
+  const stemA = normalizeStems(cleanA);
+  const stemB = normalizeStems(cleanB);
+  if (stemA === stemB) return true;
+
+  // Kiểm tra nếu cả hai cùng khớp vào 1 bài mẫu trong PRESET_EXERCISES_DATABASE
+  const presetA = findPresetExercise(cleanA);
+  const presetB = findPresetExercise(cleanB);
+  if (presetA && presetB && presetA.id === presetB.id) {
+    return true;
+  }
+
+  // Tách phần trước ngoặc và trong ngoặc đơn nếu có
+  const extractParts = (raw: string): string[] => {
+    const parts = [cleanExerciseName(raw)];
+    const match = raw.match(/^(.*?)\((.*?)\)/);
+    if (match) {
+      if (match[1]?.trim()) parts.push(cleanExerciseName(match[1]));
+      if (match[2]?.trim()) parts.push(cleanExerciseName(match[2]));
+    }
+    return parts.filter(Boolean);
+  };
+
+  const partsA = extractParts(nameA);
+  const partsB = extractParts(nameB);
+
+  for (const pa of partsA) {
+    for (const pb of partsB) {
+      if (pa === pb) return true;
+      if (normalizeStems(pa) === normalizeStems(pb)) return true;
+      if (pa.length >= 7 && pb.length >= 7) {
+        if (pa.includes(pb) || pb.includes(pa)) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function findPresetExercise(cleanedName: string): PresetExercise | undefined {
+  return PRESET_EXERCISES_DATABASE.find((p) => {
+    const pName = cleanExerciseName(p.name);
+    const pEn = cleanExerciseName(p.nameEn);
+    return (
+      pName === cleanedName ||
+      pEn === cleanedName ||
+      (cleanedName.length >= 7 && (pName.includes(cleanedName) || pEn.includes(cleanedName)))
+    );
+  });
+}
+
+export interface PreviousExerciseMatch {
+  previousDateKey: string;
+  previousDateShort: string; // e.g. '20/10'
+  previousExercise: WorkoutExercise;
+  previousMetrics: ExerciseCalculatedMetrics;
+}
+
+/**
+ * Tìm buổi tập gần nhất trong quá khứ có tập bài này
+ */
+export function findPreviousExercisePerformance(
+  currentEx: WorkoutExercise,
+  allRecords: Record<string, DayRecord>,
+  currentDateKey: string,
+  userWeightKg = 70
+): PreviousExerciseMatch | null {
+  const curName = currentEx.name?.trim();
+  if (!curName) return null;
+
+  // Lọc các ngày quá khứ nhỏ hơn currentDateKey và có dữ liệu bài tập
+  const pastDates = Object.keys(allRecords)
+    .filter((dKey) => dKey < currentDateKey && allRecords[dKey]?.workoutData)
+    .sort((a, b) => b.localeCompare(a)); // Mới nhất trở về trước
+
+  for (const dKey of pastDates) {
+    const wk = allRecords[dKey]?.workoutData;
+    if (!wk || !Array.isArray(wk.exercises) || wk.exercises.length === 0) continue;
+
+    for (const ex of wk.exercises) {
+      if (areExerciseNamesMatching(curName, ex.name)) {
+        const parts = dKey.split('-');
+        const prevDateShort = parts.length === 3 ? `${parts[2]}/${parts[1]}` : dKey;
+        const prevMetrics = calculateSingleExerciseMetrics(ex, userWeightKg);
+        return {
+          previousDateKey: dKey,
+          previousDateShort: prevDateShort,
+          previousExercise: ex,
+          previousMetrics: prevMetrics,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Tìm kiếm buổi tập trong quá khứ có nhóm cơ hoặc bài tập tương đồng nhất (toàn buổi)
  */
 export function findBestMatchingPreviousWorkout(
   currentMuscles: string[],
@@ -231,7 +373,6 @@ export function findBestMatchingPreviousWorkout(
     (currentExercises || []).map((e) => e.name.toLowerCase().trim())
   );
 
-  // Mở rộng nhóm cơ nếu là Push/Pull
   if (currentMuscleSet.has('push')) {
     currentMuscleSet.add('nguc');
     currentMuscleSet.add('vai');
@@ -242,7 +383,6 @@ export function findBestMatchingPreviousWorkout(
     currentMuscleSet.add('tay_truoc');
   }
 
-  // Sắp xếp các ngày quá khứ từ gần nhất trở về trước
   const pastDates = Object.keys(allRecords)
     .filter((dKey) => dKey < currentDateKey && allRecords[dKey]?.workoutData)
     .sort((a, b) => b.localeCompare(a));
@@ -260,24 +400,14 @@ export function findBestMatchingPreviousWorkout(
     const prevMuscles = (wk.targetMuscles || []).map((m) => m.toLowerCase().trim());
     const prevExNames = wk.exercises.map((e) => e.name.toLowerCase().trim());
 
-    // 1. Điểm trùng nhóm cơ
     for (const pm of prevMuscles) {
-      if (currentMuscleSet.has(pm)) {
-        score += 8;
-      }
-      if (pm === 'push' && (currentMuscleSet.has('nguc') || currentMuscleSet.has('vai'))) {
-        score += 6;
-      }
-      if (pm === 'pull' && currentMuscleSet.has('lung')) {
-        score += 6;
-      }
+      if (currentMuscleSet.has(pm)) score += 8;
+      if (pm === 'push' && (currentMuscleSet.has('nguc') || currentMuscleSet.has('vai'))) score += 6;
+      if (pm === 'pull' && currentMuscleSet.has('lung')) score += 6;
     }
 
-    // 2. Điểm trùng bài tập cụ thể
     for (const pe of prevExNames) {
-      if (currentExNames.has(pe)) {
-        score += 10;
-      }
+      if (currentExNames.has(pe)) score += 10;
     }
 
     if (score > highestScore) {
@@ -286,11 +416,9 @@ export function findBestMatchingPreviousWorkout(
     }
   }
 
-  // Chỉ chấp nhận nếu có ít nhất 1 bài hoặc nhóm cơ trùng khớp (score >= 6)
   if (highestScore >= 6 && bestMatch) {
     return bestMatch;
   }
 
   return null;
 }
-

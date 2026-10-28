@@ -715,7 +715,7 @@ input {
 
 .month-days-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 10px;
 }
 
@@ -6609,7 +6609,8 @@ input {
   }
 
   .month-days-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    padding-top: 8px !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 5px !important;
   }
 
@@ -7578,7 +7579,7 @@ input {
 /* MÀN HÌNH ĐIỆN THOẠI NHỎ (<= 480px) */
 @media (max-width: 480px) {
   .month-days-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
   .muscle-grid {
