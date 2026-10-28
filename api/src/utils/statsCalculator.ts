@@ -108,10 +108,12 @@ export function getTasksForDate(dateKey: string, taskConfig?: TaskConfig | null)
 
   const overridesForDate = taskConfig.taskOverrides?.[dateKey] || {};
   allTasks = allTasks.map((t) => {
-    if (overridesForDate[t.id]) {
-      return { ...t, ...overridesForDate[t.id] };
+    let taskObj = overridesForDate[t.id] ? { ...t, ...overridesForDate[t.id] } : { ...t };
+    if (taskObj.isAllDay || taskObj.id === 'drink_3l_water' || taskObj.id === 'no_junk_food') {
+      taskObj.isAllDay = true;
+      taskObj.timeHint = 'Cả ngày';
     }
-    return t;
+    return taskObj;
   });
 
   return allTasks;

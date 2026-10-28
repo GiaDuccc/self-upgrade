@@ -36,6 +36,7 @@ import { CaloriesTracker } from '~/components/CaloriesTracker/CaloriesTracker';
 import { WaterTracker } from '~/components/WaterTracker/WaterTracker';
 import { DailyStateModal } from '~/components/DailyStateModal/DailyStateModal';
 import { DayDetailSkeleton } from '~/components/Skeleton/Skeleton';
+import { SunMoonSplitIcon } from '~/components/Icons/SunMoonSplitIcon';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
 import {
   formatDateKey,
@@ -1206,9 +1207,7 @@ export const DayDetail: React.FC = () => {
                         const isAllDay = isTaskAllDay(task);
                         const span = !isAllDay ? parseTaskTimes(task) : null;
                         const timeFormatted = isAllDay
-                          ? task.timeHint && !task.timeHint.includes(':')
-                            ? task.timeHint
-                            : isEn
+                          ? isEn
                             ? 'All day'
                             : 'Cả ngày'
                           : `${span!.startTime} – ${span!.endTime}`;
@@ -1226,7 +1225,7 @@ export const DayDetail: React.FC = () => {
                                 </span>
                                 {isBoosted && <span className="task-badge-boost">★ ×1.25</span>}
                                 <span className={`task-badge-time ${isAllDay ? 'task-badge-allday' : ''}`}>
-                                  {isAllDay ? <Sun size={11} /> : <Clock size={11} />}
+                                  {isAllDay ? <SunMoonSplitIcon size={12} strokeWidth={2} /> : <Clock size={11} />}
                                   <span>{timeFormatted}</span>
                                 </span>
                               </div>

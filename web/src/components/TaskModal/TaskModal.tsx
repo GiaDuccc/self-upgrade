@@ -9,6 +9,7 @@ import {
   Clock,
   Sun,
 } from 'lucide-react';
+import { SunMoonSplitIcon } from '~/components/Icons/SunMoonSplitIcon';
 import { TaskItem, TaskScope } from '~/interface/discipline.interface';
 import { TASK_CATEGORIES } from '~/utils/constants';
 import { translateCategory, useLanguage } from '~/utils/i18n';
@@ -375,7 +376,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <label className="task-allday-switch-label" htmlFor="task-allday-toggle">
                 <div className="task-allday-switch-left">
                   <div className="task-allday-title-row">
-                    <Sun size={15} className="task-allday-icon" />
+                    <SunMoonSplitIcon size={16} strokeWidth={2} className="task-allday-icon" />
                     <span className="task-allday-title">
                       {isEn
                         ? 'All-day task (No specific time)'
@@ -510,7 +511,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
           ) : (
             <div className="task-allday-notice">
-              <Sun size={15} />
+              <SunMoonSplitIcon size={16} strokeWidth={2} />
               <span>
                 {isEn
                   ? 'This task has no fixed time constraint. It will be tracked in your task list throughout the day.'

@@ -377,13 +377,12 @@ const saveTask = async (
     endTime,
     isAllDay,
   } = payload;
-  const timeHint =
-    payload.timeHint ||
-    (isAllDay
-      ? 'Cả ngày'
-      : startTime && endTime
-      ? `${startTime} - ${endTime}`
-      : startTime || payload.target || '');
+  const timeHint = isAllDay
+    ? 'Cả ngày'
+    : payload.timeHint ||
+      (startTime && endTime
+        ? `${startTime} - ${endTime}`
+        : startTime || payload.target || '');
   const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const prev = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
