@@ -59,6 +59,7 @@ import {
   timeToDec,
   ParsedTaskTimes,
   isTaskAllDay,
+  sortTasksByTime,
 } from '~/utils/taskTimeUtils';
 
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
@@ -383,6 +384,10 @@ export const DayDetail: React.FC = () => {
   );
 
   const currentTasksList = dayData?.dayStats?.tasksList || [];
+  const sortedTasksList = useMemo(
+    () => sortTasksByTime(currentTasksList),
+    [currentTasksList]
+  );
   const {
     dynamicRows,
     tasksStartingMap,
@@ -1201,7 +1206,7 @@ export const DayDetail: React.FC = () => {
 
                   {taskViewMode === 'list' ? (
                     <div className="tasks-list-grid">
-                      {currentTasksList.map((task) => {
+                      {sortedTasksList.map((task) => {
                         const isTaskChecked = (tasksMap[task.id] || 'NONE') !== 'NONE';
                         const isBoosted = isTaskBoostedByProfile(task, userProfile);
                         const isAllDay = isTaskAllDay(task);

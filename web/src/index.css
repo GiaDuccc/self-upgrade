@@ -676,6 +676,7 @@ input {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  margin-bottom: 8px;
 }
 
 .legend-pill {
@@ -1376,6 +1377,8 @@ input {
   .day-split-container {
     grid-template-columns: 1fr;
     gap: 20px;
+    align-items: stretch;
+    width: 100%;
   }
 }
 
@@ -6483,11 +6486,14 @@ input {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: 100% !important;
+    align-items: stretch !important;
   }
 
   .overview-split-left-col,
   .overview-split-right-col {
     display: contents; /* Cho phép sắp xếp thứ tự trực tiếp */
+    width: 100% !important;
   }
 
   .overview-left-header {
@@ -6522,18 +6528,22 @@ input {
     gap: 4px;
   }
 
-  /* 4 Thẻ thống kê: siêu gọn gàng, dạng lưới 2x2 */
+  /* 4 Thẻ thống kê: siêu gọn gàng, dạng lưới 2x2 trải đều hết chiều ngang, 4 thẻ kích thước bằng nhau */
   .stats-cards-grid-split {
     order: 2;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
+    gap: 8px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .stat-card {
-    padding: 7px 9px;
-    gap: 2px;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 8px 10px;
+    gap: 3px;
     min-height: 0;
     min-width: 0;
     overflow: hidden;

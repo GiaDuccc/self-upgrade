@@ -297,3 +297,33 @@ export function parseTaskTimes(task?: Partial<TaskItem> | null): ParsedTaskTimes
   };
 }
 
+/**
+ * Sắp xếp danh sách công việc theo thứ tự thời gian từ sáng đến tối.
+ * Các công việc thực hiện cả ngày (all-day) được xếp ở cuối cùng sau các công việc buổi tối.
+ */
+export function sortTasksByTime(tasks: TaskItem[]): TaskItem[] {
+  return [...tasks].sort((a, b) => {
+    const isAllDayA = isTaskAllDay(a);
+    const isAllDayB = isTaskAllDay(b);
+
+    // Việc cả ngày xếp sau việc có khung giờ
+    if (isAllDayA && !isAllDayB) return 1;
+    if (!isAllDayA && isAllDayB) return -1;
+    if (isAllDayA && isAllDayB) {
+      return (a.title || '').localeCompare(b.title || '', 'vi');
+    }
+
+    // Các việc có khung giờ: sắp xếp theo mốc giờ bắt đầu từ sáng đến tối
+    const spanA = parseTaskTimes(a);
+    const spanB = parseTaskTimes(b);
+
+    if (spanA.startDec !== spanB.startDec) {
+      return spanA.startDec - spanB.startDec;
+    }
+    if (spanA.endDec !== spanB.endDec) {
+      return spanA.endDec - spanB.endDec;
+    }
+    return (a.title || '').localeCompare(b.title || '', 'vi');
+  });
+}
+
