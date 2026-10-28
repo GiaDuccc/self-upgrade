@@ -6766,13 +6766,13 @@ input {
   }
 
   .state-mini-card {
-    padding: 4px 4px;
+    padding: 6px 4px;
     min-width: 0;
     overflow: hidden;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 0;
     height: auto;
   }
 
@@ -6781,15 +6781,15 @@ input {
   }
 
   .state-label-mobile {
-    display: inline !important;
-    font-size: 0.72rem;
+    display: none !important;
   }
 
   .state-text-val {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
   }
 
   .state-sleep-banner {
@@ -6843,18 +6843,16 @@ input {
   .day-mode-btn {
     width: 100%;
     justify-content: center;
-    padding: 6px 3px;
-    font-size: 0.68rem;
-    gap: 3px;
+    padding: 6px 4px;
+    font-size: 0.70rem;
+    gap: 0 !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .day-mode-btn svg {
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
+    display: none !important;
   }
 
   /* Thanh chuyển đổi View Danh sách vs Bảng 24h */
