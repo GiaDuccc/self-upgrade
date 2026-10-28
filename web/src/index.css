@@ -1632,25 +1632,23 @@ input {
   box-sizing: border-box;
 }
 
-/* Cố định dòng tiêu đề trên cùng */
+/* Dòng tiêu đề trên cùng */
 .timetable-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20 !important;
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   border-right: 1px solid var(--border-subtle);
 }
 
-/* Ô góc chia chéo đường kẻ như Excel: giữ cố định ở góc trên-trái (left: 0, top: 0), z-index cao nhất đè lên cả cột Việc X và dòng Thời gian */
+/* Ô góc chia chéo đường kẻ như Excel: giữ cố định ở góc trái (left: 0) đồng bộ hoàn toàn với cột Việc 1..8 bên dưới */
 .timetable-corner-th {
   position: sticky !important;
   left: 0 !important;
-  top: 0 !important;
   z-index: 35 !important;
   width: 120px !important;
   min-width: 120px !important;
   max-width: 120px !important;
+  height: 48px !important;
+  min-height: 48px !important;
   padding: 0 !important;
   background-color: var(--bg-surface) !important;
   border-bottom: 1px solid var(--border-subtle) !important;
@@ -1704,10 +1702,13 @@ input {
   width: 160px;
   min-width: 160px;
   max-width: 160px;
+  height: 48px;
   padding: 8px 6px;
   text-align: center;
   background-color: var(--bg-surface);
   user-select: none;
+  position: static !important; /* Không sticky trên các cột giờ để ô góc chéo left: 0 ghim độc lập không bị kéo theo */
+  vertical-align: middle !important;
 }
 
 .timetable-col-header-text {
@@ -1727,18 +1728,29 @@ input {
   width: 120px !important;
   min-width: 120px !important;
   max-width: 120px !important;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 5px 8px;
+  height: 78px !important;
+  min-height: 78px !important;
+  vertical-align: middle !important; /* Căn giữa trên - dưới (trục dọc) theo yêu cầu */
+  text-align: center !important; /* Căn giữa trái - phải */
+  padding: 0 8px !important;
   user-select: none;
   border-bottom: 1px solid var(--border-subtle) !important;
   border-right: 1px solid var(--border-subtle) !important;
   border-top: none !important;
   border-left: none !important;
   box-shadow: none !important;
+  color: var(--text-muted);
+}
+
+.timetable-time-text {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .timetable-row:hover .timetable-td-time {
