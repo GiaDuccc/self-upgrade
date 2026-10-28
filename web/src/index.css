@@ -61,11 +61,12 @@
 
 [data-theme='dark'] .timetable-th,
 [data-theme='dark'] .timetable-td {
-  border: 1px solid rgba(237, 233, 225, 0.1);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
 }
 
 [data-theme='dark'] .timetable-wrapper {
-  border: 1px solid rgba(237, 233, 225, 0.14);
+  border: 1px solid var(--border-subtle);
 }
 
 [data-theme='dark'] .modal-container {
@@ -1587,7 +1588,7 @@ input {
 .timetable-wrapper {
   width: 100%;
   background-color: var(--bg-surface);
-  border: 1px solid rgba(34, 34, 32, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
@@ -1615,7 +1616,8 @@ input {
   width: max-content;
   min-width: 100%;
   height: auto;
-  border-collapse: collapse;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
   table-layout: fixed;
   font-size: 0.75rem;
   background-color: var(--bg-surface);
@@ -1623,7 +1625,10 @@ input {
 
 .timetable-th,
 .timetable-td {
-  border: 1px solid rgba(34, 34, 32, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  border-top: none;
+  border-left: none;
   box-sizing: border-box;
 }
 
@@ -1633,21 +1638,26 @@ input {
   top: 0;
   z-index: 20 !important;
   background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
 }
 
-/* Ô góc chia chéo đường kẻ như Excel: z-index cao nhất đè lên cả cột Việc X và dòng Thời gian */
+/* Ô góc chia chéo đường kẻ như Excel: giữ cố định ở góc trên-trái (left: 0, top: 0), z-index cao nhất đè lên cả cột Việc X và dòng Thời gian */
 .timetable-corner-th {
   position: sticky !important;
-  left: 0;
-  top: 0;
+  left: 0 !important;
+  top: 0 !important;
   z-index: 35 !important;
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
   padding: 0 !important;
   background-color: var(--bg-surface) !important;
-  border-right: 1.5px solid var(--border-color) !important;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-subtle) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+  border-top: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
 }
 
 .diagonal-cell {
@@ -1668,23 +1678,24 @@ input {
 
 .diagonal-label {
   position: absolute;
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--text-secondary);
   line-height: 1.1;
   user-select: none;
+  white-space: nowrap;
 }
 
 /* Trục X (trên phải): Thời gian | Trục Y (dưới trái): Việc làm */
 .diagonal-time-label {
-  top: 7px;
-  right: 6px;
+  top: 8px;
+  right: 12px;
   text-align: right;
 }
 
 .diagonal-task-label {
-  bottom: 7px;
-  left: 6px;
+  bottom: 8px;
+  left: 12px;
   text-align: left;
 }
 
@@ -1710,27 +1721,29 @@ input {
 /* Cột Việc X trên trục Y (cố định bên trái: Việc 1 .. Việc 8) */
 .timetable-td-time {
   position: sticky !important;
-  left: 0;
+  left: 0 !important;
   z-index: 25 !important; /* Luôn nằm TRÊN mọi thẻ to-do khi cuộn ngang */
   background-color: var(--bg-surface) !important;
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
-  padding: 5px 6px;
+  padding: 5px 8px;
   user-select: none;
-  border: 1px solid rgba(34, 34, 32, 0.08);
-  border-right: 1.5px solid var(--border-color) !important;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-subtle) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+  border-top: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
 }
 
 .timetable-row:hover .timetable-td-time {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .timetable-row {

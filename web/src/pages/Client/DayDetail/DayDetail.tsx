@@ -1213,6 +1213,12 @@ export const DayDetail: React.FC = () => {
                     <div className="timetable-wrapper">
                       <div className="timetable-container" ref={tableContainerRef}>
                         <table className="timetable-table">
+                          <colgroup>
+                            <col style={{ width: 120, minWidth: 120 }} />
+                            {HOURS_24.map((hour) => (
+                              <col key={hour} style={{ width: 160, minWidth: 160 }} />
+                            ))}
+                          </colgroup>
                           <thead>
                             <tr>
                               {/* Ô góc chia đôi chéo: Thời gian ở trên phải (trục X), Việc làm ở dưới trái (trục Y) */}
