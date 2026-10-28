@@ -835,7 +835,7 @@ export const DayDetail: React.FC = () => {
                 title={isEn ? 'Previous day' : 'Ngày trước'}
                 aria-label={isEn ? 'Previous day' : 'Ngày trước'}
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={18} strokeWidth={2.4} />
               </button>
               <div className="day-date-display">
                 <span>{currDayStr} / {currMonthStr}</span>
@@ -847,7 +847,7 @@ export const DayDetail: React.FC = () => {
                 title={isEn ? 'Next day' : 'Ngày sau'}
                 aria-label={isEn ? 'Next day' : 'Ngày sau'}
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={18} strokeWidth={2.4} />
               </button>
             </div>
 
@@ -1296,9 +1296,9 @@ export const DayDetail: React.FC = () => {
                       <div className="timetable-container" ref={tableContainerRef}>
                         <table className="timetable-table">
                           <colgroup>
-                            <col style={{ width: 120, minWidth: 120 }} />
+                            <col className="timetable-y-col" style={{ width: 120, minWidth: 120 }} />
                             {HOURS_24.map((hour) => (
-                              <col key={hour} style={{ width: 160, minWidth: 160 }} />
+                              <col key={hour} className="timetable-hour-col" style={{ width: 160, minWidth: 160 }} />
                             ))}
                           </colgroup>
                           <thead>

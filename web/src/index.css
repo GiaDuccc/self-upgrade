@@ -263,6 +263,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 /* ============================================================================
    NÚT BẤM MINIMALIST
    ============================================================================ */
@@ -809,6 +820,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 .day-cell-bar {
   width: 100%;
   height: 5px;
@@ -954,6 +976,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 .day-score-big-row {
   display: flex;
   align-items: center;
@@ -973,6 +1006,17 @@ input {
   font-size: 0.74rem;
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
 }
 
 .day-rank-box {
@@ -1086,6 +1130,17 @@ input {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
+}
+
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
 }
 
 .state-text-val {
@@ -1467,6 +1522,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 .task-badge-boost {
   font-size: 0.66rem;
   font-weight: 700;
@@ -1490,6 +1556,17 @@ input {
   padding: 3px 8px;
   border-radius: 4px;
   white-space: nowrap;
+}
+
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
 }
 
 .task-badge-allday {
@@ -1684,6 +1761,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 /* Trục X (trên phải): Thời gian | Trục Y (dưới trái): Việc làm */
 .diagonal-time-label {
   top: 8px;
@@ -1751,6 +1839,17 @@ input {
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
 }
 
 .timetable-row:hover .timetable-td-time {
@@ -1864,6 +1963,17 @@ input {
   border: 1px solid var(--border-subtle);
   width: fit-content;
   white-space: nowrap;
+}
+
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
 }
 
 .grid-task-boost {
@@ -3957,6 +4067,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 .food-macro-tag.cal {
   background-color: #FEF3C7;
   color: #B45309;
@@ -5296,6 +5417,17 @@ input {
   white-space: nowrap;
 }
 
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
+}
+
 .btn-shortcuts-header {
   color: var(--text-secondary);
 }
@@ -5540,6 +5672,17 @@ input {
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
+}
+
+.today-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.today-cal-svg {
+  display: block;
 }
 
 /* EXERCISES LOG & SETS */
@@ -6197,21 +6340,29 @@ input {
     margin-left: auto;
   }
 
-  .month-switcher {
-    display: flex;
-    align-items: center;
-    padding: 2px 4px;
-    gap: 2px;
+  .month-switcher,
+  .day-date-switcher {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 !important;
+    gap: 0 !important;
     min-width: 0;
     flex: 0 1 auto;
     border-radius: var(--radius-sm);
+    box-sizing: border-box !important;
   }
 
-  .month-display {
-    padding: 0 4px;
-    font-size: 0.72rem;
-    gap: 3px;
+  .month-display,
+  .day-date-display {
+    padding: 0 7px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    gap: 4px !important;
     min-width: 0;
+    display: inline-flex !important;
+    align-items: center !important;
   }
 
   .month-text-desktop {
@@ -6223,9 +6374,40 @@ input {
     font-weight: 700;
   }
 
+  /* Mũi tên trái / phải của month-switcher & day-date-switcher trên mobile phóng to rõ ràng, dễ bấm */
+  .month-switcher .btn-icon,
+  .day-date-switcher .btn-icon {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    opacity: 0.95;
+    box-shadow: none !important;
+  }
+
+  .month-switcher .btn-icon:hover,
+  .day-date-switcher .btn-icon:hover,
+  .month-switcher .btn-icon:active,
+  .day-date-switcher .btn-icon:active {
+    background: var(--bg-hover) !important;
+  }
+
+  .month-switcher .btn-icon svg,
+  .day-date-switcher .btn-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+    stroke-width: 2.5 !important;
+    display: block !important;
+  }
+
   .btn-icon {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     padding: 0;
   }
 
@@ -6234,14 +6416,22 @@ input {
     display: none !important;
   }
 
-  .header-btn-icon-label {
-    display: inline-block !important;
-    font-size: 0.68rem;
-    font-weight: 800;
-    line-height: 1;
+  .btn-today-header {
+    padding: 0 !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
   }
 
-  .btn-today-header,
+  .btn-today-header .today-cal-svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
   .btn-add-header,
   .btn-profile-header,
   .btn-settings-header {
@@ -6742,13 +6932,40 @@ input {
     padding: 1px 5px;
   }
 
-  /* Bảng timetable 24h nếu người dùng muốn xem */
+  /* Bảng timetable 24h trên mobile: không cố định cột Việc 1-8 + ô góc chéo, lướt ngang lướt cả bảng */
+  col.timetable-y-col {
+    width: 76px !important;
+    min-width: 76px !important;
+  }
+
   .timetable-corner-th,
   .timetable-td-time {
-    width: 52px;
-    min-width: 52px;
-    max-width: 52px;
-    padding: 5px 2px;
+    position: static !important;
+    left: auto !important;
+    z-index: 1 !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    padding: 0 4px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    box-shadow: none !important;
+  }
+
+  .timetable-corner-th {
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+
+  .timetable-td-time {
+    height: 62px !important;
+    min-height: 62px !important;
+  }
+
+  .timetable-time-text {
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
   }
 
   .timetable-corner-label {
