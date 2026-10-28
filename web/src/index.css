@@ -154,17 +154,20 @@ input {
   width: 36px;
   height: 36px;
   border: 1.5px solid var(--border-color);
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
+  background-color: var(--bg-surface);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.05em;
+  overflow: hidden;
   flex-shrink: 0;
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-title {

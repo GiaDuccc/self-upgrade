@@ -59,7 +59,9 @@ export const Header: React.FC<HeaderProps> = React.memo(({
       {/* HÀNG TRÊN: BRAND BÊN TRÁI & NAV TABS CỐ ĐỊNH Ở GÓC PHẢI */}
       <div className="top-navbar-row-top">
         <div className="brand-block" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <div className="brand-logo-mark">SU</div>
+          <div className="brand-logo-mark">
+            <img src="/logo.png" alt="Self Upgrade" className="brand-logo-img" />
+          </div>
           <div className="brand-text-block">
             <h1 className="brand-title">
               SELF UPGRADE
