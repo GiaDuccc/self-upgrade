@@ -58,8 +58,8 @@ export interface RecentChangeContext {
 }
 
 const TASK_TITLE_EN_MAP: Record<string, string> = {
-  'Thức dậy lúc 5h': 'Wake up at 5:00 AM',
-  'Thức dậy lúc 5h sáng': 'Wake up at 5:00 AM',
+  'Thức dậy lúc 5h': 'Wake up at 05:00',
+  'Thức dậy lúc 5h sáng': 'Wake up at 05:00',
   'Học tiếng Anh': 'Learn English',
   'Làm việc': 'Focused Work',
   'Học code': 'Learn to Code',
@@ -69,8 +69,10 @@ const TASK_TITLE_EN_MAP: Record<string, string> = {
   'Uống đủ 2 lít nước': 'Drink 2L of water',
   'Tập gym': 'Gym Workout',
   'Không ăn vặt': 'No Junk Food',
-  'Ngủ trước 11h': 'Sleep before 11:00 PM',
-  'Đi ngủ trước 11h đêm': 'Sleep before 11:00 PM',
+  'Ngủ trước 11h': 'Sleep before 23:00',
+  'Ngủ trước 23:00': 'Sleep before 23:00',
+  'Đi ngủ trước 11h đêm': 'Sleep before 23:00',
+  'Đi ngủ trước 23:00': 'Sleep before 23:00',
   'Tập thể dục buổi sáng': 'Morning workout',
   'Không dùng điện thoại 1h đầu ngày': 'No phone for the first hour',
   'Ăn sáng lành mạnh & đủ chất': 'Healthy breakfast',
@@ -89,7 +91,7 @@ function translateTaskTitle(title: string | undefined): string {
   const cleanTitle = title.replace(/\s*\(lúc.*?\)\s*$/i, '').trim();
   if (TASK_TITLE_EN_MAP[cleanTitle]) return TASK_TITLE_EN_MAP[cleanTitle];
   const lower = cleanTitle.toLowerCase();
-  if (lower.includes('thức dậy') || lower.includes('5h')) return 'Wake up at 5 AM';
+  if (lower.includes('thức dậy') || lower.includes('5h')) return 'Wake up at 05:00';
   if (lower.includes('tiếng anh') || lower.includes('ngoại ngữ')) return 'Learn English';
   if (lower.includes('học code') || lower.includes('lập trình')) return 'Learn to Code';
   if (lower.includes('làm việc') || lower.includes('deep work')) return 'Focused Work';
@@ -98,7 +100,7 @@ function translateTaskTitle(title: string | undefined): string {
   if (lower.includes('ăn vặt') || lower.includes('đồ ngọt')) return 'No Junk Food';
   if (lower.includes('đọc sách')) return 'Reading session';
   if (lower.includes('nước')) return 'Drink Water';
-  if (lower.includes('ngủ trước') || lower.includes('đi ngủ')) return 'Sleep before 11 PM';
+  if (lower.includes('ngủ trước') || lower.includes('đi ngủ') || lower.includes('23h') || lower.includes('23:00')) return 'Sleep before 23:00';
   if (lower.includes('ngủ trưa')) return 'Midday Power Nap';
   return cleanTitle;
 }
@@ -314,8 +316,8 @@ export function runDisciplineCoachAgent(params: {
       default:
         periodCandidates = [
           {
-            vi: `Đã ${timeCtx.timeStr} đêm muộn rồi đấy ${callName}, hãy rời xa các màn hình và chuẩn bị đi ngủ trước 11h để sáng mai thức dậy tràn đầy năng lượng nhé!`,
-            en: `It’s already ${timeCtx.timeStr} late night, ${nameEn}! Step away from screens and get ready to sleep before 11 PM to wake up fully energized tomorrow!`,
+            vi: `Đã ${timeCtx.timeStr} đêm muộn rồi đấy ${callName}, hãy rời xa các màn hình và chuẩn bị đi ngủ trước 23:00 để sáng mai thức dậy tràn đầy năng lượng nhé!`,
+            en: `It’s already ${timeCtx.timeStr} late night, ${nameEn}! Step away from screens and get ready to sleep before 23:00 to wake up fully energized tomorrow!`,
           },
           {
             vi: `Khuya rồi ${callName} (${timeCtx.timeStr})! Khép lại ngày hôm nay ở mức ${pct}%${streakNoteVi} là rất đáng khen rồi, giờ là lúc ngủ thật sâu để cơ thể phục hồi 100%!`,
@@ -412,7 +414,7 @@ export function runDisciplineCoachAgent(params: {
         },
         {
           vi: `Đồng hồ mới chỉ ${timeCtx.timeStr} thôi mà ${callName} đã vội chốt mục "${taskTitleVi}" rồi! Có phải bạn bấm nhầm không nè, chứ giờ này mặt trời còn chưa lặn mà đã chuẩn bị đi ngủ đêm sao?`,
-          en: `Hold on ${nameEn}, the clock shows ${timeCtx.timeStr} and you’ve already ticked "${taskTitleEn}"! Make sure you didn't click the wrong box—save this one for tonight before 11 PM!`,
+          en: `Hold on ${nameEn}, the clock shows ${timeCtx.timeStr} and you’ve already ticked "${taskTitleEn}"! Make sure you didn't click the wrong box—save this one for tonight before 23:00!`,
         },
         {
           vi: `Ủa ${callName}, mới ${timeCtx.timeStr} mà đã tích "${taskTitleVi}" rồi à? Coi chừng ấn nhầm ô nha, giờ này hãy tập trung làm việc và sinh hoạt đã, tối đến tầm 22h-23h hẵng chốt mục này nhé!`,
@@ -603,8 +605,8 @@ export function runDisciplineCoachAgent(params: {
     nextStepAdviceVi = 'Toàn bộ mục tiêu hôm nay đã hoàn tất mỹ mãn, hãy tận hưởng buổi tối thư giãn xứng đáng nhé!';
     nextStepAdviceEn = 'Every single goal for today is complete—enjoy your well-deserved rest tonight!';
   } else if (timeCtx.periodKey === 'LATE_NIGHT') {
-    nextStepAdviceVi = `Hiện đã là ${timeCtx.timeStr} đêm muộn, hãy khép lại công việc để chuẩn bị ngủ trước 11h nhé!`;
-    nextStepAdviceEn = `It’s already ${timeCtx.timeStr} late at night—wrap up your work and get ready for sleep before 11 PM!`;
+    nextStepAdviceVi = `Hiện đã là ${timeCtx.timeStr} đêm muộn, hãy khép lại công việc để chuẩn bị ngủ trước 23:00 nhé!`;
+    nextStepAdviceEn = `It’s already ${timeCtx.timeStr} late at night—wrap up your work and get ready for sleep before 23:00!`;
   } else if (timeCtx.periodKey === 'NOON') {
     nextStepAdviceVi = `Giờ trưa (${timeCtx.timeStr}) này hãy nghỉ ngơi chừng 15-20 phút dưỡng sức để chiều tiếp tục bùng nổ với "${nextTaskVi}" nhé!`;
     nextStepAdviceEn = `This midday (${timeCtx.timeStr}), rest up or take a 15–20 min power nap before tackling "${nextTaskEn}"!`;
@@ -722,9 +724,9 @@ export function runNutritionistAgent(params: {
         fat: 0,
         fiber: 0,
         aiFeedback:
-          'Chưa có món ăn nào được ghi lại cho ngày này. Hãy thêm các món bạn ăn từ 6h sáng đến 9h tối nhé!',
+          'Chưa có món ăn nào được ghi lại cho ngày này. Hãy thêm các món bạn ăn từ 06:00 đến 21:00 nhé!',
         aiFeedbackEn:
-          'No meals logged yet for this day. Please add the meals you eat between 6:00 AM and 9:00 PM!',
+          'No meals logged yet for this day. Please add the meals you eat between 06:00 and 21:00!',
         updatedAt: new Date().toISOString(),
       },
       meals: [],

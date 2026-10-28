@@ -16,6 +16,8 @@ export interface TaskItem {
   title: string;
   category: string;
   timeHint?: string;
+  startTime?: string;
+  endTime?: string;
   target?: string;
   scope?: TaskScope;
   dateKey?: string;

@@ -11,6 +11,15 @@ import {
 import { TaskItem, TaskScope } from '~/interface/discipline.interface';
 import { TASK_CATEGORIES } from '~/utils/constants';
 import { translateCategory, useLanguage } from '~/utils/i18n';
+import {
+  parseTaskTimes,
+  timeToDec,
+  formatDecToTime,
+  addMinutesToTime,
+  formatDurationText,
+  sanitize24hTime,
+  HOURS_24_SUGGESTIONS,
+} from '~/utils/taskTimeUtils';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -24,6 +33,8 @@ interface TaskModalProps {
     title: string;
     category: string;
     timeHint: string;
+    startTime?: string;
+    endTime?: string;
     scope: TaskScope;
     dateKey: string;
     hour?: number;
@@ -49,7 +60,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(TASK_CATEGORIES[0]);
   const [customCategory, setCustomCategory] = useState('');
-  const [timeHint, setTimeHint] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('09:00');
   const [scope, setScope] = useState<TaskScope>('all');
   const [errorMsg, setErrorMsg] = useState('');
   const { language, isEn } = useLanguage();
@@ -80,26 +92,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           setCategory('Khác');
           setCustomCategory(initialTask.category || '');
         }
-        const hour = initialTask.hour;
-        const defaultTime =
-          initialTask.timeHint ||
-          (typeof hour === 'number'
-            ? `${String(hour).padStart(2, '0')}:00`
-            : '08:00');
-        setTimeHint(defaultTime);
+        const parsed = parseTaskTimes(initialTask);
+        setStartTime(parsed.startTime);
+        setEndTime(parsed.endTime);
         setScope(initialTask.scope || 'all');
       } else {
         setTitle('');
         setCategory(TASK_CATEGORIES[0]);
         setCustomCategory('');
-        // Tự động điền trước khung giờ mà người dùng đã nhấn vào trên bảng
-        const hour = initialTask?.hour;
-        const defaultTime =
-          initialTask?.timeHint ||
-          (typeof hour === 'number'
-            ? `${String(hour).padStart(2, '0')}:00`
-            : '08:00');
-        setTimeHint(defaultTime);
+        const parsed = parseTaskTimes(initialTask);
+        setStartTime(parsed.startTime);
+        setEndTime(parsed.endTime);
         setScope(initialTask?.scope || 'all');
       }
       setErrorMsg('');
@@ -109,6 +112,23 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   if (!isOpen) return null;
 
   const trimmedCurrentTitle = title.trim();
+
+  const handleStartTimeChange = (val: string) => {
+    setStartTime(val);
+    const sDec = timeToDec(val);
+    const eDec = timeToDec(endTime);
+    if (eDec <= sDec) {
+      setEndTime(addMinutesToTime(val, 60));
+    }
+  };
+
+  const handleEndTimeChange = (val: string) => {
+    setEndTime(val);
+  };
+
+  const handleAddDuration = (mins: number) => {
+    setEndTime(addMinutesToTime(startTime, mins));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,35 +142,27 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         ? customCategory.trim()
         : category;
 
-    let hourVal: number | undefined = undefined;
-    if (timeHint) {
-      const match = timeHint.match(/(\d{1,2}):\d{2}/);
-      if (match) {
-        hourVal = parseInt(match[1], 10);
-      } else {
-        const matchH = timeHint.match(/(\d{1,2})h/);
-        if (matchH) {
-          hourVal = parseInt(matchH[1], 10);
-        } else {
-          const num = parseInt(timeHint, 10);
-          if (!isNaN(num) && num >= 0 && num <= 24) hourVal = num;
-        }
-      }
+    const cleanStart = sanitize24hTime(startTime, '08:00');
+    let cleanEnd = sanitize24hTime(endTime, addMinutesToTime(cleanStart, 60));
+    const sDec = timeToDec(cleanStart);
+    let eDec = timeToDec(cleanEnd);
+    if (eDec <= sDec) {
+      cleanEnd = addMinutesToTime(cleanStart, 60);
+      eDec = timeToDec(cleanEnd);
     }
-    if (hourVal === undefined && initialTask?.hour !== undefined) {
-      hourVal = initialTask.hour;
-    }
-    if (typeof hourVal === 'number' && !isNaN(hourVal)) {
-      hourVal = Math.max(0, Math.min(24, hourVal));
-    }
-
+    const finalStart = cleanStart;
+    const finalEnd = cleanEnd;
+    const finalTimeHint = `${finalStart} - ${finalEnd}`;
+    const hourVal = Math.floor(sDec);
     const colVal = initialTask?.columnIndex;
 
     const saved = await onSaveTask({
       id: mode === 'edit' && initialTask?.id ? initialTask.id : undefined,
       title: trimmedCurrentTitle,
       category: finalCategory,
-      timeHint: timeHint.trim() || 'Mỗi ngày',
+      timeHint: finalTimeHint,
+      startTime: finalStart,
+      endTime: finalEnd,
       scope,
       dateKey: currentDateKey,
       hour: hourVal,
@@ -329,52 +341,107 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           <div className="form-group">
             <div className="form-label-with-hint">
-              <label htmlFor="task-time-input" className="form-label">
+              <label className="form-label">
                 {isEn
-                  ? 'SCHEDULED TIME (00:00 – 24:00)'
-                  : 'THỜI GIAN THỰC HIỆN (00:00 – 24:00)'}{' '}
+                  ? 'EXECUTION TIME (00:00 – 23:59)'
+                  : 'THỜI GIAN THỰC HIỆN (00:00 – 23:59)'}{' '}
                 <span className="required-star">*</span>
               </label>
               <span className="form-hint">
                 <Clock size={13} />
                 {isEn
-                  ? 'Hour slot displayed on the timetable'
-                  : 'Khung giờ hiển thị trên bảng thời khóa biểu'}
+                  ? 'Start time and end time (24h format: 00:00 to 23:59)'
+                  : '2 ô thời gian bắt đầu và kết thúc (chuẩn 24h: 00:00 đến 23:59)'}
               </span>
             </div>
-            <div className="form-time-input-wrap">
-              <input
-                id="task-time-input"
-                type="text"
-                list="quick-hours-list"
-                className="form-input form-time-field"
-                placeholder={
-                  isEn
-                    ? 'e.g., 08:00, 14:30, 22:00...'
-                    : 'VD: 08:00, 14:30, 22:00...'
-                }
-                value={timeHint}
-                onChange={(e) => setTimeHint(e.target.value)}
-                required
-              />
-              <datalist id="quick-hours-list">
-                {Array.from({ length: 25 }, (_, i) => `${String(i).padStart(2, '0')}:00`).map((t) => (
-                  <option key={t} value={t} />
-                ))}
-              </datalist>
+
+            <div className="task-time-range-inputs">
+              <div className="time-field-box">
+                <label htmlFor="task-start-time" className="time-field-label">
+                  {isEn ? 'Start Time (00:00 – 23:59)' : 'Giờ bắt đầu (00:00 – 23:59)'}
+                </label>
+                <input
+                  id="task-start-time"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  className="form-input form-time-field"
+                  placeholder="08:00"
+                  list="task-24h-options"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  onBlur={() => {
+                    const clean = sanitize24hTime(startTime, '08:00');
+                    handleStartTimeChange(clean);
+                  }}
+                  required
+                />
+              </div>
+
+              <div className="time-range-separator">
+                <span>→</span>
+              </div>
+
+              <div className="time-field-box">
+                <label htmlFor="task-end-time" className="time-field-label">
+                  {isEn ? 'End Time (00:00 – 23:59)' : 'Giờ kết thúc (00:00 – 23:59)'}
+                </label>
+                <input
+                  id="task-end-time"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  className="form-input form-time-field"
+                  placeholder="09:00"
+                  list="task-24h-options"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  onBlur={() => {
+                    const clean = sanitize24hTime(
+                      endTime,
+                      addMinutesToTime(startTime, 60)
+                    );
+                    handleEndTimeChange(clean);
+                  }}
+                  required
+                />
+              </div>
             </div>
-            {/* Phím bấm chọn nhanh khung giờ */}
-            <div className="quick-hours-strip">
-              {['05:00', '07:00', '08:00', '09:00', '11:00', '13:00', '15:00', '17:00', '19:00', '21:00', '22:00'].map((qh) => (
-                <button
-                  key={qh}
-                  type="button"
-                  className={`quick-hour-btn ${timeHint === qh || timeHint.startsWith(qh) ? 'active' : ''}`}
-                  onClick={() => setTimeHint(qh)}
-                >
-                  {qh}
-                </button>
+
+            <datalist id="task-24h-options">
+              {HOURS_24_SUGGESTIONS.map((t) => (
+                <option key={t} value={t} />
               ))}
+            </datalist>
+
+            {/* Thông tin thời lượng & nút bấm tăng nhanh thời lượng */}
+            <div className="duration-quick-row">
+              <span className="duration-badge">
+                ⏱ {isEn ? 'Duration:' : 'Thời lượng:'}{' '}
+                <strong>{formatDurationText(startTime, endTime, isEn)}</strong>
+              </span>
+              <div className="duration-presets">
+                {[
+                  { label: '+30p', mins: 30 },
+                  { label: '+1h', mins: 60 },
+                  { label: '+1h30', mins: 90 },
+                  { label: '+2h', mins: 120 },
+                ].map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    className="duration-preset-btn"
+                    onClick={() => handleAddDuration(p.mins)}
+                    title={
+                      isEn
+                        ? `Set duration to ${p.label}`
+                        : `Đặt thời lượng kéo dài ${p.label}`
+                    }
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

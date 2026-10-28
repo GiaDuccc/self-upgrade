@@ -16,6 +16,7 @@ import {
   Dumbbell,
   List,
   Grid,
+  Clock,
 } from 'lucide-react';
 import {
   clearDayAPI,
@@ -50,8 +51,14 @@ import {
   translateWeekday,
   useLanguage,
 } from '~/utils/i18n';
+import {
+  parseTaskTimes,
+  formatDecToTime,
+  timeToDec,
+  ParsedTaskTimes,
+} from '~/utils/taskTimeUtils';
 
-const HOURS_24 = Array.from({ length: 25 }, (_, i) => i);
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
 const COLUMNS_5 = Array.from({ length: 5 }, (_, i) => i);
 
 const DEFAULT_TASK_HOURS: Record<string, number> = {
@@ -71,36 +78,80 @@ function resolveTaskHour(task: TaskItem): number {
   if (typeof task.hour === 'number' && task.hour >= 0 && task.hour <= 24) {
     return task.hour;
   }
-  if (task.timeHint) {
-    const match = task.timeHint.match(/(\d{1,2}):\d{2}/);
-    if (match) return parseInt(match[1], 10);
-    const matchH = task.timeHint.match(/(\d{1,2})h/);
-    if (matchH) return parseInt(matchH[1], 10);
-  }
-  if (DEFAULT_TASK_HOURS[task.id] !== undefined) {
-    return DEFAULT_TASK_HOURS[task.id];
-  }
-  return 8;
+  return parseTaskTimes(task).startHour;
 }
 
-function buildTaskGridMap(tasks: TaskItem[]): { gridMap: Map<string, TaskItem>; dynamicRows: number[] } {
-  const gridMap = new Map<string, TaskItem>();
-  let maxCol = 4; // Tối thiểu 5 hàng (Việc 1 .. Việc 5)
+export interface ScheduledTimelineTask {
+  task: TaskItem;
+  span: ParsedTaskTimes;
+  rowIndex: number;
+}
 
-  tasks.forEach((task) => {
-    const hour = resolveTaskHour(task);
-    let col = typeof task.columnIndex === 'number' && task.columnIndex >= 0 ? task.columnIndex : 0;
-    while (gridMap.has(`${hour}_${col}`)) {
-      col++;
+export function buildTaskTimelineSchedule(tasks: TaskItem[]) {
+  const parsed = tasks.map((t) => ({
+    task: t,
+    span: parseTaskTimes(t),
+  }));
+
+  // Sắp xếp theo giờ bắt đầu tăng dần
+  parsed.sort((a, b) => a.span.startDec - b.span.startDec);
+
+  const rowIntervals = new Map<
+    number,
+    Array<{ startDec: number; endDec: number; task: TaskItem }>
+  >();
+  const scheduledTasks: ScheduledTimelineTask[] = [];
+  const tasksStartingMap = new Map<string, ScheduledTimelineTask[]>();
+
+  let maxRow = 4; // Tối thiểu 5 hàng (Việc 1 .. Việc 5)
+
+  parsed.forEach(({ task, span }) => {
+    const preferredRow =
+      typeof task.columnIndex === 'number' && task.columnIndex >= 0
+        ? task.columnIndex
+        : -1;
+
+    const isRowFree = (row: number, s: number, e: number) => {
+      const intervals = rowIntervals.get(row) || [];
+      return !intervals.some(
+        (inv) => Math.max(inv.startDec, s) < Math.min(inv.endDec, e)
+      );
+    };
+
+    let targetRow = 0;
+    if (preferredRow >= 0 && isRowFree(preferredRow, span.startDec, span.endDec)) {
+      targetRow = preferredRow;
+    } else {
+      while (!isRowFree(targetRow, span.startDec, span.endDec)) {
+        targetRow++;
+      }
     }
-    gridMap.set(`${hour}_${col}`, task);
-    if (col > maxCol) {
-      maxCol = col;
+
+    if (targetRow > maxRow) {
+      maxRow = targetRow;
     }
+
+    const intervals = rowIntervals.get(targetRow) || [];
+    intervals.push({ startDec: span.startDec, endDec: span.endDec, task });
+    rowIntervals.set(targetRow, intervals);
+
+    const item: ScheduledTimelineTask = { task, span, rowIndex: targetRow };
+    scheduledTasks.push(item);
+
+    const cellKey = `${span.startHour}_${targetRow}`;
+    const list = tasksStartingMap.get(cellKey) || [];
+    list.push(item);
+    tasksStartingMap.set(cellKey, list);
   });
 
-  const dynamicRows = Array.from({ length: maxCol + 1 }, (_, i) => i);
-  return { gridMap, dynamicRows };
+  const dynamicRows = Array.from({ length: maxRow + 1 }, (_, i) => i);
+
+  return {
+    scheduledTasks,
+    dynamicRows,
+    tasksStartingMap,
+    rowIntervals,
+  };
 }
 
 export const DayDetail: React.FC = () => {
@@ -276,8 +327,12 @@ export const DayDetail: React.FC = () => {
   );
 
   const currentTasksList = dayData?.dayStats?.tasksList || [];
-  const { gridMap: taskGridMap, dynamicRows } = useMemo(
-    () => buildTaskGridMap(currentTasksList),
+  const {
+    dynamicRows,
+    tasksStartingMap,
+    rowIntervals,
+  } = useMemo(
+    () => buildTaskTimelineSchedule(currentTasksList),
     [currentTasksList]
   );
 
@@ -540,25 +595,34 @@ export const DayDetail: React.FC = () => {
     }
   };
 
-  const handleEmptyCellClick = (hour: number, colIndex: number) => {
-    const timeFormatted = `${String(hour).padStart(2, '0')}:00`;
+  const handleEmptyCellClick = (
+    hour: number,
+    colIndex: number,
+    suggestedStartTime?: string
+  ) => {
+    const startTimeFormatted =
+      suggestedStartTime || `${String(hour).padStart(2, '0')}:00`;
+    const sDec = timeToDec(startTimeFormatted);
+    const endTimeFormatted = formatDecToTime(Math.min(24, sDec + 1));
+    const timeFormatted = `${startTimeFormatted} - ${endTimeFormatted}`;
+
     onOpenAddTaskModal({
       hour,
       columnIndex: colIndex,
       timeHint: timeFormatted,
+      startTime: startTimeFormatted,
+      endTime: endTimeFormatted,
     });
   };
 
   const handleEditTaskClick = (task: TaskItem) => {
-    const taskHour = resolveTaskHour(task);
-    const hourLabel = `${String(taskHour).padStart(2, '0')}:00`;
+    const span = parseTaskTimes(task);
     onEditTask({
       ...task,
-      hour: taskHour,
-      timeHint:
-        task.timeHint && /\d{1,2}/.test(task.timeHint)
-          ? task.timeHint
-          : hourLabel,
+      hour: span.startHour,
+      timeHint: `${span.startTime} - ${span.endTime}`,
+      startTime: span.startTime,
+      endTime: span.endTime,
     });
   };
 
@@ -881,10 +945,14 @@ export const DayDetail: React.FC = () => {
                 className="btn-minimal btn-sm btn-quick-add"
                 onClick={() => {
                   const nowH = new Date().getHours();
+                  const sTime = `${String(nowH).padStart(2, '0')}:00`;
+                  const eTime = `${String(Math.min(24, nowH + 1)).padStart(2, '0')}:00`;
                   onOpenAddTaskModal({
                     hour: nowH,
                     columnIndex: 0,
-                    timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                    timeHint: `${sTime} - ${eTime}`,
+                    startTime: sTime,
+                    endTime: eTime,
                   });
                 }}
                 title={
@@ -992,10 +1060,17 @@ export const DayDetail: React.FC = () => {
                     className="btn-minimal"
                     onClick={() => {
                       const nowH = new Date().getHours();
+                      const sTime = `${String(nowH).padStart(2, '0')}:00`;
+                      const eTime =
+                        nowH >= 23
+                          ? '23:59'
+                          : `${String(nowH + 1).padStart(2, '0')}:00`;
                       onOpenAddTaskModal({
                         hour: nowH,
                         columnIndex: 0,
-                        timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                        timeHint: `${sTime} - ${eTime}`,
+                        startTime: sTime,
+                        endTime: eTime,
                       });
                     }}
                   >
@@ -1040,13 +1115,8 @@ export const DayDetail: React.FC = () => {
                       {currentTasksList.map((task) => {
                         const isTaskChecked = (tasksMap[task.id] || 'NONE') !== 'NONE';
                         const isBoosted = isTaskBoostedByProfile(task, userProfile);
-                        const hour = resolveTaskHour(task);
-                        const slotTime = `${String(hour).padStart(2, '0')}:00`;
-                        const rawHint = (task.timeHint || '').trim();
-                        const timeFormatted =
-                          rawHint && !rawHint.includes(slotTime)
-                            ? `${slotTime} • ${rawHint}`
-                            : (rawHint || slotTime);
+                        const span = parseTaskTimes(task);
+                        const timeFormatted = `${span.startTime} – ${span.endTime}`;
 
                         return (
                           <div
@@ -1060,7 +1130,10 @@ export const DayDetail: React.FC = () => {
                                   {translateCategory(task.category, language)}
                                 </span>
                                 {isBoosted && <span className="task-badge-boost">★ ×1.25</span>}
-                                <span className="task-badge-time">{timeFormatted}</span>
+                                <span className="task-badge-time">
+                                  <Clock size={11} />
+                                  <span>{timeFormatted}</span>
+                                </span>
                               </div>
 
                               <div className="task-card-actions">
@@ -1105,10 +1178,17 @@ export const DayDetail: React.FC = () => {
                         className="btn-add-task-list-bottom"
                         onClick={() => {
                           const nowH = new Date().getHours();
+                          const sTime = `${String(nowH).padStart(2, '0')}:00`;
+                          const eTime =
+                            nowH >= 23
+                              ? '23:59'
+                              : `${String(nowH + 1).padStart(2, '0')}:00`;
                           onOpenAddTaskModal({
                             hour: nowH,
                             columnIndex: 0,
-                            timeHint: `${String(nowH).padStart(2, '0')}:00`,
+                            timeHint: `${sTime} - ${eTime}`,
+                            startTime: sTime,
+                            endTime: eTime,
                           });
                         }}
                       >
@@ -1149,7 +1229,7 @@ export const DayDetail: React.FC = () => {
                                 </div>
                               </th>
 
-                              {/* Trục X: Thời gian từ 00:00 đến 24:00 */}
+                              {/* Trục X: Thời gian từ 00:00 đến 23:59 */}
                               {HOURS_24.map((hour) => {
                                 const hourLabel = `${String(hour).padStart(2, '0')}:00`;
                                 return (
@@ -1164,129 +1244,174 @@ export const DayDetail: React.FC = () => {
                           </thead>
                           <tbody>
                             {/* Trục Y: Việc 1 .. Việc 5 (tự động mở rộng nếu nhiều việc cùng giờ) */}
-                            {dynamicRows.map((colIdx) => (
-                              <tr key={colIdx} className="timetable-row">
-                                <td className="timetable-td timetable-td-time">
-                                  <span className="timetable-time-text">
-                                    {isEn ? `Task ${colIdx + 1}` : `Việc ${colIdx + 1}`}
-                                  </span>
-                                </td>
-                                {HOURS_24.map((hour) => {
-                                  const hourLabel = `${String(hour).padStart(2, '0')}:00`;
-                                  const task = taskGridMap.get(`${hour}_${colIdx}`);
+                            {dynamicRows.map((colIdx) => {
+                              const intervals = rowIntervals.get(colIdx) || [];
 
-                                  if (task) {
-                                    const isTaskChecked =
-                                      (tasksMap[task.id] || 'NONE') !== 'NONE';
-                                    const isBoosted = isTaskBoostedByProfile(
-                                      task,
-                                      userProfile
+                              return (
+                                <tr key={colIdx} className="timetable-row">
+                                  <td className="timetable-td timetable-td-time">
+                                    <span className="timetable-time-text">
+                                      {isEn ? `Task ${colIdx + 1}` : `Việc ${colIdx + 1}`}
+                                    </span>
+                                  </td>
+                                  {HOURS_24.map((hour) => {
+                                    const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+                                    const cellKey = `${hour}_${colIdx}`;
+                                    const startingTasks = tasksStartingMap.get(cellKey) || [];
+
+                                    // Kiểm tra xem ô này có bị bao phủ bởi task nào bắt đầu từ giờ trước không
+                                    const coveringInterval = intervals.find(
+                                      (inv) => inv.startDec < hour && inv.endDec > hour
                                     );
+
+                                    const isFullyCovered =
+                                      coveringInterval && coveringInterval.endDec >= hour + 1;
+                                    const isPartiallyCovered =
+                                      coveringInterval && coveringInterval.endDec < hour + 1;
 
                                     return (
                                       <td
                                         key={hour}
-                                        className={`timetable-td timetable-td-task-cell ${
-                                          isTaskChecked
-                                            ? 'cell-has-task-checked'
-                                            : 'cell-has-task'
+                                        className={`timetable-td ${
+                                          startingTasks.length > 0
+                                            ? 'timetable-td-has-task'
+                                            : isFullyCovered
+                                            ? 'timetable-td-covered'
+                                            : 'timetable-td-empty-cell'
                                         }`}
-                                      >
-                                        <div
-                                          className={`grid-task-card ${
-                                            isTaskChecked
-                                              ? 'grid-task-card-checked'
-                                              : ''
-                                          }`}
-                                          onClick={() => handleEditTaskClick(task)}
-                                          title={
-                                            isEn
-                                              ? 'Click to edit or delete this task'
-                                              : 'Nhấp để chỉnh sửa hoặc xoá đầu việc này'
+                                        onClick={() => {
+                                          if (startingTasks.length === 0 && !isFullyCovered) {
+                                            const suggestedStart = isPartiallyCovered
+                                              ? formatDecToTime(coveringInterval.endDec)
+                                              : `${String(hour).padStart(2, '0')}:00`;
+                                            handleEmptyCellClick(hour, colIdx, suggestedStart);
                                           }
-                                        >
-                                          <div className="grid-task-top">
-                                            <div className="grid-task-left">
-                                              <div className="grid-task-badge-row">
-                                                <span className="grid-task-badge">
-                                                  {translateCategory(task.category, language)}
-                                                </span>
-                                                {isBoosted && (
-                                                  <span className="grid-task-boost">
-                                                    ★ ×1.25
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <h4 className="grid-task-title">
-                                                {task.title}
-                                              </h4>
-                                              <div className="grid-task-meta">
-                                                <span>
-                                                  {task.timeHint || hourLabel}
-                                                </span>
-                                              </div>
-                                            </div>
+                                        }}
+                                        title={
+                                          startingTasks.length === 0 && !isFullyCovered
+                                            ? isEn
+                                              ? `Click to add task at ${hourLabel} (Row Task ${colIdx + 1})`
+                                              : `Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`
+                                            : undefined
+                                        }
+                                      >
+                                        <div className="timetable-cell-track">
+                                          {/* Các thẻ task bắt đầu tại giờ này */}
+                                          {startingTasks.map(({ task, span }) => {
+                                            const isTaskChecked =
+                                              (tasksMap[task.id] || 'NONE') !== 'NONE';
+                                            const isBoosted = isTaskBoostedByProfile(
+                                              task,
+                                              userProfile
+                                            );
+                                            const leftPercent = span.startMinuteFrac * 100;
+                                            const widthPercent = span.durationHours * 100;
 
+                                            return (
+                                              <div
+                                                key={task.id}
+                                                className={`grid-task-card ${
+                                                  isTaskChecked
+                                                    ? 'grid-task-card-checked'
+                                                    : ''
+                                                }`}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleEditTaskClick(task);
+                                                }}
+                                                title={
+                                                  isEn
+                                                    ? `${task.title} (${span.startTime} – ${span.endTime})\nClick to edit or delete this task`
+                                                    : `${task.title} (${span.startTime} – ${span.endTime})\nNhấp để chỉnh sửa hoặc xoá đầu việc này`
+                                                }
+                                                style={{
+                                                  left: `calc(${leftPercent}% + 3px)`,
+                                                  width: `calc(${widthPercent}% - 6px)`,
+                                                }}
+                                              >
+                                                <div className="grid-task-top">
+                                                  <div className="grid-task-left">
+                                                    <div className="grid-task-badge-row">
+                                                      <span className="grid-task-badge">
+                                                        {translateCategory(task.category, language)}
+                                                      </span>
+                                                      {isBoosted && (
+                                                        <span className="grid-task-boost">
+                                                          ★ ×1.25
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                    <h4 className="grid-task-title">
+                                                      {task.title}
+                                                    </h4>
+                                                    <div className="grid-task-meta">
+                                                      <span>
+                                                        {span.startTime} – {span.endTime}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+
+                                                  <div
+                                                    className="grid-task-right"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleToggleTask(task.id);
+                                                    }}
+                                                    title={
+                                                      isTaskChecked
+                                                        ? isEn
+                                                          ? 'Unmark completion'
+                                                          : 'Bỏ tích hoàn thành'
+                                                        : isEn
+                                                        ? 'Mark task as completed'
+                                                        : 'Tích hoàn thành việc này'
+                                                    }
+                                                  >
+                                                    <button
+                                                      type="button"
+                                                      className={`timetable-checkbox ${
+                                                        isTaskChecked ? 'checked' : ''
+                                                      }`}
+                                                    >
+                                                      {isTaskChecked && (
+                                                        <Check
+                                                          size={14}
+                                                          strokeWidth={3}
+                                                        />
+                                                      )}
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+
+                                          {/* Hiển thị nút cộng khi ô còn trống và không bị task che phủ hoàn toàn */}
+                                          {startingTasks.length === 0 && !isFullyCovered && (
                                             <div
-                                              className="grid-task-right"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleToggleTask(task.id);
-                                              }}
-                                              title={
-                                                isTaskChecked
-                                                  ? isEn
-                                                    ? 'Unmark completion'
-                                                    : 'Bỏ tích hoàn thành'
-                                                  : isEn
-                                                  ? 'Mark task as completed'
-                                                  : 'Tích hoàn thành việc này'
+                                              className="grid-empty-target"
+                                              style={
+                                                isPartiallyCovered
+                                                  ? {
+                                                      left: `${(coveringInterval.endDec - hour) * 100}%`,
+                                                      width: `${(1 - (coveringInterval.endDec - hour)) * 100}%`,
+                                                    }
+                                                  : undefined
                                               }
                                             >
-                                              <button
-                                                type="button"
-                                                className={`timetable-checkbox ${
-                                                  isTaskChecked ? 'checked' : ''
-                                                }`}
-                                              >
-                                                {isTaskChecked && (
-                                                  <Check
-                                                    size={14}
-                                                    strokeWidth={3}
-                                                  />
-                                                )}
-                                              </button>
+                                              <Plus
+                                                size={14}
+                                                className="grid-empty-plus-icon"
+                                              />
                                             </div>
-                                          </div>
+                                          )}
                                         </div>
                                       </td>
                                     );
-                                  }
-
-                                  return (
-                                    <td
-                                      key={hour}
-                                      className="timetable-td timetable-td-empty-cell"
-                                      onClick={() =>
-                                        handleEmptyCellClick(hour, colIdx)
-                                      }
-                                      title={
-                                        isEn
-                                          ? `Click to add task at ${hourLabel} (Row Task ${colIdx + 1})`
-                                          : `Nhấp để thêm việc vào lúc ${hourLabel} (Hàng Việc ${colIdx + 1})`
-                                      }
-                                    >
-                                      <div className="grid-empty-target">
-                                        <Plus
-                                          size={14}
-                                          className="grid-empty-plus-icon"
-                                        />
-                                      </div>
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            ))}
+                                  })}
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>

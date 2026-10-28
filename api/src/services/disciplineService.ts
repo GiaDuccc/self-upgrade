@@ -354,6 +354,8 @@ const saveTask = async (
     title: string;
     category: string;
     timeHint?: string;
+    startTime?: string;
+    endTime?: string;
     target?: string;
     scope: 'day' | 'week' | 'month' | 'all';
     dateKey: string;
@@ -361,8 +363,10 @@ const saveTask = async (
     columnIndex?: number;
   }
 ) => {
-  const { mode, taskId, title, category, scope, dateKey, hour, columnIndex } = payload;
-  const timeHint = payload.timeHint || payload.target || '';
+  const { mode, taskId, title, category, scope, dateKey, hour, columnIndex, startTime, endTime } = payload;
+  const timeHint =
+    payload.timeHint ||
+    (startTime && endTime ? `${startTime} - ${endTime}` : startTime || payload.target || '');
   const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const prev = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
@@ -382,6 +386,8 @@ const saveTask = async (
       title,
       category,
       timeHint,
+      startTime,
+      endTime,
       hour,
       columnIndex,
     };
@@ -400,6 +406,8 @@ const saveTask = async (
     const extraFields = {
       ...(hour !== undefined ? { hour } : {}),
       ...(columnIndex !== undefined ? { columnIndex } : {}),
+      ...(startTime !== undefined ? { startTime } : {}),
+      ...(endTime !== undefined ? { endTime } : {}),
     };
     if (scope === 'all') {
       next.globalTasks = next.globalTasks.map((t) =>

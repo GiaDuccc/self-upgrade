@@ -507,7 +507,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                   {isEn ? 'Last analyzed:' : 'Phân tích lần cuối:'}{' '}
                   {new Date(initialSummary.updatedAt).toLocaleTimeString(
                     isEn ? 'en-US' : 'vi-VN',
-                    { hour: '2-digit', minute: '2-digit' }
+                    { hour: '2-digit', minute: '2-digit', hour12: false }
                   )}
                 </span>
               )}

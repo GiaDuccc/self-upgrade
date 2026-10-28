@@ -1410,22 +1410,22 @@ input {
 .task-card-item {
   background-color: var(--bg-surface);
   border: 1.5px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.18s ease;
-  min-height: 96px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  min-height: 104px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .task-card-item:hover {
-  border-color: var(--border-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--text-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
 }
 
@@ -1456,9 +1456,9 @@ input {
 }
 
 .task-badge-cat {
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
   background: var(--bg-mixed);
   color: var(--text-secondary);
@@ -1477,14 +1477,18 @@ input {
 }
 
 .task-badge-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-secondary);
   background: var(--bg-mixed-subtle);
   border: 1px solid var(--border-subtle);
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 .task-card-actions {
@@ -1564,14 +1568,14 @@ input {
   background-color: var(--bg-mixed-subtle);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 860px) {
   .tasks-list-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 /* ============================================================================
-   BẢNG TIMETABLE TO-DO LIST (TRỤC Y: VIỆC 1..5, TRỤC X: THỜI GIAN 00:00..24:00)
+   BẢNG TIMETABLE TO-DO LIST (TRỤC Y: VIỆC 1..5, TRỤC X: THỜI GIAN 00:00..23:59)
    ============================================================================ */
 .timetable-wrapper {
   width: 100%;
@@ -1671,7 +1675,7 @@ input {
   text-align: left;
 }
 
-/* Cột tiêu đề Thời gian trên trục X (00:00 .. 24:00) */
+/* Cột tiêu đề Thời gian trên trục X (00:00 .. 23:59) */
 .timetable-th-col {
   width: 160px;
   min-width: 160px;
@@ -1714,37 +1718,68 @@ input {
   font-weight: 600;
 }
 
-/* Ô có thẻ công việc bên trong — kích thước 160x78px phù hợp cỡ chữ mới */
-.timetable-td-task-cell {
+.timetable-row {
+  overflow: visible !important;
+}
+
+/* Các ô trong bảng — hỗ trợ thẻ kéo dài ngang theo khoảng thời gian thực thi */
+.timetable-td {
+  position: relative;
+  overflow: visible !important;
+  padding: 0 !important;
+  vertical-align: top;
+  border: 1px solid rgba(34, 34, 32, 0.08);
+  box-sizing: border-box;
+}
+
+.timetable-td-th-col,
+.timetable-td-task-cell,
+.timetable-td-empty-cell,
+.timetable-td-covered,
+.timetable-td-has-task {
   width: 160px;
   min-width: 160px;
   max-width: 160px;
   height: 78px;
   min-height: 78px;
-  padding: 5px;
-  vertical-align: top;
-  border: 1px solid rgba(34, 34, 32, 0.08);
 }
 
-/* Thẻ công việc To-do List to rộng bên trong ô bảng */
+.timetable-cell-track {
+  position: relative;
+  width: 100%;
+  height: 78px;
+  min-height: 78px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* Thẻ công việc To-do List to rộng bên trong ô bảng — kéo dài bề ngang theo thời lượng thực thi */
 .grid-task-card {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  z-index: 5;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 7px 8px;
-  height: 100%;
+  padding: 6px 8px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .grid-task-card:hover {
   border-color: var(--border-color);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.09);
   background-color: var(--bg-surface);
+  z-index: 10 !important;
+}
+
+.timetable-td-covered {
+  cursor: default;
 }
 
 .grid-task-card-checked {
@@ -2764,6 +2799,91 @@ input {
   font-family: var(--font-mono);
   font-size: 0.92rem;
   letter-spacing: 0.03em;
+  text-align: center;
+}
+
+/* 2 Ô THỜI GIAN THỰC HIỆN: BẮT ĐẦU & KẾT THÚC */
+.task-time-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.time-field-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.time-field-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.time-range-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 18px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.duration-quick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--bg-mixed-subtle);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+}
+
+.duration-badge {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.duration-badge strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.duration-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.duration-preset-btn {
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.duration-preset-btn:hover {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
 }
 
 .quick-hours-strip {
@@ -6473,16 +6593,25 @@ input {
 
   .timetable-th-col,
   .timetable-td-task-cell,
-  .timetable-td-empty-cell {
+  .timetable-td-empty-cell,
+  .timetable-td-covered,
+  .timetable-td-has-task {
     width: 110px;
     min-width: 110px;
     max-width: 110px;
+    height: 62px;
+    min-height: 62px;
   }
 
-  .timetable-td-task-cell,
-  .timetable-td-empty-cell {
+  .timetable-cell-track {
     height: 62px;
-    padding: 4px;
+    min-height: 62px;
+  }
+
+  .grid-task-card {
+    top: 3px;
+    bottom: 3px;
+    padding: 4px 6px;
   }
 
   .grid-task-title {

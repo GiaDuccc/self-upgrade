@@ -107,6 +107,8 @@ export const saveTaskAPI = async (payload: {
   title: string;
   category: string;
   timeHint: string;
+  startTime?: string;
+  endTime?: string;
   scope: TaskScope;
   dateKey: string;
   hour?: number;

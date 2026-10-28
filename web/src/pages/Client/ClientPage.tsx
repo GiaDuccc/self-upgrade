@@ -320,6 +320,8 @@ export const ClientPage: React.FC = () => {
     title: string;
     category: string;
     timeHint: string;
+    startTime?: string;
+    endTime?: string;
     scope: TaskScope;
     dateKey: string;
     hour?: number;
@@ -332,6 +334,8 @@ export const ClientPage: React.FC = () => {
         title: payload.title,
         category: payload.category,
         timeHint: payload.timeHint,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
         scope: payload.scope,
         dateKey: payload.dateKey,
         hour: payload.hour,

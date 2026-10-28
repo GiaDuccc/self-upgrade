@@ -269,7 +269,7 @@ const PERSONALIZATION_EN: PersonalizationOptions = {
     {
       id: 'IRON_DISCIPLINE',
       label: 'Iron Discipline & Self-Control (×1.25)',
-      desc: '×1.25 points for Wake 5AM, Sleep before 11PM, Limit Gaming, No Junk Food',
+      desc: '×1.25 points for Wake 05:00, Sleep before 23:00, Limit Gaming, No Junk Food',
       boostCategories: ['Kỷ luật', 'Kỷ luật sáng', 'Giải trí', 'Giải trí giới hạn'],
       boostTaskIds: ['wake_5am', 'sleep_before_11pm', 'play_2_games', 'no_junk_food'],
     },
