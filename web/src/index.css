@@ -5810,7 +5810,8 @@ input {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .exercise-index {
@@ -5820,20 +5821,14 @@ input {
   color: var(--text-secondary);
   padding: 1px 6px;
   border-radius: 4px;
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .exercise-title {
   font-size: 0.92rem;
   color: var(--text-primary);
-}
-
-.exercise-vol-tag {
-  font-size: 0.74rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-  background-color: var(--bg-mixed-subtle);
-  padding: 2px 7px;
-  border-radius: 4px;
+  word-break: break-word;
 }
 
 .btn-delete-ex {
@@ -6073,12 +6068,39 @@ input {
 
 .exercise-card-bottom {
   display: flex;
-  justify-content: flex-start;
-  padding-top: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  width: 100%;
 }
 
 .btn-add-set {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.exercise-vol-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: var(--bg-mixed-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 5px 12px;
+  height: 30px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
 }
 
 /* BOTTOM ACTIONS: NÚT THÊM BÀI TẬP ĐẨY SANG CẠNH TRÁI, NÚT LƯU Ở BÊN PHẢI */
@@ -7336,78 +7358,144 @@ input {
     font-size: 0.78rem;
   }
 
-  /* Bảng Sets hỗ trợ cuộn ngang mượt mà trên mobile */
+  /* Bảng chi tiết bài tập: Không cuộn ngang, thu nhỏ ô nhập vừa khít màn hình mobile */
   .sets-table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
     width: 100%;
   }
 
   .sets-table {
     width: 100%;
-    min-width: 390px;
+    min-width: 0 !important;
+    table-layout: fixed;
   }
 
   .sets-table th,
   .sets-table td {
-    padding: 4px 3px;
+    padding: 4px 2px;
     font-size: 0.72rem;
   }
 
   .sets-table .col-set {
-    width: 32px;
+    width: 24px;
+    text-align: center;
   }
 
   .sets-table .col-weight,
   .sets-table .col-reps,
   .sets-table .col-rir {
-    width: calc((100% - 60px) / 3);
-    min-width: 80px;
+    width: calc((100% - 50px) / 3);
+    min-width: 0 !important;
   }
 
   .sets-table .col-action {
-    width: 28px;
+    width: 26px;
+    text-align: center;
   }
 
   .set-num-pill {
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
+    width: 19px;
+    height: 19px;
+    line-height: 19px;
     font-size: 0.68rem;
+    margin: 0 auto;
   }
 
   .stepper-input-wrapper {
     height: 28px;
+    width: 100%;
+    border-radius: 4px;
   }
 
   .stepper-native-input {
-    padding: 3px 4px;
+    padding: 2px 2px;
     font-size: 0.78rem;
-  }
-
-  .stepper-input-wrapper .unit-label {
-    right: 2px;
-    font-size: 0.62rem;
+    text-align: center;
+    min-width: 0;
   }
 
   .stepper-arrows-col {
-    width: 16px;
-    padding-right: 2px;
+    width: 14px;
+    padding-right: 1px;
+    padding-left: 0;
   }
 
   .stepper-arrow-btn {
     height: 11px;
   }
 
-  .set-select {
-    padding: 4px 4px;
-    font-size: 0.72rem;
+  .btn-delete-set {
+    padding: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-delete-set svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .exercise-card {
+    padding: 10px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .exercise-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .exercise-name-badge-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
   }
 
   .exercise-title-container {
     max-width: 100%;
     min-width: 0;
     flex: 1;
+  }
+
+  .exercise-title-pill {
+    max-width: 100%;
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  .exercise-title {
+    font-size: 0.84rem;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  /* Hàng đáy: Nút Thêm hiệp & Thẻ Volume cân bằng trên 1 hàng */
+  .exercise-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 4px;
+    width: 100%;
+  }
+
+  .btn-add-set {
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    height: 26px;
+  }
+
+  .exercise-vol-tag {
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    height: 26px;
   }
 
   .exercise-title-input-wrapper {

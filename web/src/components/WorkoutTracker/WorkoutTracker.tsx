@@ -749,10 +749,6 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                           </div>
                         )}
                       </div>
-
-                      <span className="exercise-vol-tag">
-                        Volume: {exVol.toLocaleString()} kg
-                      </span>
                     </div>
 
                     <button
@@ -771,9 +767,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                       <thead>
                         <tr>
                           <th className="col-set">SET</th>
-                          <th className="col-weight">
-                            {isEn ? 'WEIGHT (KG)' : 'TRỌNG LƯỢNG (KG)'}
-                          </th>
+                          <th className="col-weight">KG</th>
                           <th className="col-reps">
                             {isEn ? 'REPS' : 'SỐ REP'}
                           </th>
@@ -985,6 +979,10 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                       <Plus size={13} />
                       <span>{isEn ? 'Add Set' : 'Thêm hiệp (Set)'}</span>
                     </button>
+
+                    <span className="exercise-vol-tag">
+                      Volume: {exVol.toLocaleString()} kg
+                    </span>
                   </div>
                 </div>
               );
