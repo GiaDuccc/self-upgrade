@@ -6,9 +6,11 @@ import {
   Dumbbell,
   Check,
   RotateCcw,
+  Sparkles,
+  Flame,
 } from 'lucide-react';
 import { UserProfile } from '~/interface/user.interface';
-import { DEFAULT_USER_PROFILE } from '~/utils/constants';
+import { DEFAULT_USER_PROFILE, calculateMacroRecommendations } from '~/utils/constants';
 import { getLocalizedPersonalization, useLanguage } from '~/utils/i18n';
 
 interface ProfileModalProps {
@@ -92,6 +94,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       ? Math.round((weight / ((height / 100) * (height / 100))) * 10) / 10
       : null;
 
+  const macroRec = calculateMacroRecommendations(formData);
+
   return (
     <div
       className="modal-backdrop"
@@ -160,7 +164,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </span>
             </div>
 
-            <div className="profile-inputs-grid-5">
+            <div className="profile-inputs-grid-6">
               <div className="form-group">
                 <label className="form-label" htmlFor="prof-name">
                   {isEn ? 'NAME / NICKNAME' : 'TÊN / BIỆT DANH'}
@@ -173,6 +177,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  {isEn ? 'GENDER' : 'GIỚI TÍNH'}
+                </label>
+                <div className="gender-pills-wrap">
+                  <button
+                    type="button"
+                    className={`gender-pill ${formData.gender !== 'female' ? 'active' : ''}`}
+                    onClick={() => handleChange('gender', 'male')}
+                  >
+                    <span>{isEn ? '👨 Male' : '👨 Nam'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`gender-pill ${formData.gender === 'female' ? 'active' : ''}`}
+                    onClick={() => handleChange('gender', 'female')}
+                  >
+                    <span>{isEn ? '👩 Female' : '👩 Nữ'}</span>
+                  </button>
+                </div>
               </div>
 
               <div className="form-group">
@@ -411,6 +437,175 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. MỤC TIÊU DINH DƯỠNG (MACRO) ĐỀ XUẤT CHO BẠN */}
+          <div className="profile-section-block">
+            <div className="profile-section-title">
+              <Sparkles size={15} />
+              <span>
+                {isEn
+                  ? '4. RECOMMENDED NUTRITION & MACRO TARGETS (AI NUTRITIONIST)'
+                  : '4. MỤC TIÊU DINH DƯỠNG (MACRO) ĐỀ XUẤT (AI DINH DƯỠNG)'}
+              </span>
+            </div>
+
+            <div className="macro-recommend-card">
+              <div className="macro-recommend-card-top">
+                <div>
+                  <h4 className="macro-recommend-title">
+                    <Flame size={15} />
+                    <span>
+                      {isEn
+                        ? `Daily Target: ~${macroRec.targetCalories.toLocaleString()} kcal (${macroRec.goalLabelEn})`
+                        : `Mục tiêu ngày: ~${macroRec.targetCalories.toLocaleString()} kcal (${macroRec.goalLabel})`}
+                    </span>
+                  </h4>
+                  <p className="macro-recommend-desc">
+                    {isEn
+                      ? `Calibrated for ${formData.gender === 'female' ? 'Female' : 'Male'}, ${formData.weightKg || '68'}kg, ${formData.heightCm || '170'}cm, age ${formData.age || '22'} (Mifflin-St Jeor: BMR ~${macroRec.bmr} kcal | TDEE ~${macroRec.tdee} kcal)`
+                      : `Tính chuẩn khoa học cho ${formData.gender === 'female' ? 'Nữ' : 'Nam'}, ${formData.weightKg || '68'}kg, ${formData.heightCm || '170'}cm, ${formData.age || '22'} tuổi (Mifflin-St Jeor: BMR ~${macroRec.bmr} kcal | TDEE ~${macroRec.tdee} kcal)`}
+                  </p>
+                </div>
+
+                <div className="macro-mode-switch">
+                  <button
+                    type="button"
+                    className={`macro-mode-btn ${formData.macroMode !== 'custom' ? 'active' : ''}`}
+                    onClick={() => handleChange('macroMode', 'auto')}
+                  >
+                    {isEn ? 'Auto Recommended' : 'Tự động đề xuất'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`macro-mode-btn ${formData.macroMode === 'custom' ? 'active' : ''}`}
+                    onClick={() => handleChange('macroMode', 'custom')}
+                  >
+                    {isEn ? 'Custom Input' : 'Tự chỉnh thủ công'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="macro-targets-grid">
+                <div className="macro-target-badge target-calories">
+                  <span className="target-label">{isEn ? 'CALORIES' : 'CALO MỤC TIÊU'}</span>
+                  {formData.macroMode === 'custom' ? (
+                    <div className="target-custom-wrap">
+                      <input
+                        type="number"
+                        className="target-custom-input"
+                        placeholder={String(macroRec.targetCalories)}
+                        value={formData.targetCalories || ''}
+                        onChange={(e) => handleChange('targetCalories', e.target.value)}
+                      />
+                      <span className="target-unit">kcal</span>
+                    </div>
+                  ) : (
+                    <strong className="target-value">
+                      {macroRec.targetCalories.toLocaleString()}{' '}
+                      <span className="target-unit">kcal</span>
+                    </strong>
+                  )}
+                  <span className="target-note">
+                    {macroRec.targetCalories > macroRec.tdee
+                      ? `+${macroRec.targetCalories - macroRec.tdee} kcal surplus`
+                      : macroRec.targetCalories < macroRec.tdee
+                      ? `${macroRec.targetCalories - macroRec.tdee} kcal deficit`
+                      : 'Maintenance'}
+                  </span>
+                </div>
+
+                <div className="macro-target-badge target-protein">
+                  <span className="target-label">{isEn ? 'PROTEIN' : 'PROTEIN (ĐẠM)'}</span>
+                  {formData.macroMode === 'custom' ? (
+                    <div className="target-custom-wrap">
+                      <input
+                        type="number"
+                        className="target-custom-input"
+                        placeholder={String(macroRec.targetProtein)}
+                        value={formData.targetProtein || ''}
+                        onChange={(e) => handleChange('targetProtein', e.target.value)}
+                      />
+                      <span className="target-unit">g</span>
+                    </div>
+                  ) : (
+                    <strong className="target-value">
+                      {macroRec.targetProtein}{' '}
+                      <span className="target-unit">g</span>
+                    </strong>
+                  )}
+                  <span className="target-note">
+                    ~{(Math.round((macroRec.targetProtein / (parseFloat(formData.weightKg || '68') || 68)) * 10) / 10)}g / kg
+                  </span>
+                </div>
+
+                <div className="macro-target-badge target-carb">
+                  <span className="target-label">{isEn ? 'CARBS' : 'CARB (TINH BỘT)'}</span>
+                  {formData.macroMode === 'custom' ? (
+                    <div className="target-custom-wrap">
+                      <input
+                        type="number"
+                        className="target-custom-input"
+                        placeholder={String(macroRec.targetCarb)}
+                        value={formData.targetCarb || ''}
+                        onChange={(e) => handleChange('targetCarb', e.target.value)}
+                      />
+                      <span className="target-unit">g</span>
+                    </div>
+                  ) : (
+                    <strong className="target-value">
+                      {macroRec.targetCarb}{' '}
+                      <span className="target-unit">g</span>
+                    </strong>
+                  )}
+                  <span className="target-note">{isEn ? 'Energy fuel' : 'Năng lượng sạch'}</span>
+                </div>
+
+                <div className="macro-target-badge target-fat">
+                  <span className="target-label">{isEn ? 'FAT' : 'CHẤT BÉO (FAT)'}</span>
+                  {formData.macroMode === 'custom' ? (
+                    <div className="target-custom-wrap">
+                      <input
+                        type="number"
+                        className="target-custom-input"
+                        placeholder={String(macroRec.targetFat)}
+                        value={formData.targetFat || ''}
+                        onChange={(e) => handleChange('targetFat', e.target.value)}
+                      />
+                      <span className="target-unit">g</span>
+                    </div>
+                  ) : (
+                    <strong className="target-value">
+                      {macroRec.targetFat}{' '}
+                      <span className="target-unit">g</span>
+                    </strong>
+                  )}
+                  <span className="target-note">{isEn ? 'Hormones & cells' : 'Hormone & khớp'}</span>
+                </div>
+
+                <div className="macro-target-badge target-fiber">
+                  <span className="target-label">{isEn ? 'FIBER' : 'CHẤT XƠ'}</span>
+                  {formData.macroMode === 'custom' ? (
+                    <div className="target-custom-wrap">
+                      <input
+                        type="number"
+                        className="target-custom-input"
+                        placeholder={String(macroRec.targetFiber)}
+                        value={formData.targetFiber || ''}
+                        onChange={(e) => handleChange('targetFiber', e.target.value)}
+                      />
+                      <span className="target-unit">g</span>
+                    </div>
+                  ) : (
+                    <strong className="target-value">
+                      {macroRec.targetFiber}{' '}
+                      <span className="target-unit">g</span>
+                    </strong>
+                  )}
+                  <span className="target-note">{isEn ? 'Digestive health' : 'Tiêu hóa khỏe'}</span>
+                </div>
               </div>
             </div>
           </div>

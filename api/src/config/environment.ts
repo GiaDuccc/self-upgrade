@@ -19,7 +19,9 @@ export const env = {
   WEBSITE_DOMAIN_PRODUCTION:
     process.env.WEBSITE_DOMAIN_PRODUCTION || 'https://self-upgrade.giaduc.tech',
 
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  GEMINI_API_KEY: (process.env.GEMINI_API_KEY || '').replace(/['"]/g, '').trim(),
+  GEMINI_NUTRITION_MODEL:
+    process.env.GEMINI_NUTRITION_MODEL || 'gemini-3.5-flash-lite',
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',

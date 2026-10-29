@@ -1,3 +1,4 @@
+import { env } from '~/config/environment';
 import { CookingMethod, FoodItem, FoodState, UserProfile } from '~/types';
 
 export interface MacroPer100g {
@@ -651,7 +652,7 @@ export function parsePortionGrams(weightStr: string | undefined, defaultUnitGram
 export function lookupFoodEntry(foodName: string): MacroPer100g {
   const lower = foodName.toLowerCase().trim();
 
-  // Tìm khớp chính xác nhất
+  // Tìm khớp chính xác nhất trong cơ sở dữ liệu
   for (const item of FOOD_DATABASE) {
     for (const kw of item.keywords) {
       if (lower.includes(kw)) {
@@ -660,7 +661,54 @@ export function lookupFoodEntry(foodName: string): MacroPer100g {
     }
   }
 
-  // Fallback thông minh cho món ăn hỗn hợp chưa có trong danh mục
+  // Fallback heuristic thông minh
+  return smartHeuristicFoodEstimate(foodName);
+}
+
+/**
+ * Ước tính dinh dưỡng theo thành phần nguyên liệu nếu không gọi được Gemini
+ */
+function smartHeuristicFoodEstimate(foodName: string): MacroPer100g {
+  const lower = foodName.toLowerCase();
+
+  // Thịt đỏ / Bò
+  if (lower.includes('bò') || lower.includes('beef')) {
+    return { keywords: [lower], nameEn: foodName, calories: 215, protein: 22.0, carb: 2.0, fat: 14.0, fiber: 0, defaultUnitGrams: 180, rawToCookedRatio: 0.75 };
+  }
+  // Gia cầm (gà, vịt, ngan)
+  if (lower.includes('gà') || lower.includes('chicken') || lower.includes('vịt') || lower.includes('chim')) {
+    return { keywords: [lower], nameEn: foodName, calories: 175, protein: 24.0, carb: 1.0, fat: 8.0, fiber: 0, defaultUnitGrams: 200, rawToCookedRatio: 0.74 };
+  }
+  // Thủy hải sản
+  if (lower.includes('cá') || lower.includes('fish') || lower.includes('tôm') || lower.includes('mực') || lower.includes('hải sản') || lower.includes('cua')) {
+    return { keywords: [lower], nameEn: foodName, calories: 130, protein: 20.0, carb: 1.0, fat: 4.5, fiber: 0, defaultUnitGrams: 180, rawToCookedRatio: 0.8 };
+  }
+  // Trứng
+  if (lower.includes('trứng') || lower.includes('egg')) {
+    return { keywords: [lower], nameEn: foodName, calories: 155, protein: 13.0, carb: 1.1, fat: 11.0, fiber: 0, defaultUnitGrams: 110 };
+  }
+  // Đậu phụ / Chay
+  if (lower.includes('đậu phụ') || lower.includes('tofu') || lower.includes('đậu hũ')) {
+    return { keywords: [lower], nameEn: foodName, calories: 95, protein: 9.5, carb: 3.0, fat: 5.0, fiber: 1.2, defaultUnitGrams: 150 };
+  }
+  // Món xào / chiên / rán
+  if (lower.includes('chiên') || lower.includes('rán') || lower.includes('xào')) {
+    return { keywords: [lower], nameEn: foodName, calories: 195, protein: 9.0, carb: 22.0, fat: 8.5, fiber: 1.5, defaultUnitGrams: 220 };
+  }
+  // Tinh bột (cơm, bún, miến, phở, mì, bánh mì, khoai, xôi)
+  if (lower.includes('cơm') || lower.includes('xôi') || lower.includes('bánh mì') || lower.includes('mì') || lower.includes('nui') || lower.includes('bún')) {
+    return { keywords: [lower], nameEn: foodName, calories: 165, protein: 5.5, carb: 30.0, fat: 2.8, fiber: 1.2, defaultUnitGrams: 250 };
+  }
+  // Rau củ / Canh / Salad
+  if (lower.includes('salad') || lower.includes('rau') || lower.includes('canh') || lower.includes('gỏi')) {
+    return { keywords: [lower], nameEn: foodName, calories: 55, protein: 2.5, carb: 7.5, fat: 1.8, fiber: 2.5, defaultUnitGrams: 200 };
+  }
+  // Đồ ngọt / Chè / Trà sữa / Bánh
+  if (lower.includes('chè') || lower.includes('bánh') || lower.includes('kem') || lower.includes('kẹo') || lower.includes('trà sữa') || lower.includes('sinh tố')) {
+    return { keywords: [lower], nameEn: foodName, calories: 235, protein: 3.5, carb: 42.0, fat: 6.5, fiber: 1.0, defaultUnitGrams: 180 };
+  }
+
+  // Fallback thông minh mặc định
   return {
     keywords: [lower],
     nameEn: foodName,
@@ -675,15 +723,139 @@ export function lookupFoodEntry(foodName: string): MacroPer100g {
 }
 
 /**
- * Tool 3: Tính toán chính xác 5 chỉ số macro cho 1 món ăn dựa trên khối lượng, trạng thái sống/chín và cách chế biến
+ * Cache trong bộ nhớ RAM cho các món ăn lạ đã được Gemini AI phân tích (0ms cho các lần tra cứu sau).
+ * Giới hạn trần an toàn MAX_FOOD_CACHE_SIZE để đảm bảo RAM luôn cố định dưới ~500KB, tuyệt đối không bị phình to.
  */
-export function calculateSingleItemMacros(meal: FoodItem): FoodItem {
-  const dbEntry = lookupFoodEntry(meal.name);
+const MAX_FOOD_CACHE_SIZE = 2000;
+const GEMINI_FOOD_CACHE = new Map<string, MacroPer100g>();
+
+function setFoodCache(key: string, value: MacroPer100g) {
+  if (GEMINI_FOOD_CACHE.size >= MAX_FOOD_CACHE_SIZE) {
+    const oldestKey = GEMINI_FOOD_CACHE.keys().next().value;
+    if (oldestKey) GEMINI_FOOD_CACHE.delete(oldestKey);
+  }
+  GEMINI_FOOD_CACHE.set(key, value);
+}
+
+function getFoodCache(key: string): MacroPer100g | undefined {
+  if (!GEMINI_FOOD_CACHE.has(key)) return undefined;
+  const val = GEMINI_FOOD_CACHE.get(key)!;
+  GEMINI_FOOD_CACHE.delete(key);
+  GEMINI_FOOD_CACHE.set(key, val);
+  return val;
+}
+
+/**
+ * Tool 2.5: Sử dụng Google Gemini AI Model (mặc định gemini-3.5-flash-lite siêu nhẹ, nhanh, tiết kiệm)
+ * để ước tính chính xác Macro cho các món ăn lạ, món tự chế biến hoặc không có trong cơ sở dữ liệu tĩnh.
+ */
+export async function estimateUnknownFoodWithGemini(foodName: string): Promise<MacroPer100g> {
+  const lower = foodName.toLowerCase().trim();
+  const cached = getFoodCache(lower);
+  if (cached) {
+    return cached;
+  }
+
+  if (!env.GEMINI_API_KEY) {
+    const heuristic = smartHeuristicFoodEstimate(foodName);
+    setFoodCache(lower, heuristic);
+    return heuristic;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
+
+    const modelName = env.GEMINI_NUTRITION_MODEL || 'gemini-3.5-flash-lite';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${env.GEMINI_API_KEY}`;
+    const prompt = `Bạn là chuyên gia dinh dưỡng thể thao và ẩm thực. Hãy phân tích và ước tính giá trị dinh dưỡng trên 100g thức ăn cho món ăn: "${foodName}".
+Nếu là món tự chế hoặc kết hợp nhiều nguyên liệu, hãy bóc tách các thành phần chính để đưa ra calo và macro trung bình thực tế nhất.
+Trả về ĐÚNG 1 JSON duy nhất dạng:
+{
+  "calories": number (calo trên 100g),
+  "protein": number (gam protein trên 100g),
+  "carb": number (gam carb trên 100g),
+  "fat": number (gam chất béo trên 100g),
+  "fiber": number (gam chất xơ trên 100g),
+  "defaultUnitGrams": number (khối lượng trung bình 1 phần/bát/đĩa ăn, ví dụ 180-350),
+  "nameEn": string (tên tiếng Anh tương đương)
+}`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json' },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Gemini API status ${res.status}`);
+    }
+
+    const data: any = await res.json();
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('Empty Gemini response text');
+
+    const parsed = JSON.parse(rawText);
+    const entry: MacroPer100g = {
+      keywords: [lower],
+      nameEn: parsed.nameEn || foodName,
+      calories: Math.max(0, Math.round(Number(parsed.calories) || 145)),
+      protein: Math.max(0, Math.round((Number(parsed.protein) || 8) * 10) / 10),
+      carb: Math.max(0, Math.round((Number(parsed.carb) || 16) * 10) / 10),
+      fat: Math.max(0, Math.round((Number(parsed.fat) || 5) * 10) / 10),
+      fiber: Math.max(0, Math.round((Number(parsed.fiber) || 1.5) * 10) / 10),
+      defaultUnitGrams: Math.max(50, Math.round(Number(parsed.defaultUnitGrams) || 200)),
+      rawToCookedRatio: 0.85,
+    };
+
+    setFoodCache(lower, entry);
+    console.log(
+      `[Gemini AI Nutrition] Estimated "${foodName}": ${entry.calories} kcal/100g | P:${entry.protein}g C:${entry.carb}g F:${entry.fat}g`
+    );
+    return entry;
+  } catch (error) {
+    console.warn(
+      `[Gemini AI Nutrition] Estimation failed for "${foodName}", using heuristic fallback:`,
+      error instanceof Error ? error.message : error
+    );
+    const fallback = smartHeuristicFoodEstimate(foodName);
+    setFoodCache(lower, fallback);
+    return fallback;
+  }
+}
+
+/**
+ * Tool 3: Tính toán chính xác 5 chỉ số macro cho 1 món ăn (hỗ trợ cả món quen trong DB và món lạ qua Gemini Flash)
+ */
+export async function calculateSingleItemMacrosAsync(meal: FoodItem): Promise<FoodItem> {
+  const lower = meal.name.toLowerCase().trim();
+  let dbEntry: MacroPer100g | null = null;
+
+  // 1. Kiểm tra nhanh trong cơ sở dữ liệu có sẵn (0ms)
+  for (const item of FOOD_DATABASE) {
+    for (const kw of item.keywords) {
+      if (lower.includes(kw)) {
+        dbEntry = item;
+        break;
+      }
+    }
+    if (dbEntry) break;
+  }
+
+  // 2. Nếu món lạ / tự chế không có trong DB -> gọi Gemini 3.8 Flash để ước tính chính xác
+  if (!dbEntry) {
+    dbEntry = await estimateUnknownFoodWithGemini(meal.name);
+  }
+
   const grams = parsePortionGrams(meal.weight, dbEntry.defaultUnitGrams);
   const factor = grams / 100;
 
-  // Hệ số chuyển đổi Sống (Raw) vs Chín (Cooked)
-  // Cơ sở dữ liệu tính theo 100g đã nấu chín. Nếu cân lúc còn sống, thịt/cá chứa nhiều nước hơn (~0.74x), gạo khô đặc hơn (~2.8x)
   let stateMultiplier = 1.0;
   if (meal.foodState === 'raw' && dbEntry.rawToCookedRatio) {
     stateMultiplier = dbEntry.rawToCookedRatio;
@@ -699,17 +871,57 @@ export function calculateSingleItemMacros(meal: FoodItem): FoodItem {
   if (meal.foodState !== 'raw' && !dbEntry.isLiquid) {
     const method: CookingMethod | undefined = meal.cookingMethod;
     if (method === 'chien') {
-      // Chiên/rán thấm dầu: ~9g chất béo (+81 kcal) trên mỗi 100g thực phẩm
       const extraFat = 9.0 * factor;
       baseFat += extraFat;
       baseCal += extraFat * 9;
     } else if (method === 'xao') {
-      // Xào: ~4.5g chất béo (+40.5 kcal) trên mỗi 100g thực phẩm
       const extraFat = 4.5 * factor;
       baseFat += extraFat;
       baseCal += extraFat * 9;
     } else if (method === 'nuong') {
-      // Nướng: phết nhẹ dầu/gia vị (~1.2g fat / 100g)
+      const extraFat = 1.2 * factor;
+      baseFat += extraFat;
+      baseCal += extraFat * 9;
+    }
+  }
+
+  return {
+    ...meal,
+    calories: Math.max(0, Math.round(baseCal)),
+    protein: Math.max(0, Math.round(basePro * 10) / 10),
+    carb: Math.max(0, Math.round(baseCarb * 10) / 10),
+    fat: Math.max(0, Math.round(baseFat * 10) / 10),
+    fiber: Math.max(0, Math.round(baseFiber * 10) / 10),
+  };
+}
+
+export function calculateSingleItemMacros(meal: FoodItem): FoodItem {
+  const dbEntry = lookupFoodEntry(meal.name);
+  const grams = parsePortionGrams(meal.weight, dbEntry.defaultUnitGrams);
+  const factor = grams / 100;
+
+  let stateMultiplier = 1.0;
+  if (meal.foodState === 'raw' && dbEntry.rawToCookedRatio) {
+    stateMultiplier = dbEntry.rawToCookedRatio;
+  }
+
+  let baseCal = dbEntry.calories * factor * stateMultiplier;
+  let basePro = dbEntry.protein * factor * stateMultiplier;
+  let baseCarb = dbEntry.carb * factor * stateMultiplier;
+  let baseFat = dbEntry.fat * factor * stateMultiplier;
+  let baseFiber = dbEntry.fiber * factor * stateMultiplier;
+
+  if (meal.foodState !== 'raw' && !dbEntry.isLiquid) {
+    const method: CookingMethod | undefined = meal.cookingMethod;
+    if (method === 'chien') {
+      const extraFat = 9.0 * factor;
+      baseFat += extraFat;
+      baseCal += extraFat * 9;
+    } else if (method === 'xao') {
+      const extraFat = 4.5 * factor;
+      baseFat += extraFat;
+      baseCal += extraFat * 9;
+    } else if (method === 'nuong') {
       const extraFat = 1.2 * factor;
       baseFat += extraFat;
       baseCal += extraFat * 9;
@@ -734,34 +946,95 @@ export interface UserNutritionTargets {
   targetCarb: number;
   targetFat: number;
   targetFiber: number;
+  goalKey: string;
+  goalLabel: string;
+  goalLabelEn: string;
 }
 
 /**
- * Tool 4: Tính toán BMR, TDEE và nhu cầu Macro cá nhân hóa theo hồ sơ thể trạng của người dùng
+ * Tool 4: Tính toán BMR, TDEE và nhu cầu Macro cá nhân hóa theo hồ sơ thể trạng (Giới tính, Tuổi, Chiều cao, Cân nặng, Mục tiêu Gym)
  */
 export function calculateUserNutritionTargets(profile: UserProfile): UserNutritionTargets {
-  const weight = parseFloat(String(profile.weightKg || '65')) || 65;
+  const weight = parseFloat(String(profile.weightKg || '68')) || 68;
   const height = parseFloat(String(profile.heightCm || '170')) || 170;
   const age = parseInt(String(profile.age || '22'), 10) || 22;
+  const isFemale = profile.gender === 'female';
 
-  // Công thức Mifflin-St Jeor chuẩn
-  const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + 5);
-  const tdee = Math.round(bmr * 1.45); // Mức vận động rèn luyện kỷ luật hàng ngày
+  // Công thức Mifflin-St Jeor chuẩn khoa học
+  const bmr = isFemale
+    ? Math.round(10 * weight + 6.25 * height - 5 * age - 161)
+    : Math.round(10 * weight + 6.25 * height - 5 * age + 5);
 
+  const tdee = Math.round(bmr * 1.45); // Mức vận động rèn luyện tiêu chuẩn
+
+  const workoutGoal = (profile.workoutGoal || 'HYPERTROPHY').toUpperCase();
   let targetCalories = tdee;
-  let proteinPerKg = 1.8;
+  let targetProtein = Math.round(weight * 2.0);
+  let targetFat = Math.round((targetCalories * 0.25) / 9);
+  let targetFiber = 25;
+  let goalLabel = 'Tăng cơ bắp tối đa (Hypertrophy)';
+  let goalLabelEn = 'Muscle Hypertrophy';
 
-  const goal = (profile.focusGoal || '').toUpperCase();
-  if (goal.includes('HEALTH') || goal.includes('FITNESS')) {
-    proteinPerKg = 2.0;
+  if (workoutGoal.includes('FAT_LOSS')) {
+    targetCalories = Math.max(1200, tdee - 450); // Thâm hụt 450 kcal
+    targetProtein = Math.round(weight * 2.3); // Nạp đạm cao chống teo cơ
+    targetFat = Math.round((targetCalories * 0.22) / 9);
+    targetFiber = 30;
+    goalLabel = 'Giảm mỡ & Săn chắc (Fat Loss)';
+    goalLabelEn = 'Fat Loss & Cutting';
+  } else if (workoutGoal.includes('STRENGTH')) {
+    targetCalories = tdee + 150;
+    targetProtein = Math.round(weight * 2.0);
+    targetFat = Math.round((targetCalories * 0.28) / 9);
+    targetFiber = 25;
+    goalLabel = 'Tăng sức mạnh & Tải nặng (Strength)';
+    goalLabelEn = 'Strength & Power';
+  } else if (workoutGoal.includes('ENDURANCE')) {
+    targetCalories = tdee;
+    targetProtein = Math.round(weight * 1.6);
+    targetFat = Math.round((targetCalories * 0.20) / 9);
+    targetFiber = 28;
+    goalLabel = 'Sức bền & Thể lực (Endurance)';
+    goalLabelEn = 'Endurance & Conditioning';
+  } else if (workoutGoal.includes('GENERAL_FITNESS')) {
+    targetCalories = tdee;
+    targetProtein = Math.round(weight * 1.8);
+    targetFat = Math.round((targetCalories * 0.25) / 9);
+    targetFiber = 25;
+    goalLabel = 'Duy trì & Thể chất khỏe (General Fitness)';
+    goalLabelEn = 'General Fitness & Health';
+  } else {
+    // HYPERTROPHY (Mặc định)
+    targetCalories = tdee + 250; // Thặng dư 250 kcal để tăng cơ nạc
+    targetProtein = Math.round(weight * 2.1);
+    targetFat = Math.round((targetCalories * 0.25) / 9);
+    targetFiber = 28;
+    goalLabel = 'Tăng cơ bắp tối đa (Hypertrophy)';
+    goalLabelEn = 'Muscle Hypertrophy';
   }
 
-  const targetProtein = Math.round(weight * proteinPerKg);
-  const targetFat = Math.round((targetCalories * 0.25) / 9);
-  const targetCarb = Math.round(
-    Math.max(100, (targetCalories - targetProtein * 4 - targetFat * 9) / 4)
+  let targetCarb = Math.round(
+    Math.max(80, (targetCalories - targetProtein * 4 - targetFat * 9) / 4)
   );
-  const targetFiber = 25;
+
+  // Nếu người dùng chọn Custom và đã nhập số riêng -> ưu tiên số tùy chỉnh
+  if (profile.macroMode === 'custom') {
+    if (profile.targetCalories && Number(profile.targetCalories) > 0) {
+      targetCalories = Math.round(Number(profile.targetCalories));
+    }
+    if (profile.targetProtein && Number(profile.targetProtein) > 0) {
+      targetProtein = Math.round(Number(profile.targetProtein));
+    }
+    if (profile.targetCarb && Number(profile.targetCarb) > 0) {
+      targetCarb = Math.round(Number(profile.targetCarb));
+    }
+    if (profile.targetFat && Number(profile.targetFat) > 0) {
+      targetFat = Math.round(Number(profile.targetFat));
+    }
+    if (profile.targetFiber && Number(profile.targetFiber) > 0) {
+      targetFiber = Math.round(Number(profile.targetFiber));
+    }
+  }
 
   return {
     bmr,
@@ -771,6 +1044,8 @@ export function calculateUserNutritionTargets(profile: UserProfile): UserNutriti
     targetCarb,
     targetFat,
     targetFiber,
+    goalKey: workoutGoal,
+    goalLabel,
+    goalLabelEn,
   };
 }
-

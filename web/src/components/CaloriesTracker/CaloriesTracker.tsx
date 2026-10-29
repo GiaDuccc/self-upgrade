@@ -20,6 +20,8 @@ import {
   CookingMethod,
 } from '~/interface/discipline.interface';
 import { useLanguage } from '~/utils/i18n';
+import { UserProfile } from '~/interface/user.interface';
+import { calculateMacroRecommendations } from '~/utils/constants';
 
 interface CaloriesTrackerProps {
   dateKey: string;
@@ -27,6 +29,7 @@ interface CaloriesTrackerProps {
   initialSummary?: CaloriesSummary;
   onSaveCalories: (meals: FoodItem[]) => Promise<void>;
   isSaving?: boolean;
+  userProfile?: UserProfile;
 }
 
 const DEFAULT_TIMES: Record<MealSession, string> = {
@@ -90,8 +93,10 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
   initialSummary,
   onSaveCalories,
   isSaving = false,
+  userProfile,
 }) => {
   const { isEn } = useLanguage();
+  const macroTargets = userProfile ? calculateMacroRecommendations(userProfile) : null;
   const [meals, setMeals] = useState<FoodItem[]>(() => initialMeals);
   const [activeSessionAdd, setActiveSessionAdd] = useState<MealSession | null>(
     null
@@ -586,10 +591,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.totalCalories : 0}</strong>
-              <span className="macro-unit">kcal</span>
+              {macroTargets ? (
+                <span className="macro-target-val">
+                  / {macroTargets.targetCalories.toLocaleString()}{' '}
+                  <span className="macro-unit">kcal</span>
+                </span>
+              ) : (
+                <span className="macro-unit">kcal</span>
+              )}
             </div>
             <span className="macro-desc">
-              {isEn ? 'Energy intake' : 'Năng lượng nạp'}
+              {macroTargets ? (isEn ? `Target: ~${macroTargets.targetCalories} kcal` : `Mục tiêu: ~${macroTargets.targetCalories} kcal`) : (isEn ? 'Energy intake' : 'Năng lượng nạp')}
             </span>
           </div>
 
@@ -599,10 +611,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.protein : 0}</strong>
-              <span className="macro-unit">g</span>
+              {macroTargets ? (
+                <span className="macro-target-val">
+                  / {macroTargets.targetProtein}{' '}
+                  <span className="macro-unit">g</span>
+                </span>
+              ) : (
+                <span className="macro-unit">g</span>
+              )}
             </div>
             <span className="macro-desc">
-              {isEn ? 'Muscle growth' : 'Phát triển cơ bắp'}
+              {macroTargets ? (isEn ? `Target: ~${macroTargets.targetProtein}g` : `Mục tiêu: ~${macroTargets.targetProtein}g đạm`) : (isEn ? 'Muscle growth' : 'Phát triển cơ bắp')}
             </span>
           </div>
 
@@ -612,10 +631,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.carb : 0}</strong>
-              <span className="macro-unit">g</span>
+              {macroTargets ? (
+                <span className="macro-target-val">
+                  / {macroTargets.targetCarb}{' '}
+                  <span className="macro-unit">g</span>
+                </span>
+              ) : (
+                <span className="macro-unit">g</span>
+              )}
             </div>
             <span className="macro-desc">
-              {isEn ? 'Active fuel' : 'Nhiên liệu hoạt động'}
+              {macroTargets ? (isEn ? `Target: ~${macroTargets.targetCarb}g` : `Mục tiêu: ~${macroTargets.targetCarb}g tinh bột`) : (isEn ? 'Active fuel' : 'Nhiên liệu hoạt động')}
             </span>
           </div>
 
@@ -625,10 +651,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.fat : 0}</strong>
-              <span className="macro-unit">g</span>
+              {macroTargets ? (
+                <span className="macro-target-val">
+                  / {macroTargets.targetFat}{' '}
+                  <span className="macro-unit">g</span>
+                </span>
+              ) : (
+                <span className="macro-unit">g</span>
+              )}
             </div>
             <span className="macro-desc">
-              {isEn ? 'Hormones & cells' : 'Hormone & tế bào'}
+              {macroTargets ? (isEn ? `Target: ~${macroTargets.targetFat}g` : `Mục tiêu: ~${macroTargets.targetFat}g chất béo`) : (isEn ? 'Hormones & cells' : 'Hormone & tế bào')}
             </span>
           </div>
 
@@ -638,10 +671,17 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
             </span>
             <div className="macro-card-value">
               <strong>{initialSummary ? initialSummary.fiber : 0}</strong>
-              <span className="macro-unit">g</span>
+              {macroTargets ? (
+                <span className="macro-target-val">
+                  / {macroTargets.targetFiber}{' '}
+                  <span className="macro-unit">g</span>
+                </span>
+              ) : (
+                <span className="macro-unit">g</span>
+              )}
             </div>
             <span className="macro-desc">
-              {isEn ? 'Healthy digestion' : 'Hệ tiêu hóa khỏe'}
+              {macroTargets ? (isEn ? `Target: ~${macroTargets.targetFiber}g` : `Mục tiêu: ~${macroTargets.targetFiber}g chất xơ`) : (isEn ? 'Healthy digestion' : 'Hệ tiêu hóa khỏe')}
             </span>
           </div>
         </div>

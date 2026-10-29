@@ -365,6 +365,7 @@ export const PERSONALIZATION_OPTIONS = {
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
   name: '',
+  gender: 'male',
   age: '',
   weightKg: '',
   heightCm: '',
@@ -377,6 +378,12 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   personalMotto: '',
   workoutGoal: 'HYPERTROPHY',
   workoutLevel: 'INTERMEDIATE',
+  macroMode: 'auto',
+  targetCalories: '',
+  targetProtein: '',
+  targetCarb: '',
+  targetFat: '',
+  targetFiber: '',
 };
 
 export function isTaskBoostedByProfile(

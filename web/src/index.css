@@ -7687,3 +7687,212 @@ input {
     display: none;
   }
 }
+
+
+/* ============================================================================
+   MACRO RECOMMENDATIONS & TARGETS STYLES (AI NUTRITIONIST & PROFILE MODAL)
+   ============================================================================ */
+.profile-inputs-grid-6 {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.gender-pills-wrap {
+  display: flex;
+  gap: 6px;
+  height: 38px;
+}
+
+.gender-pill {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gender-pill:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.gender-pill.active {
+  background-color: var(--bg-primary);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.macro-recommend-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.macro-recommend-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.macro-recommend-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.macro-recommend-desc {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.macro-mode-switch {
+  display: flex;
+  gap: 4px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.macro-mode-btn {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.macro-mode-btn:hover {
+  color: var(--text-primary);
+}
+
+.macro-mode-btn.active {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.macro-targets-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.macro-target-badge {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.macro-target-badge.target-calories {
+  border-color: var(--border-color);
+  background-color: var(--bg-mixed-subtle);
+}
+
+.target-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.target-value {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.target-unit {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.target-note {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.target-custom-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.target-custom-input {
+  width: 100%;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.target-custom-input:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.macro-target-val {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.macro-target-val .macro-unit {
+  font-size: 0.72rem;
+}
+
+@media (max-width: 768px) {
+  .profile-inputs-grid-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .profile-inputs-grid-6 > .form-group:first-child {
+    grid-column: 1 / -1;
+  }
+  .macro-targets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .macro-targets-grid > .target-calories {
+    grid-column: 1 / -1;
+  }
+}

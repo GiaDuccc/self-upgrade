@@ -14,6 +14,7 @@ import {
 } from './memory/agentMemoryEngine';
 import {
   calculateSingleItemMacros,
+  calculateSingleItemMacrosAsync,
   calculateUserNutritionTargets,
 } from './tools/nutritionKnowledgeTool';
 
@@ -725,12 +726,12 @@ export function runDisciplineCoachAgent(params: {
  * SUB-AGENT 2: NUTRITIONIST AGENT (Tool-Augmented Macro & Diet Reasoning)
  * ============================================================================
  */
-export function runNutritionistAgent(params: {
+export async function runNutritionistAgent(params: {
   profile: UserProfile;
   dateKey: string;
   meals: FoodItem[];
   previousSummary?: CaloriesSummary;
-}): { summary: CaloriesSummary; meals: FoodItem[] } {
+}): Promise<{ summary: CaloriesSummary; meals: FoodItem[] }> {
   const { profile, meals, previousSummary } = params;
 
   if (!meals || meals.length === 0) {
@@ -752,7 +753,7 @@ export function runNutritionistAgent(params: {
   }
 
   // BƯỚC 1: GỌI TOOL TÍNH TOÁN CHÍNH XÁC 5 CHỈ SỐ MACRO CHO TỪNG MÓN ĂN
-  const analyzedMeals = meals.map((m) => calculateSingleItemMacros(m));
+  const analyzedMeals = await Promise.all(meals.map((m) => calculateSingleItemMacrosAsync(m)));
 
   // BƯỚC 2: TỔNG HỢP 5 CHỈ SỐ TOÀN NGÀY
   const totalCalories = Math.round(

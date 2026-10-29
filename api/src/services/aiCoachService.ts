@@ -631,7 +631,7 @@ const analyzeNutrition = async (
   meals: FoodItem[],
   previousSummary?: CaloriesSummary
 ): Promise<{ summary: CaloriesSummary; meals: FoodItem[] }> => {
-  const result = runNutritionistAgent({
+  const result = await runNutritionistAgent({
     profile,
     dateKey,
     meals,

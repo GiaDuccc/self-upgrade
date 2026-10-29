@@ -322,6 +322,7 @@ export const PERSONALIZATION_OPTIONS: PersonalizationOptions = {
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
   name: '',
+  gender: 'male',
   age: '',
   weightKg: '',
   heightCm: '',
@@ -334,6 +335,12 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   personalMotto: '',
   workoutGoal: 'HYPERTROPHY',
   workoutLevel: 'INTERMEDIATE',
+  macroMode: 'auto',
+  targetCalories: '',
+  targetProtein: '',
+  targetCarb: '',
+  targetFat: '',
+  targetFiber: '',
 };
 
 export function isTaskBoostedByProfile(
@@ -378,3 +385,109 @@ export function getTodayInfo() {
   };
 }
 
+
+
+export interface MacroRecommendation {
+  bmr: number;
+  tdee: number;
+  targetCalories: number;
+  targetProtein: number;
+  targetCarb: number;
+  targetFat: number;
+  targetFiber: number;
+  goalLabel: string;
+  goalLabelEn: string;
+}
+
+export function calculateMacroRecommendations(profile: Partial<UserProfile>): MacroRecommendation {
+  const weight = parseFloat(String(profile.weightKg || '68')) || 68;
+  const height = parseFloat(String(profile.heightCm || '170')) || 170;
+  const age = parseInt(String(profile.age || '22'), 10) || 22;
+  const isFemale = profile.gender === 'female';
+
+  // Mifflin-St Jeor
+  const bmr = isFemale
+    ? Math.round(10 * weight + 6.25 * height - 5 * age - 161)
+    : Math.round(10 * weight + 6.25 * height - 5 * age + 5);
+
+  const tdee = Math.round(bmr * 1.45);
+
+  const workoutGoal = (profile.workoutGoal || 'HYPERTROPHY').toUpperCase();
+  let targetCalories = tdee;
+  let targetProtein = Math.round(weight * 2.0);
+  let targetFat = Math.round((targetCalories * 0.25) / 9);
+  let targetFiber = 25;
+  let goalLabel = 'Tăng cơ bắp tối đa (Hypertrophy)';
+  let goalLabelEn = 'Muscle Hypertrophy';
+
+  if (workoutGoal.includes('FAT_LOSS')) {
+    targetCalories = Math.max(1200, tdee - 450);
+    targetProtein = Math.round(weight * 2.3);
+    targetFat = Math.round((targetCalories * 0.22) / 9);
+    targetFiber = 30;
+    goalLabel = 'Giảm mỡ & Săn chắc (Fat Loss)';
+    goalLabelEn = 'Fat Loss & Cutting';
+  } else if (workoutGoal.includes('STRENGTH')) {
+    targetCalories = tdee + 150;
+    targetProtein = Math.round(weight * 2.0);
+    targetFat = Math.round((targetCalories * 0.28) / 9);
+    targetFiber = 25;
+    goalLabel = 'Tăng sức mạnh & Tải nặng (Strength)';
+    goalLabelEn = 'Strength & Power';
+  } else if (workoutGoal.includes('ENDURANCE')) {
+    targetCalories = tdee;
+    targetProtein = Math.round(weight * 1.6);
+    targetFat = Math.round((targetCalories * 0.20) / 9);
+    targetFiber = 28;
+    goalLabel = 'Sức bền & Thể lực (Endurance)';
+    goalLabelEn = 'Endurance & Conditioning';
+  } else if (workoutGoal.includes('GENERAL_FITNESS')) {
+    targetCalories = tdee;
+    targetProtein = Math.round(weight * 1.8);
+    targetFat = Math.round((targetCalories * 0.25) / 9);
+    targetFiber = 25;
+    goalLabel = 'Duy trì & Thể chất khỏe (General Fitness)';
+    goalLabelEn = 'General Fitness & Health';
+  } else {
+    targetCalories = tdee + 250;
+    targetProtein = Math.round(weight * 2.1);
+    targetFat = Math.round((targetCalories * 0.25) / 9);
+    targetFiber = 28;
+    goalLabel = 'Tăng cơ bắp tối đa (Hypertrophy)';
+    goalLabelEn = 'Muscle Hypertrophy';
+  }
+
+  let targetCarb = Math.round(
+    Math.max(80, (targetCalories - targetProtein * 4 - targetFat * 9) / 4)
+  );
+
+  if (profile.macroMode === 'custom') {
+    if (profile.targetCalories && Number(profile.targetCalories) > 0) {
+      targetCalories = Math.round(Number(profile.targetCalories));
+    }
+    if (profile.targetProtein && Number(profile.targetProtein) > 0) {
+      targetProtein = Math.round(Number(profile.targetProtein));
+    }
+    if (profile.targetCarb && Number(profile.targetCarb) > 0) {
+      targetCarb = Math.round(Number(profile.targetCarb));
+    }
+    if (profile.targetFat && Number(profile.targetFat) > 0) {
+      targetFat = Math.round(Number(profile.targetFat));
+    }
+    if (profile.targetFiber && Number(profile.targetFiber) > 0) {
+      targetFiber = Math.round(Number(profile.targetFiber));
+    }
+  }
+
+  return {
+    bmr,
+    tdee,
+    targetCalories,
+    targetProtein,
+    targetCarb,
+    targetFat,
+    targetFiber,
+    goalLabel,
+    goalLabelEn,
+  };
+}

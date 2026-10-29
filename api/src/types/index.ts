@@ -206,6 +206,7 @@ export interface MonthStats {
 
 export interface UserProfile {
   name: string;
+  gender?: 'male' | 'female';
   age: string;
   weightKg: string;
   heightCm: string;
@@ -218,6 +219,12 @@ export interface UserProfile {
   personalMotto: string;
   workoutGoal?: string;
   workoutLevel?: string;
+  macroMode?: 'auto' | 'custom';
+  targetCalories?: string | number;
+  targetProtein?: string | number;
+  targetCarb?: string | number;
+  targetFat?: string | number;
+  targetFiber?: string | number;
 }
 
 export interface UserDocument {

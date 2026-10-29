@@ -1623,6 +1623,7 @@ export const DayDetail: React.FC = () => {
                 initialSummary={caloriesSummary}
                 onSaveCalories={handleSaveCalories}
                 isSaving={isSavingCalories}
+                userProfile={userProfile}
               />
             </div>
           ) : (
