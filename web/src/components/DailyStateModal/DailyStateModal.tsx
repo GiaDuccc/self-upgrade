@@ -61,6 +61,17 @@ export const DailyStateModal: React.FC<DailyStateModalProps> = ({
     };
   }, [isOpen, initialPhysicalState, initialMentalState, initialEmotionalState]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,6 +101,7 @@ export const DailyStateModal: React.FC<DailyStateModalProps> = ({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="daily-state-modal-title"
     >
       <div
         className="modal-container modal-container-wide"
@@ -97,11 +109,11 @@ export const DailyStateModal: React.FC<DailyStateModalProps> = ({
       >
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-icon-badge">
+            <div className="modal-icon-badge" aria-hidden="true">
               <UserCheck size={18} />
             </div>
             <div>
-              <h3 className="modal-title">
+              <h3 id="daily-state-modal-title" className="modal-title">
                 {isEn
                   ? `UPDATE DAILY STATES (${dayStr}/${monthStr})`
                   : `CẬP NHẬT TRẠNG THÁI NGÀY ${dayStr}/${monthStr}`}

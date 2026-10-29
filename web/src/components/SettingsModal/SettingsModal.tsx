@@ -81,6 +81,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="settings-modal-title"
     >
       <div
         className="modal-container settings-modal-container"
@@ -89,11 +90,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-icon-badge">
+            <div className="modal-icon-badge" aria-hidden="true">
               <Settings size={18} />
             </div>
             <div>
-              <h3 className="modal-title">
+              <h3 id="settings-modal-title" className="modal-title">
                 {isEn ? 'SYSTEM SETTINGS' : 'CÀI ĐẶT HỆ THỐNG'}
               </h3>
               <p className="modal-subtitle">

@@ -58,7 +58,19 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     <header className="top-navbar">
       {/* HÀNG TRÊN: BRAND BÊN TRÁI & NAV TABS CỐ ĐỊNH Ở GÓC PHẢI */}
       <div className="top-navbar-row-top">
-        <div className="brand-block" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <div
+          className="brand-block"
+          role="button"
+          tabIndex={0}
+          aria-label={isEn ? 'Go to Dashboard home' : 'Về trang chủ Tổng quan tháng'}
+          onClick={() => navigate('/')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/');
+            }
+          }}
+        >
           <div className="brand-logo-mark">
             <img src="/logo.png" alt="Self Upgrade" className="brand-logo-img" />
           </div>
@@ -87,22 +99,24 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           <button
             type="button"
             className={`btn-minimal nav-tab-btn ${isDashboardPage ? 'active' : ''}`}
+            aria-current={isDashboardPage ? 'page' : undefined}
             onClick={() => navigate('/')}
           >
-            <LayoutDashboard size={15} />
+            <LayoutDashboard size={15} aria-hidden="true" />
             <span className="nav-tab-text-desktop">{isEn ? 'Monthly Overview' : 'Tổng quan tháng'}</span>
             <span className="nav-tab-text-mobile">{isEn ? 'Month' : 'Tháng'}</span>
           </button>
           <button
             type="button"
             className={`btn-minimal nav-tab-btn ${isDayDetailPage ? 'active' : ''}`}
+            aria-current={isDayDetailPage ? 'page' : undefined}
             onClick={() => {
               const savedTab = localStorage.getItem('activeDayTab');
               const query = savedTab && savedTab !== 'todolist' ? `?tab=${savedTab}` : '';
               navigate(`/day/${targetDayKey}${query}`);
             }}
           >
-            <CheckSquare size={15} />
+            <CheckSquare size={15} aria-hidden="true" />
             <span className="nav-tab-text-desktop">
               {isEn ? 'Day Detail' : 'Chi tiết ngày'} ({targetDayKey.slice(8, 10)}/{targetDayKey.slice(5, 7)})
             </span>

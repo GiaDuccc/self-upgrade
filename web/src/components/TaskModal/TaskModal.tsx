@@ -269,6 +269,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="task-modal-title"
     >
       <div
         className="modal-container"
@@ -276,11 +277,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       >
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-icon-badge">
+            <div className="modal-icon-badge" aria-hidden="true">
               {mode === 'add' ? <Plus size={18} /> : <Sparkles size={18} />}
             </div>
             <div>
-              <h3 className="modal-title">
+              <h3 id="task-modal-title" className="modal-title">
                 {mode === 'add'
                   ? isEn
                     ? 'Add New Task'
@@ -307,7 +308,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="modal-body">
-          {errorMsg && <div className="modal-error-alert">{errorMsg}</div>}
+          {errorMsg && (
+            <div className="modal-error-alert" role="alert">
+              {errorMsg}
+            </div>
+          )}
 
           <div className="form-group">
             <div className="form-label-with-hint">
@@ -361,6 +366,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <input
                 type="text"
                 className="form-input form-input-sub"
+                aria-label={isEn ? 'Custom category name' : 'Tên danh mục khác'}
                 placeholder={
                   isEn ? 'Enter custom category...' : 'Nhập tên trường khác...'
                 }

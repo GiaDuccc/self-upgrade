@@ -107,6 +107,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="profile-modal-title"
     >
       <div
         className="modal-container modal-container-wide"
@@ -114,11 +115,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       >
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-icon-badge">
+            <div className="modal-icon-badge" aria-hidden="true">
               <UserCheck size={18} />
             </div>
             <div>
-              <h3 className="modal-title">
+              <h3 id="profile-modal-title" className="modal-title">
                 {isFirstTimeSetup
                   ? isEn
                     ? 'Welcome! First-Time Personalization Setup'

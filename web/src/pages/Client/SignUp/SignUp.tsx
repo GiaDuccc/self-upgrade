@@ -116,10 +116,11 @@ export const SignUp: React.FC = () => {
               ĐỊA CHỈ GMAIL <span className="required-star">*</span>
             </label>
             <div className="auth-input-wrap">
-              <Mail size={16} className="auth-input-icon" />
+              <Mail size={16} className="auth-input-icon" aria-hidden="true" />
               <input
                 id="signup-email"
                 type="email"
+                autoComplete="email"
                 className="form-input auth-input-with-icon"
                 placeholder="yourname@gmail.com"
                 value={email}
@@ -135,10 +136,11 @@ export const SignUp: React.FC = () => {
               MẬT KHẨU (TỐI THIỂU 6 KÝ TỰ) <span className="required-star">*</span>
             </label>
             <div className="auth-input-wrap">
-              <Lock size={16} className="auth-input-icon" />
+              <Lock size={16} className="auth-input-icon" aria-hidden="true" />
               <input
                 id="signup-password"
                 type="password"
+                autoComplete="new-password"
                 className="form-input auth-input-with-icon"
                 placeholder="Nhập mật khẩu bảo mật..."
                 value={password}
@@ -154,10 +156,11 @@ export const SignUp: React.FC = () => {
               NHẬP LẠI MẬT KHẨU <span className="required-star">*</span>
             </label>
             <div className="auth-input-wrap">
-              <Lock size={16} className="auth-input-icon" />
+              <Lock size={16} className="auth-input-icon" aria-hidden="true" />
               <input
                 id="signup-confirm-password"
                 type="password"
+                autoComplete="new-password"
                 className="form-input auth-input-with-icon"
                 placeholder="Nhập lại mật khẩu để xác nhận..."
                 value={confirmPassword}

@@ -457,14 +457,15 @@ export const AiCoachWidget: React.FC<AiCoachWidgetProps> = ({
               type="button"
               className="btn-ai-close"
               onClick={handleCloseManually}
+              aria-label={isEn ? 'Collapse AI bubble' : 'Thu gọn bong bóng AI'}
               title={isEn ? 'Collapse bubble' : 'Thu gọn bong bóng'}
             >
-              <X size={13} />
+              <X size={13} aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        <div className="ai-speech-bubble-body">
+        <div className="ai-speech-bubble-body" aria-live="polite">
           {isAiLoading ? (
             <div
               className="ai-typing-indicator"

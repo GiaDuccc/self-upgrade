@@ -689,11 +689,13 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                     : 'Nhấn để chọn hoặc tự gõ tên riêng'}
                                 </span>
                               </div>
-                              <div className="suggestions-list">
+                              <div className="suggestions-list" role="listbox">
                                 {suggestionsList.map((item) => (
                                   <div
                                     key={item.id}
                                     className="suggestion-item"
+                                    role="option"
+                                    tabIndex={0}
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       handleSelectSuggestion(
@@ -701,6 +703,16 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                         isEn ? item.nameEn : item.name,
                                         item.category
                                       );
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleSelectSuggestion(
+                                          ex.id,
+                                          isEn ? item.nameEn : item.name,
+                                          item.category
+                                        );
+                                      }
                                     }}
                                   >
                                     <span className="suggestion-name">
@@ -720,8 +732,23 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                           <div
                             className={`exercise-title-pill ${!ex.name.trim() ? 'is-empty' : ''}`}
                             onClick={() => setFocusedExId(ex.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setFocusedExId(ex.id);
+                              }
+                            }}
                             role="button"
                             tabIndex={0}
+                            aria-label={
+                              ex.name.trim()
+                                ? isEn
+                                  ? `Edit exercise name: ${ex.name}`
+                                  : `Sửa tên bài tập: ${ex.name}`
+                                : isEn
+                                ? 'Click to enter exercise name'
+                                : 'Nhấn để nhập tên bài tập'
+                            }
                             title={
                               isEn
                                 ? 'Click to enter/edit exercise name'
@@ -736,6 +763,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                 <Edit2
                                   size={12}
                                   className="exercise-title-edit-icon"
+                                  aria-hidden="true"
                                 />
                               </>
                             ) : (
@@ -755,9 +783,10 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                       type="button"
                       className="btn-icon-minimal btn-delete-ex"
                       onClick={() => handleDeleteExercise(ex.id)}
+                      aria-label={isEn ? 'Remove exercise' : 'Xóa bài tập này'}
                       title={isEn ? 'Remove exercise' : 'Xóa bài tập này'}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
 
@@ -766,15 +795,17 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                     <table className="sets-table">
                       <thead>
                         <tr>
-                          <th className="col-set">SET</th>
-                          <th className="col-weight">KG</th>
-                          <th className="col-reps">
+                          <th scope="col" className="col-set">SET</th>
+                          <th scope="col" className="col-weight">KG</th>
+                          <th scope="col" className="col-reps">
                             {isEn ? 'REPS' : 'SỐ REP'}
                           </th>
-                          <th className="col-rir">
+                          <th scope="col" className="col-rir">
                             RIR <span className="th-hint">(0-5)</span>
                           </th>
-                          <th className="col-action"></th>
+                          <th scope="col" className="col-action">
+                            <span className="sr-only">{isEn ? 'Actions' : 'Thao tác'}</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -794,6 +825,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                   max={500}
                                   step={0.5}
                                   className="stepper-native-input weight-input"
+                                  aria-label={isEn ? `Set ${s.setNumber} weight (kg)` : `Mức tạ (kg) hiệp ${s.setNumber}`}
                                   value={s.weightKg}
                                   placeholder="0"
                                   onChange={(e) =>
@@ -849,6 +881,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                   min={0}
                                   max={200}
                                   className="stepper-native-input reps-input"
+                                  aria-label={isEn ? `Set ${s.setNumber} reps` : `Số rep hiệp ${s.setNumber}`}
                                   value={s.reps}
                                   placeholder="0"
                                   onChange={(e) =>
@@ -911,6 +944,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                   min={0}
                                   max={10}
                                   className="stepper-native-input rir-input"
+                                  aria-label={isEn ? `Set ${s.setNumber} RIR` : `Chỉ số RIR hiệp ${s.setNumber}`}
                                   value={s.rir}
                                   placeholder="2"
                                   onChange={(e) =>
@@ -958,10 +992,11 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
                                 type="button"
                                 className="btn-icon-minimal btn-delete-set"
                                 onClick={() => handleDeleteSet(ex.id, sIdx)}
+                                aria-label={isEn ? `Delete set ${s.setNumber}` : `Xóa hiệp ${s.setNumber}`}
                                 title={isEn ? 'Delete set' : 'Xóa set'}
                                 disabled={ex.sets.length <= 1}
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={16} aria-hidden="true" />
                               </button>
                             </td>
                           </tr>

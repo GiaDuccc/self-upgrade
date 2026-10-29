@@ -119,10 +119,11 @@ export const SignIn: React.FC = () => {
               GMAIL / EMAIL <span className="required-star">*</span>
             </label>
             <div className="auth-input-wrap">
-              <Mail size={16} className="auth-input-icon" />
+              <Mail size={16} className="auth-input-icon" aria-hidden="true" />
               <input
                 id="signin-email"
                 type="email"
+                autoComplete="email"
                 className="form-input auth-input-with-icon"
                 placeholder="example@gmail.com"
                 value={email}
@@ -138,10 +139,11 @@ export const SignIn: React.FC = () => {
               MẬT KHẨU <span className="required-star">*</span>
             </label>
             <div className="auth-input-wrap">
-              <Lock size={16} className="auth-input-icon" />
+              <Lock size={16} className="auth-input-icon" aria-hidden="true" />
               <input
                 id="signin-password"
                 type="password"
+                autoComplete="current-password"
                 className="form-input auth-input-with-icon"
                 placeholder="Nhập mật khẩu của bạn..."
                 value={password}

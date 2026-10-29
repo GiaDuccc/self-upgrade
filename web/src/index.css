@@ -9,7 +9,7 @@
   --bg-mixed-subtle: #F3F0EA;
   --text-primary: #222220;
   --text-secondary: #5C5A55;
-  --text-muted: #8E8B82;
+  --text-muted: #6B6860;
   --border-color: #222220;
   --border-subtle: #D6D1C7;
   --btn-bg: #FFFDF9;
@@ -30,9 +30,9 @@
   --font-sans: 'JetBrains Mono', monospace;
   --font-mono: 'JetBrains Mono', monospace;
   --state-bad: #DC2626;
-  --state-medium: #ee651b;
-  --state-good: #ffbb00;
-  --state-perfect: #16A34A;
+  --state-medium: #D9531E;
+  --state-good: #B45309;
+  --state-perfect: #15803D;
 }
 
 [data-theme='dark'] {
@@ -42,7 +42,7 @@
   --bg-mixed-subtle: #201F1C;
   --text-primary: #EDE9E1;
   --text-secondary: #9E9A91;
-  --text-muted: #6E6B62;
+  --text-muted: #908C82;
   --border-color: #EDE9E1;
   --border-subtle: #383632;
   --btn-bg: #1B1A18;
@@ -57,6 +57,10 @@
   --chart-line: #EDE9E1;
   --chart-area: rgba(237, 233, 225, 0.08);
   --chart-grid: #282724;
+  --state-bad: #EF4444;
+  --state-medium: #F97316;
+  --state-good: #FBBF24;
+  --state-perfect: #22C55E;
 }
 
 [data-theme='dark'] .timetable-th,
@@ -114,6 +118,33 @@ input {
   color: inherit;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
 /* ============================================================================
    LAYOUT CHUNG (THU NHỎ KHUNG, LỘ THÊM 50PX KHOẢNG TRỐNG 2 BÊN)
    ============================================================================ */
@@ -148,6 +179,8 @@ input {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
 }
 
 .brand-logo-mark {
@@ -7887,5 +7920,11 @@ select.form-input option {
   }
   .macro-targets-grid > .target-calories {
     grid-column: 1 / -1;
+  }
+  .btn-food-delete,
+  .btn-edit-task,
+  .btn-delete-set {
+    min-width: 32px;
+    min-height: 32px;
   }
 }

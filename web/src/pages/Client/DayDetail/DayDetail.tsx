@@ -960,6 +960,12 @@ export const DayDetail: React.FC = () => {
                   className="state-mini-card"
                   title={physObj.desc}
                   onClick={() => setIsStateModalOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsStateModalOpen(true);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                 >
@@ -976,6 +982,12 @@ export const DayDetail: React.FC = () => {
                   className="state-mini-card"
                   title={mentObj.desc}
                   onClick={() => setIsStateModalOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsStateModalOpen(true);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                 >
@@ -992,6 +1004,12 @@ export const DayDetail: React.FC = () => {
                   className="state-mini-card"
                   title={emoObj.desc}
                   onClick={() => setIsStateModalOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsStateModalOpen(true);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                 >
@@ -1014,6 +1032,12 @@ export const DayDetail: React.FC = () => {
                       : `Giấc ngủ: ${dayData.dayRecord.sleepData.bedTime} - ${dayData.dayRecord.sleepData.wakeTime} (${Math.floor(dayData.dayRecord.sleepData.durationMinutes / 60)}h ${dayData.dayRecord.sleepData.durationMinutes % 60}m)${dayData.dayRecord.sleepData.source ? ` • Nguồn: ${dayData.dayRecord.sleepData.source}` : ''}`
                   }
                   onClick={onOpenProfileModal}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onOpenProfileModal();
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                 >
@@ -1028,6 +1052,11 @@ export const DayDetail: React.FC = () => {
 
             <div
               className="progress-bar-track"
+              role="progressbar"
+              aria-valuenow={dayStats.percentage}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={isEn ? 'Daily progress' : 'Tiến độ ngày'}
               title={
                 isEn
                   ? `Daily progress: ${dayStats.percentage}%`
@@ -1232,7 +1261,15 @@ export const DayDetail: React.FC = () => {
                           <div
                             key={task.id}
                             className={`task-card-item ${isTaskChecked ? 'task-card-checked' : ''}`}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => handleEditTaskClick(task)}
+                            onKeyDown={(e) => {
+                              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                handleEditTaskClick(task);
+                              }
+                            }}
                           >
                             <div className="task-card-header">
                               <div className="task-card-badges">
@@ -1254,9 +1291,10 @@ export const DayDetail: React.FC = () => {
                                     e.stopPropagation();
                                     handleEditTaskClick(task);
                                   }}
+                                  aria-label={isEn ? `Edit task: ${task.title}` : `Sửa việc: ${task.title}`}
                                   title={isEn ? 'Edit task' : 'Sửa việc'}
                                 >
-                                  <Edit2 size={13} />
+                                  <Edit2 size={13} aria-hidden="true" />
                                 </button>
                                 <button
                                   type="button"
@@ -1265,10 +1303,18 @@ export const DayDetail: React.FC = () => {
                                     e.stopPropagation();
                                     handleToggleTask(task.id);
                                   }}
-                                  aria-label={isTaskChecked ? 'Uncheck task' : 'Check task'}
+                                  aria-label={
+                                    isTaskChecked
+                                      ? isEn
+                                        ? `Uncheck task: ${task.title}`
+                                        : `Bỏ tích việc: ${task.title}`
+                                      : isEn
+                                      ? `Complete task: ${task.title}`
+                                      : `Tích hoàn thành: ${task.title}`
+                                  }
                                   title={isTaskChecked ? (isEn ? 'Uncheck' : 'Bỏ tích') : (isEn ? 'Check' : 'Tích hoàn thành')}
                                 >
-                                  {isTaskChecked && <Check size={14} strokeWidth={3} />}
+                                  {isTaskChecked && <Check size={14} strokeWidth={3} aria-hidden="true" />}
                                 </button>
                               </div>
                             </div>
@@ -1319,12 +1365,13 @@ export const DayDetail: React.FC = () => {
                           <thead>
                             <tr>
                               {/* Ô góc chia đôi chéo: Thời gian ở trên phải (trục X), Việc làm ở dưới trái (trục Y) */}
-                              <th className="timetable-th timetable-corner-th">
+                              <th scope="col" className="timetable-th timetable-corner-th">
                                 <div className="diagonal-cell">
                                   <svg
                                     className="diagonal-svg"
                                     viewBox="0 0 100 100"
                                     preserveAspectRatio="none"
+                                    aria-hidden="true"
                                   >
                                     <line
                                       x1="0"
@@ -1349,7 +1396,7 @@ export const DayDetail: React.FC = () => {
                               {HOURS_24.map((hour) => {
                                 const hourLabel = `${String(hour).padStart(2, '0')}:00`;
                                 return (
-                                  <th key={hour} className="timetable-th timetable-th-col">
+                                  <th key={hour} scope="col" className="timetable-th timetable-th-col">
                                     <div className="timetable-col-header-text">
                                       {hourLabel}
                                     </div>
@@ -1485,6 +1532,15 @@ export const DayDetail: React.FC = () => {
                                                   >
                                                     <button
                                                       type="button"
+                                                      aria-label={
+                                                        isTaskChecked
+                                                          ? isEn
+                                                            ? `Uncheck task: ${task.title}`
+                                                            : `Bỏ tích việc: ${task.title}`
+                                                          : isEn
+                                                          ? `Complete task: ${task.title}`
+                                                          : `Tích hoàn thành: ${task.title}`
+                                                      }
                                                       className={`timetable-checkbox ${
                                                         isTaskChecked ? 'checked' : ''
                                                       }`}
@@ -1493,6 +1549,7 @@ export const DayDetail: React.FC = () => {
                                                         <Check
                                                           size={14}
                                                           strokeWidth={3}
+                                                          aria-hidden="true"
                                                         />
                                                       )}
                                                     </button>

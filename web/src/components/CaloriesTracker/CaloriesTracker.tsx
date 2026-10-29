@@ -353,9 +353,10 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                       type="button"
                       className="btn-food-delete"
                       onClick={() => handleDeleteFoodItem(item.id)}
+                      aria-label={isEn ? `Delete ${item.name}` : `Xóa món ${item.name}`}
                       title={isEn ? 'Delete this item' : 'Xóa món này'}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={13} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -366,10 +367,11 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                     <div className="inline-form-inputs">
                       <div className="inline-form-row">
                         <div className="inline-input-group flex-2">
-                          <label className="inline-label">
+                          <label htmlFor={`food-name-${session}`} className="inline-label">
                             {isEn ? 'Food name:' : 'Tên món ăn:'}
                           </label>
                           <input
+                            id={`food-name-${session}`}
                             type="text"
                             className="form-input inline-input"
                             placeholder={
@@ -388,10 +390,11 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                         </div>
 
                         <div className="inline-input-group flex-1">
-                          <label className="inline-label">
+                          <label htmlFor={`food-portion-${session}`} className="inline-label">
                             {isEn ? 'Portion:' : 'Định lượng:'}
                           </label>
                           <input
+                            id={`food-portion-${session}`}
                             type="text"
                             className="form-input inline-input"
                             placeholder={
@@ -687,7 +690,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
         </div>
 
         {/* Hộp nhận xét của AI dựa theo bảng calories mới nhất */}
-        <div className="nutrition-ai-feedback-box">
+        <div className="nutrition-ai-feedback-box" aria-live="polite">
           <div className="feedback-content-row">
             <div className="feedback-ai-icon">
               <Sparkles size={16} />
