@@ -547,12 +547,14 @@ textarea:focus-visible,
   color: var(--text-secondary);
 }
 
-.line-chart-wrapper {
+.line-chart-wrapper,
+.bar-chart-wrapper {
   width: 100%;
   overflow: hidden;
 }
 
-.line-chart-svg {
+.line-chart-svg,
+.bar-chart-svg {
   width: 100%;
   height: auto;
   display: block;
@@ -569,6 +571,36 @@ textarea:focus-visible,
   fill: var(--text-primary);
 }
 
+.chart-point-group,
+.chart-bar-group {
+  outline: none;
+}
+
+.chart-bar-group:focus-visible .chart-bar-rect {
+  stroke: var(--text-primary);
+  stroke-width: 2px;
+}
+
+.chart-bar-rect {
+  transition: fill 0.15s ease, opacity 0.15s ease;
+}
+
+.chart-bar-group:hover .chart-bar-rect {
+  opacity: 0.85;
+}
+
+.chart-bar-group.is-selected .chart-bar-rect {
+  opacity: 1;
+}
+
+.chart-bar-val-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.chart-bar-group,
 .chart-point-group {
   cursor: pointer;
 }
@@ -6753,7 +6785,8 @@ textarea:focus-visible,
     width: auto;
   }
 
-  .line-chart-wrapper {
+  .line-chart-wrapper,
+.bar-chart-wrapper {
     height: 120px;
   }
 

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { MonthlyLineChart, DistributionDonutChart } from '~/components/Charts/Charts';
+import { MonthlyBarChart, DistributionDonutChart } from '~/components/Charts/Charts';
 import { MonthDaysGrid } from '~/components/MonthDaysGrid/MonthDaysGrid';
 import { DashboardSkeleton } from '~/components/Skeleton/Skeleton';
 import { ClientOutletContext } from '~/pages/Client/ClientPage';
@@ -143,9 +143,9 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Khu vực 2 Biểu đồ: Biểu đồ Đường & Biểu đồ Tròn xếp dọc */}
+        {/* Khu vực 2 Biểu đồ: Biểu đồ Cột & Biểu đồ Tròn xếp dọc */}
         <div className="charts-split-stack">
-          <MonthlyLineChart
+          <MonthlyBarChart
             daysList={monthStats.daysList}
             selectedDateKey={selectedDayItem.dateKey}
             onSelectDay={handleNavigateToDay}

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { MonthDayItem, MonthStats } from '~/interface/discipline.interface';
 import { translateRankTitle, useLanguage } from '~/utils/i18n';
 
-interface MonthlyLineChartProps {
+interface MonthlyBarChartProps {
   daysList: MonthDayItem[];
   selectedDateKey: string;
   onSelectDay: (dateKey: string) => void;
 }
 
-export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
+export const MonthlyBarChart: React.FC<MonthlyBarChartProps> = ({
   daysList = [],
   selectedDateKey,
   onSelectDay,
@@ -20,43 +20,26 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
   const height = 230;
   const padLeft = 42;
   const padRight = 20;
-  const padTop = 22;
+  const padTop = 26;
   const padBottom = 34;
 
   const plotWidth = width - padLeft - padRight;
   const plotHeight = height - padTop - padBottom;
 
-  const count = daysList.length || 30;
-
-  const getX = (index: number) => {
-    if (count <= 1) return padLeft + plotWidth / 2;
-    return padLeft + (index / (count - 1)) * plotWidth;
-  };
+  const count = daysList.length || 31;
+  const slotWidth = plotWidth / count;
+  const barWidth = Math.max(7, Math.min(14, slotWidth * 0.62));
 
   const getY = (percentage: number) => {
     const clamped = Math.max(0, Math.min(100, percentage || 0));
     return padTop + plotHeight - (clamped / 100) * plotHeight;
   };
 
-  const points = daysList.map((d, idx) => ({
-    x: getX(idx),
-    y: getY(d.percentage),
-    ...d,
-  }));
-
-  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
-  const areaPoints =
-    points.length > 0
-      ? `${points[0].x},${padTop + plotHeight} ${polylinePoints} ${
-          points[points.length - 1].x
-        },${padTop + plotHeight}`
-      : '';
-
   const yTicks = [0, 25, 50, 75, 100];
 
   const activePoint =
     hoveredDay ||
-    points.find((p) => p.dateKey === selectedDateKey) ||
+    daysList.find((p) => p.dateKey === selectedDateKey) ||
     null;
 
   return (
@@ -65,14 +48,9 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
         <div>
           <h3 className="chart-title">
             {isEn
-              ? 'LINE CHART — DAILY PERFORMANCE (%)'
-              : 'BIỂU ĐỒ ĐƯỜNG — HIỆU SUẤT THEO NGÀY (%)'}
+              ? 'COLUMN CHART — DAILY PERFORMANCE (%)'
+              : 'BIỂU ĐỒ CỘT — HIỆU SUẤT THEO NGÀY (%)'}
           </h3>
-          {/* <p className="chart-subtitle">
-            {isEn
-              ? 'Click any point on the chart to open that day’s detail & check-in page'
-              : 'Nhấn vào điểm bất kỳ trên biểu đồ để mở trang chi tiết & tích việc ngày đó'}
-          </p> */}
           {activePoint && (
             <div className="chart-active-badge">
               <span>
@@ -89,12 +67,16 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
         </div>
       </div>
 
-      <div className="line-chart-wrapper">
+      <div className="bar-chart-wrapper line-chart-wrapper">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="line-chart-svg"
+          className="bar-chart-svg line-chart-svg"
           role="img"
-          aria-label="Biểu đồ đường điểm số trong tháng"
+          aria-label={
+            isEn
+              ? 'Monthly daily performance bar chart'
+              : 'Biểu đồ cột hiệu suất theo ngày trong tháng'
+          }
         >
           {yTicks.map((val) => {
             const y = getY(val);
@@ -121,99 +103,130 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
             );
           })}
 
-          {areaPoints && (
-            <polygon points={areaPoints} fill="var(--chart-area)" />
-          )}
+          {daysList.map((d, idx) => {
+            const isSelected = d.dateKey === selectedDateKey;
+            const isHovered = hoveredDay?.dateKey === d.dateKey;
+            const clamped = Math.max(0, Math.min(100, d.percentage || 0));
+            const centerX = padLeft + (idx + 0.5) * slotWidth;
+            const barX = centerX - barWidth / 2;
+            const barHeight = (clamped / 100) * plotHeight;
+            const barY = padTop + plotHeight - barHeight;
+            const hasData = d.checkedCount > 0;
 
-          {polylinePoints && (
-            <polyline
-              fill="none"
-              stroke="var(--chart-line)"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              points={polylinePoints}
-            />
-          )}
-
-          {points.map((pt) => {
-            const isSelected = pt.dateKey === selectedDateKey;
-            if (!isSelected) return null;
-            return (
-              <line
-                key={`guide-${pt.dateKey}`}
-                x1={pt.x}
-                y1={padTop}
-                x2={pt.x}
-                y2={padTop + plotHeight}
-                stroke="var(--border-color)"
-                strokeWidth="1"
-                strokeDasharray="2 2"
-                opacity="0.55"
-              />
-            );
-          })}
-
-          {points.map((pt) => {
-            const isSelected = pt.dateKey === selectedDateKey;
-            const isHovered = hoveredDay?.dateKey === pt.dateKey;
-            const hasData = pt.checkedCount > 0;
             const showDayLabel =
-              pt.day === 1 ||
-              pt.day % 5 === 0 ||
-              pt.day === count ||
+              d.day === 1 ||
+              d.day % 5 === 0 ||
+              d.day === count ||
               isSelected;
 
             return (
               <g
-                key={pt.dateKey}
-                className="chart-point-group"
-                onClick={() => onSelectDay(pt.dateKey)}
-                onMouseEnter={() => setHoveredDay(pt)}
+                key={d.dateKey}
+                className={`chart-bar-group ${isSelected ? 'is-selected' : ''}`}
+                onClick={() => onSelectDay(d.dateKey)}
+                onMouseEnter={() => setHoveredDay(d)}
                 onMouseLeave={() => setHoveredDay(null)}
+                tabIndex={0}
+                role="button"
+                aria-label={
+                  isEn
+                    ? `Day ${d.day}: ${d.percentage}%, ${translateRankTitle(d.rank.title, language)}`
+                    : `Ngày ${d.day}: ${d.percentage}%, ${translateRankTitle(d.rank.title, language)}`
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectDay(d.dateKey);
+                  }
+                }}
               >
+                {/* Vùng hit-box bắt tương tác click/hover trọn vẹn cả slot */}
                 <rect
-                  x={pt.x - plotWidth / count / 2}
+                  x={centerX - slotWidth / 2}
                   y={padTop}
-                  width={Math.max(14, plotWidth / count)}
+                  width={slotWidth}
                   height={plotHeight + 24}
                   fill="transparent"
                 />
 
-                {(isSelected || isHovered) && (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r={6.5}
-                    fill="var(--bg-surface)"
-                    stroke="var(--border-color)"
-                    strokeWidth="2"
+                {/* Highlight nền phía sau khi cột được chọn */}
+                {isSelected && (
+                  <rect
+                    x={centerX - slotWidth / 2 + 1}
+                    y={padTop}
+                    width={slotWidth - 2}
+                    height={plotHeight}
+                    fill="var(--chart-area)"
+                    rx="3"
                   />
                 )}
 
-                <circle
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={isSelected ? 4 : hasData ? 3.2 : 2.2}
-                  fill={
-                    isSelected || hasData
-                      ? 'var(--chart-line)'
-                      : 'var(--bg-mixed)'
-                  }
-                  stroke="var(--border-color)"
-                  strokeWidth={hasData || isSelected ? '1.5' : '1'}
+                {/* Cột track nền mờ thể hiện 100% capacity */}
+                <rect
+                  x={barX}
+                  y={padTop}
+                  width={barWidth}
+                  height={plotHeight}
+                  fill="var(--level-none)"
+                  opacity={isSelected ? 0.6 : 0.35}
+                  rx="2"
                 />
 
+                {/* Cột giá trị thực tế */}
+                {clamped > 0 ? (
+                  <rect
+                    x={barX}
+                    y={barY}
+                    width={barWidth}
+                    height={Math.max(3, barHeight)}
+                    rx="2"
+                    className="chart-bar-rect"
+                    fill={
+                      isSelected
+                        ? 'var(--text-primary)'
+                        : hasData
+                        ? 'var(--chart-line)'
+                        : 'var(--bg-mixed)'
+                    }
+                    stroke={isSelected ? 'var(--border-color)' : 'none'}
+                    strokeWidth={isSelected ? '1' : '0'}
+                  />
+                ) : (
+                  /* Vạch đáy 2px cho ngày có 0% */
+                  <rect
+                    x={barX}
+                    y={padTop + plotHeight - 2}
+                    width={barWidth}
+                    height={2}
+                    rx="1"
+                    className="chart-bar-rect"
+                    fill={isSelected ? 'var(--text-primary)' : 'var(--border-subtle)'}
+                  />
+                )}
+
+                {/* Nhãn % nhỏ trên đỉnh cột khi được chọn hoặc hover */}
+                {(isSelected || isHovered) && clamped > 0 && (
+                  <text
+                    x={centerX}
+                    y={Math.max(padTop - 6, barY - 6)}
+                    textAnchor="middle"
+                    className="chart-bar-val-text"
+                  >
+                    {clamped}%
+                  </text>
+                )}
+
+                {/* Nhãn ngày trên trục X */}
                 {showDayLabel && (
                   <text
-                    x={pt.x}
+                    x={centerX}
                     y={height - 10}
                     textAnchor="middle"
                     className={`chart-axis-text ${
                       isSelected ? 'chart-axis-text-active' : ''
                     }`}
                   >
-                    {pt.day}
+                    {d.day}
                   </text>
                 )}
               </g>
@@ -224,6 +237,9 @@ export const MonthlyLineChart: React.FC<MonthlyLineChartProps> = ({
     </div>
   );
 };
+
+// Giữ lại alias MonthlyLineChart để đảm bảo tính tương thích ngược hoàn toàn nếu có nơi cần dùng
+export const MonthlyLineChart = MonthlyBarChart;
 
 interface DistributionDonutChartProps {
   selectedDayStats: MonthDayItem;
