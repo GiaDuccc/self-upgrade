@@ -9,30 +9,23 @@ const findOrCreateByUserId = async (
   userId: string | ObjectId
 ): Promise<DisciplineDocument> => {
   const uid = new ObjectId(userId);
-  const existing = await GET_DB()
+  const result = await GET_DB()
     .collection<DisciplineDocument>(DISCIPLINE_COLLECTION_NAME)
-    .findOne({ userId: uid });
+    .findOneAndUpdate(
+      { userId: uid },
+      {
+        $setOnInsert: {
+          userId: uid,
+          records: {},
+          taskConfig: getDefaultTaskConfig(),
+          createdAt: Date.now(),
+          updatedAt: null,
+        },
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
 
-  if (existing) {
-    return existing;
-  }
-
-  const newDoc: DisciplineDocument = {
-    userId: uid,
-    records: {},
-    taskConfig: getDefaultTaskConfig(),
-    createdAt: Date.now(),
-    updatedAt: null,
-  };
-
-  const inserted = await GET_DB()
-    .collection<DisciplineDocument>(DISCIPLINE_COLLECTION_NAME)
-    .insertOne(newDoc);
-
-  return {
-    ...newDoc,
-    _id: inserted.insertedId,
-  };
+  return result!;
 };
 
 const updateByUserId = async (
@@ -56,9 +49,46 @@ const updateByUserId = async (
   return result;
 };
 
+const updateFieldsByUserId = async (
+  userId: string | ObjectId,
+  setFields: Record<string, unknown> = {},
+  unsetFields: Record<string, unknown> = {}
+): Promise<DisciplineDocument | null> => {
+  const uid = new ObjectId(userId);
+  const updateOp: Record<string, unknown> = {
+    $set: { ...setFields, updatedAt: Date.now() },
+    $setOnInsert: {
+      userId: uid,
+      taskConfig: getDefaultTaskConfig(),
+      createdAt: Date.now(),
+    },
+  };
+  if (Object.keys(unsetFields).length > 0) {
+    updateOp.$unset = unsetFields;
+  }
+
+  const result = await GET_DB()
+    .collection<DisciplineDocument>(DISCIPLINE_COLLECTION_NAME)
+    .findOneAndUpdate(
+      { userId: uid },
+      updateOp,
+      { returnDocument: 'after', upsert: true }
+    );
+
+  return result;
+};
+
+const ensureIndexes = async () => {
+  await GET_DB()
+    .collection<DisciplineDocument>(DISCIPLINE_COLLECTION_NAME)
+    .createIndex({ userId: 1 }, { unique: true });
+};
+
 export const disciplineModel = {
   DISCIPLINE_COLLECTION_NAME,
   findOrCreateByUserId,
   updateByUserId,
+  updateFieldsByUserId,
+  ensureIndexes,
 };
 

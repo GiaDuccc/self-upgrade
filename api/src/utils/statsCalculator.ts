@@ -25,11 +25,19 @@ export function formatDateKey(year: number, month: number, day: number): string 
   return `${year}-${m}-${d}`;
 }
 
-export function getTodayInfo() {
+export function getTodayInfo(timeZone = 'Asia/Ho_Chi_Minh') {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+
+  const year = Number(parts.find((p) => p.type === 'year')?.value || now.getFullYear());
+  const month = Number(parts.find((p) => p.type === 'month')?.value || now.getMonth() + 1);
+  const day = Number(parts.find((p) => p.type === 'day')?.value || now.getDate());
+
   return {
     year,
     month,

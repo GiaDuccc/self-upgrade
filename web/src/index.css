@@ -3535,12 +3535,6 @@ input {
   padding-bottom: 8px;
 }
 
-.profile-inputs-grid-5 {
-  display: grid;
-  grid-template-columns: 1.5fr 0.8fr 1fr 1fr 1fr;
-  gap: 10px;
-}
-
 .bio-preview-banner {
   display: flex;
   align-items: center;
@@ -3641,9 +3635,6 @@ input {
   }
   .day-score-summary-card {
     min-width: 100%;
-  }
-  .profile-inputs-grid-5 {
-    grid-template-columns: repeat(2, 1fr);
   }
   .scope-cards-grid {
     grid-template-columns: 1fr;
@@ -7584,15 +7575,6 @@ input {
     gap: 8px;
   }
 
-  .profile-inputs-grid-5 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .profile-inputs-grid-5 > .form-group:first-child {
-    grid-column: 1 / -1;
-  }
-
   .scope-cards-grid {
     grid-template-columns: 1fr;
     gap: 6px;
@@ -7741,40 +7723,6 @@ select.form-input option {
 .custom-select-wrapper:hover .custom-select-arrow,
 .custom-select-wrapper:focus-within .custom-select-arrow {
   color: var(--text-primary);
-}
-
-.gender-pills-wrap {
-  display: flex;
-  gap: 6px;
-  height: 38px;
-}
-
-.gender-pill {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.gender-pill:hover {
-  border-color: var(--text-muted);
-  color: var(--text-primary);
-}
-
-.gender-pill.active {
-  background-color: var(--bg-primary);
-  border-color: var(--text-primary);
-  color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .macro-recommend-card {

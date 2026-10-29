@@ -24,6 +24,9 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   isProfileSetup: Joi.boolean().default(false),
   profile: Joi.object({
     name: Joi.string().allow('').default(''),
+    gender: Joi.string()
+      .valid('MALE', 'FEMALE')
+      .default(DEFAULT_USER_PROFILE.gender || 'MALE'),
     age: Joi.alternatives().try(Joi.number(), Joi.string().allow('')).default(''),
     heightCm: Joi.alternatives().try(Joi.number(), Joi.string().allow('')).default(''),
     weightKg: Joi.alternatives().try(Joi.number(), Joi.string().allow('')).default(''),
@@ -38,6 +41,24 @@ const USER_COLLECTION_SCHEMA = Joi.object({
     personalMotto: Joi.string().allow('').default(DEFAULT_USER_PROFILE.personalMotto),
     workoutGoal: Joi.string().allow('').default(DEFAULT_USER_PROFILE.workoutGoal || 'HYPERTROPHY'),
     workoutLevel: Joi.string().allow('').default(DEFAULT_USER_PROFILE.workoutLevel || 'INTERMEDIATE'),
+    macroMode: Joi.string()
+      .valid('AUTO', 'CUSTOM')
+      .default(DEFAULT_USER_PROFILE.macroMode || 'AUTO'),
+    targetCalories: Joi.alternatives()
+      .try(Joi.number(), Joi.string().allow(''))
+      .default(DEFAULT_USER_PROFILE.targetCalories ?? ''),
+    targetProtein: Joi.alternatives()
+      .try(Joi.number(), Joi.string().allow(''))
+      .default(DEFAULT_USER_PROFILE.targetProtein ?? ''),
+    targetCarb: Joi.alternatives()
+      .try(Joi.number(), Joi.string().allow(''))
+      .default(DEFAULT_USER_PROFILE.targetCarb ?? ''),
+    targetFat: Joi.alternatives()
+      .try(Joi.number(), Joi.string().allow(''))
+      .default(DEFAULT_USER_PROFILE.targetFat ?? ''),
+    targetFiber: Joi.alternatives()
+      .try(Joi.number(), Joi.string().allow(''))
+      .default(DEFAULT_USER_PROFILE.targetFiber ?? ''),
   }).default(DEFAULT_USER_PROFILE),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').allow(null).default(null),
@@ -92,6 +113,12 @@ const update = async (
   return result;
 };
 
+const ensureIndexes = async () => {
+  await GET_DB()
+    .collection<UserDocument>(USER_COLLECTION_NAME)
+    .createIndex({ email: 1, _destroy: 1 });
+};
+
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
@@ -99,5 +126,6 @@ export const userModel = {
   findOneById,
   findOneByEmail,
   update,
+  ensureIndexes,
 };
 

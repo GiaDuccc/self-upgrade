@@ -7,6 +7,8 @@ import { env } from '~/config/environment';
 import { CLOSE_DB, CONNECT_DB } from '~/config/mongodb';
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware';
 import { apiLimiter } from '~/middlewares/rateLimitMiddleware';
+import { disciplineModel } from '~/models/disciplineModel';
+import { userModel } from '~/models/userModel';
 import { APIs_V1 } from '~/routes/v1';
 
 const START_SERVER = () => {
@@ -61,6 +63,14 @@ const START_SERVER = () => {
     console.log('1. Connecting to MongoDB Cloud Atlas...');
     await CONNECT_DB();
     console.log('2. Connected to MongoDB Cloud Atlas!');
+    try {
+      await Promise.all([
+        userModel.ensureIndexes(),
+        disciplineModel.ensureIndexes(),
+      ]);
+    } catch (idxErr) {
+      console.warn('Warning ensuring DB indexes:', idxErr);
+    }
     START_SERVER();
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);

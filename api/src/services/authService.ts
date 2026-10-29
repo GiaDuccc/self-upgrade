@@ -214,14 +214,20 @@ const signUp = async (reqBody: { email: string; password: string }) => {
     });
 
     const emailSent = await sendVerificationEmail(email, verifyCode, verifyToken);
+    if (!emailSent && env.BUILD_MODE !== 'dev') {
+      throw new ApiError(
+        StatusCodes.SERVICE_UNAVAILABLE,
+        'Hệ thống gửi email đang bận hoặc bảo trì. Vui lòng thử lại sau ít phút!'
+      );
+    }
 
     return {
       user: pickUser(updatedUser),
       emailSent,
-      devVerifyCode: !emailSent || env.BUILD_MODE === 'dev' ? verifyCode : undefined,
+      devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
       message: emailSent
         ? 'Tài khoản chưa xác thực đã được cập nhật. Vui lòng kiểm tra email để lấy mã xác nhận!'
-        : 'Tài khoản đã tạo thành công! (Do máy chủ chưa gửi được mail, bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
+        : 'Tài khoản đã tạo thành công! (Chế độ DEV: bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
     };
   }
 
@@ -244,14 +250,20 @@ const signUp = async (reqBody: { email: string; password: string }) => {
   await disciplineModel.findOrCreateByUserId(created.insertedId);
 
   const emailSent = await sendVerificationEmail(email, verifyCode, verifyToken);
+  if (!emailSent && env.BUILD_MODE !== 'dev') {
+    throw new ApiError(
+      StatusCodes.SERVICE_UNAVAILABLE,
+      'Hệ thống gửi email đang bận hoặc bảo trì. Vui lòng bấm gửi lại mã xác thực sau ít phút!'
+    );
+  }
 
   return {
     user: pickUser(getNewUser),
     emailSent,
-    devVerifyCode: !emailSent || env.BUILD_MODE === 'dev' ? verifyCode : undefined,
+    devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
     message: emailSent
       ? 'Đăng ký thành công! Vui lòng kiểm tra hộp thư email để nhập mã xác nhận 6 số.'
-      : 'Tài khoản đã tạo thành công! (Do máy chủ chưa gửi được mail, bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
+      : 'Tài khoản đã tạo thành công! (Chế độ DEV: bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
   };
 };
 
@@ -337,13 +349,19 @@ const resendVerification = async (reqBody: { email: string }) => {
   });
 
   const emailSent = await sendVerificationEmail(email, verifyCode, verifyToken);
+  if (!emailSent && env.BUILD_MODE !== 'dev') {
+    throw new ApiError(
+      StatusCodes.SERVICE_UNAVAILABLE,
+      'Hệ thống gửi email đang bận hoặc bảo trì. Vui lòng thử lại sau ít phút!'
+    );
+  }
 
   return {
     emailSent,
-    devVerifyCode: !emailSent || env.BUILD_MODE === 'dev' ? verifyCode : undefined,
+    devVerifyCode: env.BUILD_MODE === 'dev' ? verifyCode : undefined,
     message: emailSent
       ? 'Đã gửi lại mã xác nhận mới tới email của bạn!'
-      : 'Đã tạo mã xác nhận mới! (Do máy chủ chưa gửi được mail, bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
+      : 'Đã tạo mã xác nhận mới! (Chế độ DEV: bạn có thể dùng mã kích hoạt trực tiếp bên dưới).',
   };
 };
 
@@ -423,6 +441,13 @@ const refreshTokenClient = async (clientRefreshToken: string) => {
   const user = await userModel.findOneById(decoded._id);
   if (!user) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa!');
+  }
+
+  if (!user.refreshToken || user.refreshToken !== clientRefreshToken) {
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      'Phiên đăng nhập đã bị thu hồi hoặc hết hiệu lực! Vui lòng đăng nhập lại.'
+    );
   }
 
   const userInfo = {

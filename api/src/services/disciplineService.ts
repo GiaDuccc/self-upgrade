@@ -10,7 +10,18 @@ import {
 } from '~/config/settings';
 import { disciplineModel } from '~/models/disciplineModel';
 import { userModel } from '~/models/userModel';
-import { CustomTaskItem, DayRecord, FoodItem, TaskConfig, TaskLevelKey, WaterData, SleepData, WorkoutExercise } from '~/types';
+import {
+  CustomTaskItem,
+  DayRecord,
+  DisciplineDocument,
+  FoodItem,
+  TaskConfig,
+  TaskLevelKey,
+  UserDocument,
+  WaterData,
+  SleepData,
+  WorkoutExercise,
+} from '~/types';
 import { aiCoachService } from '~/services/aiCoachService';
 import ApiError from '~/utils/ApiError';
 import {
@@ -32,39 +43,16 @@ const getSettingsMetadata = () => ({
   defaultTasks: DAILY_TASKS,
 });
 
-const getMonthData = async (userId: string, year: number, month: number) => {
-  const user = await userModel.findOneById(userId);
-  if (!user) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
-  }
-
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const profile = user.profile || DEFAULT_USER_PROFILE;
-  const records = disciplineDoc.records || {};
-  const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
-
-  const monthStats = calculateMonthStats(year, month, records, taskConfig, profile);
-
-  return {
-    monthStats,
-    profile,
-    isProfileSetup: Boolean(user.isProfileSetup),
-    settings: getSettingsMetadata(),
-  };
-};
-
-const getDayData = async (userId: string, dateKey: string) => {
-  const user = await userModel.findOneById(userId);
-  if (!user) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
-  }
-
+const formatDayDataResponse = (
+  dateKey: string,
+  user: UserDocument,
+  disciplineDoc: DisciplineDocument
+) => {
   const [y, m, d] = dateKey.split('-').map(Number);
   if (!y || !m || !d) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Định dạng ngày không hợp lệ (YYYY-MM-DD)!');
   }
 
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
   const profile = user.profile || DEFAULT_USER_PROFILE;
   const records = disciplineDoc.records || {};
   const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
@@ -88,40 +76,83 @@ const getDayData = async (userId: string, dateKey: string) => {
   };
 };
 
+const getMonthData = async (userId: string, year: number, month: number) => {
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
+
+  const profile = user.profile || DEFAULT_USER_PROFILE;
+  const records = disciplineDoc.records || {};
+  const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
+
+  const monthStats = calculateMonthStats(year, month, records, taskConfig, profile);
+
+  return {
+    monthStats,
+    profile,
+    isProfileSetup: Boolean(user.isProfileSetup),
+    settings: getSettingsMetadata(),
+  };
+};
+
+const getDayData = async (userId: string, dateKey: string) => {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  if (!y || !m || !d) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Định dạng ngày không hợp lệ (YYYY-MM-DD)!');
+  }
+
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
+
+  return formatDayDataResponse(dateKey, user, disciplineDoc);
+};
+
 const setTaskLevel = async (
   userId: string,
   payload: { dateKey: string; taskId: string; levelKey: TaskLevelKey; hours?: number[] }
 ) => {
   const { dateKey, taskId, levelKey, hours } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
-  const currentTasks = { ...(currentDay.tasks || {}) };
-  const currentTaskHours = { ...(currentDay.taskHours || {}) };
+  const setFields: Record<string, unknown> = {
+    [`records.${dateKey}.updatedAt`]: new Date().toISOString(),
+  };
+  const unsetFields: Record<string, unknown> = {};
 
   if (levelKey === 'NONE') {
-    delete currentTasks[taskId];
-    delete currentTaskHours[taskId];
+    unsetFields[`records.${dateKey}.tasks.${taskId}`] = '';
+    unsetFields[`records.${dateKey}.taskHours.${taskId}`] = '';
   } else {
-    currentTasks[taskId] = levelKey;
+    setFields[`records.${dateKey}.tasks.${taskId}`] = levelKey;
     if (hours !== undefined) {
       if (hours.length === 0) {
-        delete currentTaskHours[taskId];
+        unsetFields[`records.${dateKey}.taskHours.${taskId}`] = '';
       } else {
-        currentTaskHours[taskId] = hours;
+        setFields[`records.${dateKey}.taskHours.${taskId}`] = hours;
       }
     }
   }
 
-  records[dateKey] = {
-    ...currentDay,
-    tasks: currentTasks,
-    taskHours: currentTaskHours,
-    updatedAt: new Date().toISOString(),
-  };
+  const [user, updatedDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.updateFieldsByUserId(userId, setFields, unsetFields),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(
+    dateKey,
+    user,
+    updatedDoc || (await disciplineModel.findOrCreateByUserId(userId))
+  );
 };
 
 const markAllLevel = async (
@@ -129,12 +160,17 @@ const markAllLevel = async (
   payload: { dateKey: string; levelKey: TaskLevelKey }
 ) => {
   const { dateKey, levelKey } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
+
   const taskConfig = disciplineDoc.taskConfig || getDefaultTaskConfig();
   const tasksForDay = getTasksForDate(dateKey, taskConfig);
-
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const currentDay: DayRecord = { ...(disciplineDoc.records?.[dateKey] || {}) };
   const newTasksMap: Record<string, TaskLevelKey> = {};
   const newTaskHours: Record<string, number[]> = { ...(currentDay.taskHours || {}) };
 
@@ -148,25 +184,30 @@ const markAllLevel = async (
     }
   }
 
-  records[dateKey] = {
-    ...currentDay,
-    tasks: newTasksMap,
-    taskHours: newTaskHours,
-    updatedAt: new Date().toISOString(),
-  };
+  const updatedDoc = await disciplineModel.updateFieldsByUserId(userId, {
+    [`records.${dateKey}.tasks`]: newTasksMap,
+    [`records.${dateKey}.taskHours`]: newTaskHours,
+    [`records.${dateKey}.updatedAt`]: new Date().toISOString(),
+  });
 
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(dateKey, user, updatedDoc || disciplineDoc);
 };
 
 const clearDay = async (userId: string, payload: { dateKey: string }) => {
   const { dateKey } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  delete records[dateKey];
+  const [user, updatedDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.updateFieldsByUserId(userId, {}, { [`records.${dateKey}`]: '' }),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(
+    dateKey,
+    user,
+    updatedDoc || (await disciplineModel.findOrCreateByUserId(userId))
+  );
 };
 
 const updateNote = async (
@@ -174,19 +215,22 @@ const updateNote = async (
   payload: { dateKey: string; note: string }
 ) => {
   const { dateKey, note } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const [user, updatedDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.updateFieldsByUserId(userId, {
+      [`records.${dateKey}.note`]: note,
+      [`records.${dateKey}.updatedAt`]: new Date().toISOString(),
+    }),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  records[dateKey] = {
-    ...currentDay,
-    tasks: currentDay.tasks || {},
-    note,
-    updatedAt: new Date().toISOString(),
-  };
-
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(
+    dateKey,
+    user,
+    updatedDoc || (await disciplineModel.findOrCreateByUserId(userId))
+  );
 };
 
 const saveDayCalories = async (
@@ -194,13 +238,18 @@ const saveDayCalories = async (
   payload: { dateKey: string; meals: FoodItem[] }
 ) => {
   const { dateKey, meals } = payload;
-  const user = await userModel.findOneById(userId);
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  const profile = user?.profile || DEFAULT_USER_PROFILE;
-    const previousSummary = currentDay.caloriesData?.summary;
+  const currentDay: DayRecord = disciplineDoc.records?.[dateKey] || {};
+  const profile = user.profile || DEFAULT_USER_PROFILE;
+  const previousSummary = currentDay.caloriesData?.summary;
+
   const { summary, meals: analyzedMeals } = await aiCoachService.analyzeNutrition(
     profile,
     dateKey,
@@ -208,17 +257,15 @@ const saveDayCalories = async (
     previousSummary
   );
 
-  records[dateKey] = {
-    ...currentDay,
-    caloriesData: {
+  const updatedDoc = await disciplineModel.updateFieldsByUserId(userId, {
+    [`records.${dateKey}.caloriesData`]: {
       meals: analyzedMeals,
       summary,
     },
-    updatedAt: new Date().toISOString(),
-  };
+    [`records.${dateKey}.updatedAt`]: new Date().toISOString(),
+  });
 
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(dateKey, user, updatedDoc || disciplineDoc);
 };
 
 const saveDayWater = async (
@@ -226,18 +273,22 @@ const saveDayWater = async (
   payload: { dateKey: string; waterData: WaterData }
 ) => {
   const { dateKey, waterData } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const [user, updatedDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.updateFieldsByUserId(userId, {
+      [`records.${dateKey}.waterData`]: waterData,
+      [`records.${dateKey}.updatedAt`]: new Date().toISOString(),
+    }),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  records[dateKey] = {
-    ...currentDay,
-    waterData,
-    updatedAt: new Date().toISOString(),
-  };
-
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(
+    dateKey,
+    user,
+    updatedDoc || (await disciplineModel.findOrCreateByUserId(userId))
+  );
 };
 
 const saveDaySleep = async (
@@ -245,21 +296,26 @@ const saveDaySleep = async (
   payload: { dateKey: string; sleepData: SleepData }
 ) => {
   const { dateKey, sleepData } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const nowIso = new Date().toISOString();
+  const [user, updatedDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.updateFieldsByUserId(userId, {
+      [`records.${dateKey}.sleepData`]: {
+        ...sleepData,
+        updatedAt: nowIso,
+      },
+      [`records.${dateKey}.updatedAt`]: nowIso,
+    }),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  records[dateKey] = {
-    ...currentDay,
-    sleepData: {
-      ...sleepData,
-      updatedAt: new Date().toISOString(),
-    },
-    updatedAt: new Date().toISOString(),
-  };
-
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(
+    dateKey,
+    user,
+    updatedDoc || (await disciplineModel.findOrCreateByUserId(userId))
+  );
 };
 
 const saveDayWorkout = async (
@@ -271,35 +327,39 @@ const saveDayWorkout = async (
   }
 ) => {
   const { dateKey, targetMuscles, exercises } = payload;
-  const user = await userModel.findOneById(userId);
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  const profile = user?.profile || DEFAULT_USER_PROFILE;
-  const summary = (exercises && exercises.length > 0)
-    ? await aiCoachService.analyzeWorkout({
-        profile,
-        dateKey,
-        targetMuscles: targetMuscles || [],
-        exercises: exercises || [],
-        allRecords: records,
-      })
-    : undefined;
+  const records = disciplineDoc.records || {};
+  const profile = user.profile || DEFAULT_USER_PROFILE;
+  const summary =
+    exercises && exercises.length > 0
+      ? await aiCoachService.analyzeWorkout({
+          profile,
+          dateKey,
+          targetMuscles: targetMuscles || [],
+          exercises: exercises || [],
+          allRecords: records,
+        })
+      : undefined;
 
-  records[dateKey] = {
-    ...currentDay,
-    workoutData: {
+  const nowIso = new Date().toISOString();
+  const updatedDoc = await disciplineModel.updateFieldsByUserId(userId, {
+    [`records.${dateKey}.workoutData`]: {
       targetMuscles: targetMuscles || [],
       exercises: exercises || [],
       summary,
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     },
-    updatedAt: new Date().toISOString(),
-  };
+    [`records.${dateKey}.updatedAt`]: nowIso,
+  });
 
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(dateKey, user, updatedDoc || disciplineDoc);
 };
 
 const saveDayStates = async (
@@ -312,20 +372,24 @@ const saveDayStates = async (
   }
 ) => {
   const { dateKey, physicalState, mentalState, emotionalState } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
-  const records = { ...(disciplineDoc.records || {}) };
-  const currentDay: DayRecord = { ...(records[dateKey] || {}) };
+  const [user, updatedDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.updateFieldsByUserId(userId, {
+      [`records.${dateKey}.physicalState`]: physicalState,
+      [`records.${dateKey}.mentalState`]: mentalState,
+      [`records.${dateKey}.emotionalState`]: emotionalState,
+      [`records.${dateKey}.updatedAt`]: new Date().toISOString(),
+    }),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
 
-  records[dateKey] = {
-    ...currentDay,
-    physicalState,
-    mentalState,
-    emotionalState,
-    updatedAt: new Date().toISOString(),
-  };
-
-  await disciplineModel.updateByUserId(userId, { records });
-  return await getDayData(userId, dateKey);
+  return formatDayDataResponse(
+    dateKey,
+    user,
+    updatedDoc || (await disciplineModel.findOrCreateByUserId(userId))
+  );
 };
 
 const getTargetDatesByScope = (
@@ -383,7 +447,13 @@ const saveTask = async (
       (startTime && endTime
         ? `${startTime} - ${endTime}`
         : startTime || payload.target || '');
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
   const prev = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
   const next: TaskConfig = {
@@ -461,8 +531,8 @@ const saveTask = async (
     }
   }
 
-  await disciplineModel.updateByUserId(userId, { taskConfig: next });
-  return await getDayData(userId, dateKey);
+  const updatedDoc = await disciplineModel.updateByUserId(userId, { taskConfig: next });
+  return formatDayDataResponse(dateKey, user, updatedDoc || disciplineDoc);
 };
 
 const deleteTask = async (
@@ -474,7 +544,13 @@ const deleteTask = async (
   }
 ) => {
   const { taskId, scope, dateKey } = payload;
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
+  }
   const prev = disciplineDoc.taskConfig || getDefaultTaskConfig();
 
   const next: TaskConfig = {
@@ -497,17 +573,18 @@ const deleteTask = async (
     });
   }
 
-  await disciplineModel.updateByUserId(userId, { taskConfig: next });
-  return await getDayData(userId, dateKey);
+  const updatedDoc = await disciplineModel.updateByUserId(userId, { taskConfig: next });
+  return formatDayDataResponse(dateKey, user, updatedDoc || disciplineDoc);
 };
 
 const exportData = async (userId: string) => {
-  const user = await userModel.findOneById(userId);
+  const [user, disciplineDoc] = await Promise.all([
+    userModel.findOneById(userId),
+    disciplineModel.findOrCreateByUserId(userId),
+  ]);
   if (!user) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa! Vui lòng đăng nhập lại.');
   }
-
-  const disciplineDoc = await disciplineModel.findOrCreateByUserId(userId);
 
   return {
     records: disciplineDoc.records || {},
