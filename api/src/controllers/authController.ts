@@ -44,12 +44,22 @@ const resendVerification = async (
   }
 };
 
-const getCookieOptions = (req: Request) => {
-  const isHttps =
-    env.BUILD_MODE === 'production' ||
-    process.env.NODE_ENV === 'production' ||
+const isSecureRequest = (req: Request): boolean => {
+  const origin = req.headers.origin || '';
+  if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+    return false;
+  }
+  return (
     req.secure ||
-    req.headers['x-forwarded-proto'] === 'https';
+    req.headers['x-forwarded-proto'] === 'https' ||
+    origin.startsWith('https://') ||
+    env.BUILD_MODE === 'production' ||
+    process.env.NODE_ENV === 'production'
+  );
+};
+
+const getCookieOptions = (req: Request) => {
+  const isHttps = isSecureRequest(req);
 
   return {
     httpOnly: true,
@@ -61,11 +71,7 @@ const getCookieOptions = (req: Request) => {
 };
 
 const getClearCookieOptions = (req: Request) => {
-  const isHttps =
-    env.BUILD_MODE === 'production' ||
-    process.env.NODE_ENV === 'production' ||
-    req.secure ||
-    req.headers['x-forwarded-proto'] === 'https';
+  const isHttps = isSecureRequest(req);
 
   return {
     httpOnly: true,

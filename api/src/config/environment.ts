@@ -37,7 +37,6 @@ export const env = {
     process.env.JWT_ACCESS_SECRET_CLIENT || 'default_access_secret_client',
   REFRESH_TOKEN_SECRET_SIGNATURE_CLIENT:
     process.env.JWT_REFRESH_SECRET_CLIENT || 'default_refresh_secret_client',
-  ACCESS_TOKEN_LIFE: process.env.ACCESS_TOKEN_LIFE || '1h',
+  ACCESS_TOKEN_LIFE: process.env.ACCESS_TOKEN_LIFE || '1d',
   REFRESH_TOKEN_LIFE: process.env.REFRESH_TOKEN_LIFE || '14 days',
 };
-

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LogIn, Mail, Lock, ArrowRight } from 'lucide-react';
 import { signInClientAPI, checkServerHealthAPI } from '~/apis/clientAPI/authApi';
+import { tryRefreshTokenClient } from '~/apis/axiosClient';
 import { AuthSkeleton } from '~/components/Skeleton/Skeleton';
 
 export const SignIn: React.FC = () => {
@@ -12,7 +13,8 @@ export const SignIn: React.FC = () => {
   const [isServerReady, setIsServerReady] = useState(false);
   const navigate = useNavigate();
 
-  // Kiểm tra Backend đã khởi động xong chưa, tự động thăm dò mỗi 2s
+  // Kiểm tra Backend đã khởi động xong chưa, tự động thăm dò mỗi 2s.
+  // Ngay khi Backend sẵn sàng, nếu trong Cookies vẫn còn refreshTokenClient hợp lệ thì tự động lấy lại accessToken và vào thẳng trang chủ.
   useEffect(() => {
     let isMounted = true;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -21,6 +23,21 @@ export const SignIn: React.FC = () => {
       const ok = await checkServerHealthAPI();
       if (!isMounted) return;
       if (ok) {
+        if (!localStorage.getItem('accessTokenClient')) {
+          try {
+            const restoredToken = await tryRefreshTokenClient(0);
+            if (!isMounted) return;
+            if (restoredToken) {
+              navigate('/', { replace: true });
+              return;
+            }
+          } catch {
+            // Không có cookie refreshTokenClient hoặc đã hết hạn -> hiển thị form đăng nhập bình thường
+          }
+        } else {
+          navigate('/', { replace: true });
+          return;
+        }
         setIsServerReady(true);
       } else {
         setIsServerReady(false);

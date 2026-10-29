@@ -407,22 +407,22 @@ const refreshTokenClient = async (clientRefreshToken: string) => {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy Refresh Token trong cookie!');
   }
 
-  const decoded = JwtProvider.verifyToken(
-    clientRefreshToken,
-    env.REFRESH_TOKEN_SECRET_SIGNATURE_CLIENT
-  );
+  let decoded;
+  try {
+    decoded = JwtProvider.verifyToken(
+      clientRefreshToken,
+      env.REFRESH_TOKEN_SECRET_SIGNATURE_CLIENT
+    );
+  } catch {
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      'Refresh Token đã hết hạn hoặc không hợp lệ! Vui lòng đăng nhập lại.'
+    );
+  }
 
   const user = await userModel.findOneById(decoded._id);
   if (!user) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản không tồn tại hoặc đã bị xóa!');
-  }
-
-  // So sánh Refresh Token từ cookie với giá trị lưu trong database
-  if (user.refreshToken !== clientRefreshToken) {
-    throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
-      'Refresh Token không hợp lệ hoặc đã bị thay đổi so với database!'
-    );
   }
 
   const userInfo = {
@@ -437,7 +437,10 @@ const refreshTokenClient = async (clientRefreshToken: string) => {
     env.ACCESS_TOKEN_LIFE
   );
 
-  return { accessToken };
+  return {
+    accessToken,
+    user: pickUser(user),
+  };
 };
 
 const signOutClient = async (userId?: string) => {

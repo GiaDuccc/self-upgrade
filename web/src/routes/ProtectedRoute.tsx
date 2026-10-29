@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import axios from 'axios';
-import { getApiRoot } from '~/utils/constants';
+import { isTransientNetworkError, tryRefreshTokenClient } from '~/apis/axiosClient';
 
 export const ProtectedRoute: React.FC = () => {
   const [isChecking, setIsChecking] = useState<boolean>(() => {
@@ -10,41 +9,55 @@ export const ProtectedRoute: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return !!localStorage.getItem('accessTokenClient');
   });
+  const [isWaitingForServer, setIsWaitingForServer] = useState<boolean>(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessTokenClient');
-    if (token) {
-      setIsAuthenticated(true);
-      setIsChecking(false);
-      return;
-    }
+    let isMounted = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Nếu accessToken bị mất trong localStorage, thử dùng cookie refreshTokenClient để xin cấp lại accessToken
-    const apiBase = `${getApiRoot()}/v1`;
-
-    axios
-      .put(
-        `${apiBase}/auth/refreshTokenClient`,
-        {},
-        { withCredentials: true }
-      )
-      .then((res) => {
-        const newAccessToken = res.data?.accessToken;
-        if (newAccessToken) {
-          localStorage.setItem('accessTokenClient', newAccessToken);
+    const verifyOrRestoreSession = async () => {
+      const token = localStorage.getItem('accessTokenClient');
+      if (token) {
+        if (isMounted) {
           setIsAuthenticated(true);
+          setIsWaitingForServer(false);
+          setIsChecking(false);
+        }
+        return;
+      }
+
+      // Nếu accessToken bị mất trong localStorage, dùng cookie refreshTokenClient để xin cấp lại accessToken.
+      // Nếu BE đang reload / cold-start (lỗi mạng hoặc 502-504), kiên nhẫn chờ BE khởi động xong thay vì đá ra /sign-in.
+      try {
+        const newAccessToken = await tryRefreshTokenClient(1);
+        if (!isMounted) return;
+        if (newAccessToken) {
+          setIsAuthenticated(true);
+          setIsWaitingForServer(false);
+          setIsChecking(false);
         } else {
           setIsAuthenticated(false);
+          setIsChecking(false);
         }
-      })
-      .catch(() => {
-        localStorage.removeItem('accessTokenClient');
-        localStorage.removeItem('userInfoClient');
+      } catch (err: any) {
+        if (!isMounted) return;
+        if (isTransientNetworkError(err)) {
+          setIsWaitingForServer(true);
+          retryTimer = setTimeout(verifyOrRestoreSession, 2000);
+          return;
+        }
+        setIsWaitingForServer(false);
         setIsAuthenticated(false);
-      })
-      .finally(() => {
         setIsChecking(false);
-      });
+      }
+    };
+
+    verifyOrRestoreSession();
+
+    return () => {
+      isMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, []);
 
   if (isChecking) {
@@ -52,13 +65,20 @@ export const ProtectedRoute: React.FC = () => {
       <div
         style={{
           display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
           alignItems: 'center',
           justifyContent: 'center',
           height: '100vh',
           backgroundColor: 'var(--bg-primary, #FAF7F2)',
+          color: 'var(--text-secondary, #5C5A55)',
+          fontSize: '0.9rem',
         }}
       >
         <div className="spinner-sm" style={{ width: 28, height: 28 }} />
+        {isWaitingForServer && (
+          <span>Máy chủ đang khởi động, đang tự động khôi phục phiên đăng nhập...</span>
+        )}
       </div>
     );
   }
@@ -69,4 +89,3 @@ export const ProtectedRoute: React.FC = () => {
 
   return <Outlet />;
 };
-
