@@ -7694,8 +7694,20 @@ input {
    ============================================================================ */
 .profile-inputs-grid-6 {
   display: grid;
-  grid-template-columns: 1.4fr 1.2fr 0.8fr 1fr 1fr 1fr;
+  grid-template-columns: 1.5fr 0.9fr 0.75fr 0.95fr 1fr 1.25fr;
   gap: 10px;
+}
+
+select.form-input {
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  cursor: pointer;
+  height: 42px;
+}
+
+select.form-input option {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .gender-pills-wrap {

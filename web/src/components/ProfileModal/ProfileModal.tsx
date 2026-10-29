@@ -180,25 +180,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="prof-gender">
                   {isEn ? 'GENDER' : 'GIỚI TÍNH'}
                 </label>
-                <div className="gender-pills-wrap">
-                  <button
-                    type="button"
-                    className={`gender-pill ${formData.gender !== 'female' ? 'active' : ''}`}
-                    onClick={() => handleChange('gender', 'male')}
-                  >
-                    <span>{isEn ? '👨 Male' : '👨 Nam'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`gender-pill ${formData.gender === 'female' ? 'active' : ''}`}
-                    onClick={() => handleChange('gender', 'female')}
-                  >
-                    <span>{isEn ? '👩 Female' : '👩 Nữ'}</span>
-                  </button>
-                </div>
+                <select
+                  id="prof-gender"
+                  className="form-input"
+                  value={formData.gender || 'male'}
+                  onChange={(e) => handleChange('gender', e.target.value as 'male' | 'female')}
+                >
+                  <option value="male">{isEn ? 'Male' : 'Nam'}</option>
+                  <option value="female">{isEn ? 'Female' : 'Nữ'}</option>
+                </select>
               </div>
 
               <div className="form-group">

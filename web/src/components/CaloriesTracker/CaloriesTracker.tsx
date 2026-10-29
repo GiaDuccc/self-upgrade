@@ -504,7 +504,7 @@ export const CaloriesTracker: React.FC<CaloriesTrackerProps> = ({
                 <span>
                   {isEn
                     ? 'MINI NUTRITIONIST AI'
-                    : 'AI DINH DƯỠNG (MINI NUTRITIONIST AI)'}
+                    : 'AI DINH DƯỠNG'}
                 </span>
               </div>
               {initialSummary?.updatedAt && (
