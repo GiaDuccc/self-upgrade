@@ -60,7 +60,7 @@ export const MonthlyBarChart: React.FC<MonthlyBarChartProps> = ({
               <span className="chart-badge-sub">
                 ({activePoint.rawPoints}/{activePoint.maxPoints}
                 {isEn ? ' pts' : 'đ'} •{' '}
-                {translateRankTitle(activePoint.rank.title, language)})
+                {translateRankTitle(activePoint.rank?.title, language)})
               </span>
             </div>
           )}
@@ -130,8 +130,8 @@ export const MonthlyBarChart: React.FC<MonthlyBarChartProps> = ({
                 role="button"
                 aria-label={
                   isEn
-                    ? `Day ${d.day}: ${d.percentage}%, ${translateRankTitle(d.rank.title, language)}`
-                    : `Ngày ${d.day}: ${d.percentage}%, ${translateRankTitle(d.rank.title, language)}`
+                    ? `Day ${d.day}: ${d.percentage}%, ${translateRankTitle(d.rank?.title, language)}`
+                    : `Ngày ${d.day}: ${d.percentage}%, ${translateRankTitle(d.rank?.title, language)}`
                 }
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -445,7 +445,7 @@ export const DistributionDonutChart: React.FC<DistributionDonutChartProps> = ({
               <span className="legend-label">{isEn ? 'Rank' : 'Đánh giá'}</span>
               <span className="legend-pts">
                 ({translateRankTitle(
-                  isDayScope ? selectedDayStats.rank.title : monthStats.monthRank.title,
+                  isDayScope ? selectedDayStats?.rank?.title : monthStats?.monthRank?.title,
                   language
                 )})
               </span>
