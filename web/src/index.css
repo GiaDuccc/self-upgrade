@@ -7710,6 +7710,39 @@ select.form-input option {
   color: var(--text-primary);
 }
 
+.custom-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.custom-select-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 24px !important;
+  cursor: pointer;
+}
+
+.custom-select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.custom-select-wrapper:hover .custom-select-arrow,
+.custom-select-wrapper:focus-within .custom-select-arrow {
+  color: var(--text-primary);
+}
+
 .gender-pills-wrap {
   display: flex;
   gap: 6px;

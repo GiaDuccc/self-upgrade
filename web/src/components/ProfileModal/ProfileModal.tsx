@@ -183,15 +183,32 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 <label className="form-label" htmlFor="prof-gender">
                   {isEn ? 'GENDER' : 'GIỚI TÍNH'}
                 </label>
-                <select
-                  id="prof-gender"
-                  className="form-input"
-                  value={formData.gender || 'male'}
-                  onChange={(e) => handleChange('gender', e.target.value as 'male' | 'female')}
-                >
-                  <option value="male">{isEn ? 'Male' : 'Nam'}</option>
-                  <option value="female">{isEn ? 'Female' : 'Nữ'}</option>
-                </select>
+                <div className="custom-select-wrapper">
+                  <select
+                    id="prof-gender"
+                    className="form-input custom-select-input"
+                    value={formData.gender || 'male'}
+                    onChange={(e) => handleChange('gender', e.target.value as 'male' | 'female')}
+                  >
+                    <option value="male">{isEn ? 'Male' : 'Nam'}</option>
+                    <option value="female">{isEn ? 'Female' : 'Nữ'}</option>
+                  </select>
+                  <div className="custom-select-arrow" aria-hidden="true">
+                    <svg
+                      width="9"
+                      height="7"
+                      viewBox="0 0 12 10"
+                      fill="currentColor"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      style={{ display: 'block' }}
+                    >
+                      <polygon points="6,8 9.5,2 2.5,2" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">
