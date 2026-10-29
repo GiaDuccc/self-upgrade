@@ -838,9 +838,27 @@ export async function calculateSingleItemMacrosAsync(meal: FoodItem): Promise<Fo
   let dbEntry: MacroPer100g | null = null;
 
   // 1. Kiểm tra nhanh trong cơ sở dữ liệu có sẵn (0ms)
+  // Chỉ match DB tĩnh khi tên món trùng khớp chính xác hoặc là biến thể nấu đơn giản (VD: "ức gà", "cơm trắng", "trứng luộc").
+  // Nếu là món phức tạp/kết hợp (VD: "Mỳ ý sốt kem nấm", "Trà sữa Phúc Long", "Thịt lợn xào hành tây"), KHÔNG match bừa từ con mà chuyển cho Gemini AI.
   for (const item of FOOD_DATABASE) {
     for (const kw of item.keywords) {
-      if (lower.includes(kw)) {
+      const cleanKw = kw.toLowerCase().trim();
+      if (lower === cleanKw) {
+        dbEntry = item;
+        break;
+      }
+      if (
+        lower === `${cleanKw} luộc` ||
+        lower === `${cleanKw} hấp` ||
+        lower === `${cleanKw} chiên` ||
+        lower === `${cleanKw} nướng` ||
+        lower === `${cleanKw} xào` ||
+        lower === `${cleanKw} áp chảo`
+      ) {
+        dbEntry = item;
+        break;
+      }
+      if (cleanKw.length >= 6 && lower.startsWith(cleanKw) && cleanKw.length / lower.length >= 0.8) {
         dbEntry = item;
         break;
       }
