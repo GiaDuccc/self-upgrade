@@ -17,7 +17,7 @@ export const env = {
   WEBSITE_DOMAIN_DEV:
     process.env.WEBSITE_DOMAIN_DEVELOPMENT || 'http://localhost:1904',
   WEBSITE_DOMAIN_PRODUCTION:
-    process.env.WEBSITE_DOMAIN_PRODUCTION || 'https://self-upgrade.vercel.app',
+    process.env.WEBSITE_DOMAIN_PRODUCTION || 'https://self-upgrade.giaduc.tech',
 
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   SMTP_USER: process.env.SMTP_USER || '',

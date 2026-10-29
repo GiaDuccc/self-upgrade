@@ -14,6 +14,9 @@ export const corsOptions: CorsOptions = {
       !origin ||
       WHITELIST_DOMAINS.includes(origin) ||
       origin === env.WEBSITE_DOMAIN_PRODUCTION ||
+      origin.endsWith('giaduc.tech') ||
+      origin === 'https://self-upgrade.giaduc.tech' ||
+      origin === 'http://self-upgrade.giaduc.tech' ||
       origin.endsWith('.vercel.app') ||
       origin.endsWith('.trycloudflare.com') ||
       origin.startsWith('capacitor://') ||

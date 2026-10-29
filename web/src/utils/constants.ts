@@ -26,6 +26,15 @@ export const getApiRoot = (): string => {
     if (
       typeof window !== 'undefined' &&
       window.location.hostname &&
+      (window.location.hostname === 'self-upgrade.giaduc.tech' ||
+        window.location.hostname.endsWith('giaduc.tech') ||
+        window.location.hostname.endsWith('.vercel.app'))
+    ) {
+      return 'https://self-upgrade-be.onrender.com';
+    }
+    if (
+      typeof window !== 'undefined' &&
+      window.location.hostname &&
       window.location.hostname !== 'localhost' &&
       window.location.hostname !== '127.0.0.1'
     ) {
