@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,8 +11,13 @@ import { DayDetail } from '~/pages/Client/DayDetail/DayDetail';
 import { SignIn } from '~/pages/Client/SignIn/SignIn';
 import { SignUp } from '~/pages/Client/SignUp/SignUp';
 import { VerifyEmail } from '~/pages/Client/VerifyEmail/VerifyEmail';
+import { LandingSkeleton } from '~/components/Skeleton/Skeleton';
 import { ProtectedRoute } from '~/routes/ProtectedRoute';
 import { PublicRoute } from '~/routes/PublicRoute';
+
+const Landing = lazy(() =>
+  import('~/pages/Landing/Landing').then((m) => ({ default: m.Landing }))
+);
 
 export default function App() {
   useEffect(() => {
@@ -25,6 +30,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* LANDING PAGE Ở DOMAIN GỐC CHO KHÁCH */}
+        <Route
+          path="/"
+          element={
+            <Suspense fallback={<LandingSkeleton />}>
+              <Landing />
+            </Suspense>
+          }
+        />
+        <Route path="/landing" element={<Navigate to="/" replace />} />
+
         {/* PUBLIC AUTH ROUTES */}
         <Route element={<PublicRoute />}>
           <Route path="/sign-in" element={<SignIn />} />
@@ -32,10 +48,11 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
-        {/* PROTECTED CLIENT ROUTES (SEPARATED PAGES: DASHBOARD & DAY DETAIL) */}
+        {/* PROTECTED CLIENT ROUTES (TỔNG QUAN THÁNG & CHI TIẾT NGÀY) */}
         <Route element={<ProtectedRoute />}>
           <Route element={<ClientPage />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/tong-quan-thang" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Navigate to="/tong-quan-thang" replace />} />
             <Route path="/day/:dateKey" element={<DayDetail />} />
           </Route>
         </Route>

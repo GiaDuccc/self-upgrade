@@ -541,7 +541,7 @@ export const ClientPage: React.FC = () => {
       // Phím M: Về tổng quan tháng
       if (key === 'm') {
         e.preventDefault();
-        navigate('/');
+        navigate('/tong-quan-thang');
         return;
       }
 

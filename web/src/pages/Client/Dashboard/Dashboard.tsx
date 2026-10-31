@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { AsciiReveal } from 'ascii-reveal';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { MonthlyBarChart, DistributionDonutChart } from '~/components/Charts/Charts';
 import { MonthDaysGrid } from '~/components/MonthDaysGrid/MonthDaysGrid';
@@ -22,7 +23,11 @@ export const Dashboard: React.FC = () => {
   const { language, isEn } = useLanguage();
 
   if (isLoadingMonth || !monthStats) {
-    return <DashboardSkeleton />;
+    return (
+      <AsciiReveal loading={true}>
+        <DashboardSkeleton />
+      </AsciiReveal>
+    );
   }
 
   const selectedDayItem =
@@ -37,8 +42,9 @@ export const Dashboard: React.FC = () => {
   const monthRankTitle = translateRankTitle(monthStats.monthRank.title, language);
 
   return (
-    <div className="overview-split-container">
-      {/* CỘT BÊN TRÁI: BIỂU ĐỒ & THỐNG KÊ THÁNG */}
+    <AsciiReveal>
+      <div className="overview-split-container">
+        {/* CỘT BÊN TRÁI: BIỂU ĐỒ & THỐNG KÊ THÁNG */}
       <div className="overview-split-left-col">
         <div className="section-header-bar">
           <div>
@@ -174,6 +180,7 @@ export const Dashboard: React.FC = () => {
           onSelectDay={handleNavigateToDay}
         />
       </div>
-    </div>
+      </div>
+    </AsciiReveal>
   );
 };

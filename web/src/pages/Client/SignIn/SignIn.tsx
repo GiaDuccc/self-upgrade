@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AsciiReveal } from 'ascii-reveal';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LogIn, Mail, Lock, ArrowRight } from 'lucide-react';
@@ -28,14 +29,14 @@ export const SignIn: React.FC = () => {
             const restoredToken = await tryRefreshTokenClient(0);
             if (!isMounted) return;
             if (restoredToken) {
-              navigate('/', { replace: true });
+              navigate('/tong-quan-thang', { replace: true });
               return;
             }
           } catch {
             // Không có cookie refreshTokenClient hoặc đã hết hạn -> hiển thị form đăng nhập bình thường
           }
         } else {
-          navigate('/', { replace: true });
+          navigate('/tong-quan-thang', { replace: true });
           return;
         }
         setIsServerReady(true);
@@ -79,7 +80,7 @@ export const SignIn: React.FC = () => {
       localStorage.setItem('userInfoClient', JSON.stringify(res.user));
 
       toast.success('Đăng nhập thành công!');
-      navigate('/', { replace: true });
+      navigate('/tong-quan-thang', { replace: true });
     } catch (error: any) {
       const status = error?.response?.status;
       const msg =
@@ -95,15 +96,14 @@ export const SignIn: React.FC = () => {
     }
   };
 
-  // Nếu Backend chưa khởi động xong (Render cold-start hoặc chưa chạy BE) -> hiển thị Skeleton loading 1:1
-  if (!isServerReady) {
-    return <AuthSkeleton mode="signin" />;
-  }
-
   return (
-    <div className="auth-page-shell">
-      <div className="auth-card">
-        <div className="auth-brand-header">
+    <AsciiReveal loading={!isServerReady}>
+      {!isServerReady ? (
+        <AuthSkeleton mode="signin" />
+      ) : (
+        <div className="auth-page-shell">
+        <div className="auth-card">
+          <div className="auth-brand-header">
           <img src="/logo.png" alt="Self Upgrade" className="auth-logo-img" />
           <div>
             <h1 className="auth-title">SELF UPGRADE</h1>
@@ -170,7 +170,9 @@ export const SignIn: React.FC = () => {
             <ArrowRight size={14} />
           </Link>
         </div>
+        </div>
       </div>
-    </div>
+      )}
+    </AsciiReveal>
   );
 };

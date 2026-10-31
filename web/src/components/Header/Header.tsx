@@ -48,7 +48,10 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   const location = useLocation();
   const { isEn } = useLanguage();
 
-  const isDashboardPage = location.pathname === '/';
+  const isDashboardPage =
+    location.pathname === '/tong-quan-thang' ||
+    location.pathname === '/dashboard' ||
+    location.pathname === '/';
   const isDayDetailPage = location.pathname.startsWith('/day');
   const routeDateMatch = location.pathname.match(/^\/day\/(\d{4}-\d{2}-\d{2})/);
   const todayInfo = getTodayInfo();
@@ -63,11 +66,11 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           role="button"
           tabIndex={0}
           aria-label={isEn ? 'Go to Dashboard home' : 'Về trang chủ Tổng quan tháng'}
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/tong-quan-thang')}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              navigate('/');
+              navigate('/tong-quan-thang');
             }
           }}
         >
@@ -100,7 +103,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             type="button"
             className={`btn-minimal nav-tab-btn ${isDashboardPage ? 'active' : ''}`}
             aria-current={isDashboardPage ? 'page' : undefined}
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/tong-quan-thang')}
           >
             <LayoutDashboard size={15} aria-hidden="true" />
             <span className="nav-tab-text-desktop">{isEn ? 'Monthly Overview' : 'Tổng quan tháng'}</span>

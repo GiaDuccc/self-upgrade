@@ -1,43 +1,41 @@
 /* ==========================================================================
+   ASCII REVEAL SKELETON CONFIGURATION
+   ========================================================================== */
+:root {
+  --ascii-font: 'JetBrains Mono', monospace;
+  --ascii-skeleton: var(--text-secondary, #5C5A55);
+  --ascii-accent: var(--text-primary, #222220);
+}
+
+[data-theme='dark'] {
+  --ascii-skeleton: #6E6B62;
+  --ascii-accent: #EDE9E1;
+}
+
+.ars {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
+}
+
+.sk-box.ars {
+  overflow: hidden;
+}
+.sk-box .ars-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+}
+
+[data-theme='dark'] .sk-box .ars-block {
+  background: #1B1A18;
+  border-color: #383632;
+}
+
+
+/* ==========================================================================
    SKELETON LOADING ANIMATIONS & BASE STYLES
    Kích thước 1:1 chuẩn xác tuyệt đối với giao diện thực tế (CLS = 0)
    Hỗ trợ hoàn hảo cả Light Kraft & Dark Theme
    ========================================================================== */
-
-@keyframes agy-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.sk-shimmer-base {
-  background: linear-gradient(
-    90deg,
-    var(--bg-mixed) 0%,
-    var(--bg-mixed-subtle) 25%,
-    var(--bg-surface) 50%,
-    var(--bg-mixed-subtle) 75%,
-    var(--bg-mixed) 100%
-  );
-  background-size: 200% 100%;
-  animation: agy-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-[data-theme='dark'] .sk-shimmer-base {
-  background: linear-gradient(
-    90deg,
-    #21201D 0%,
-    #292824 25%,
-    #33312C 50%,
-    #292824 75%,
-    #21201D 100%
-  );
-  background-size: 200% 100%;
-  animation: agy-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
 
 .sk-box {
   display: block;
@@ -59,10 +57,6 @@
 
 .sk-chart-box-line {
   min-height: 268px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
 }
 
 .sk-line-canvas {
@@ -79,39 +73,9 @@
 
 .sk-chart-box-donut {
   min-height: 280px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.sk-donut-canvas {
-  height: 175px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-.sk-donut-circle-shape {
-  width: 145px;
-  height: 145px;
-  border-radius: 50%;
-  border: 18px solid var(--bg-mixed);
-  position: relative;
-  flex-shrink: 0;
-  box-sizing: border-box;
 }
 
 .sk-day-cell {
-  min-height: 102px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-  box-sizing: border-box;
   cursor: default !important;
 }
 
@@ -261,24 +225,44 @@
   }
 }
 
+/* ==========================================================================
+   SESSION RESTORE (PHIÊN ĐĂNG NHẬP ĐANG KHÔI PHỤC)
+   ========================================================================== */
+.session-restore-skeleton {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.session-restore-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.session-restore-lines {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-restore-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  max-width: 380px;
+}
+
+
 @media (max-width: 768px) {
   .sk-stat-card {
     min-height: 96px;
-  }
-
-  .sk-donut-canvas {
-    flex-direction: column;
-    height: auto;
-    gap: 14px;
-  }
-
-  .sk-donut-circle-shape {
-    width: 135px;
-    height: 135px;
-  }
-
-  .sk-day-cell {
-    min-height: 86px;
   }
 
   .sk-timetable-corner,

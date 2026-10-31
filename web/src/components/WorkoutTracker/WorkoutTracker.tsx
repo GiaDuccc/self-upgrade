@@ -10,6 +10,7 @@ import {
   HelpCircle,
   CheckCircle2,
   Edit2,
+  Loader2,
 } from 'lucide-react';
 import {
   WorkoutData,
@@ -1051,7 +1052,7 @@ export const WorkoutTracker: React.FC<WorkoutTrackerProps> = ({
           >
             {isSaving ? (
               <>
-                <span className="spinner-sm" />
+                <Loader2 size={16} className="spin-anim" />
                 <span>
                   {isEn ? 'Analyzing Workout...' : 'AI Đang phân tích...'}
                 </span>

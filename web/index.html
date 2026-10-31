@@ -50,23 +50,45 @@
         font-family: 'JetBrains Mono', monospace;
         -webkit-font-smoothing: antialiased;
       }
-      @keyframes sk-init-anim {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
+      /* ASCII DITHER SKELETON (ascii-reveal) - THAY THẾ TOÀN BỘ GRADIENT MOTION SHIMMER CŨ */
+      :root {
+        --ascii-skeleton: #5C5A55;
+        --ascii-accent: #222220;
+      }
+      [data-theme='dark'] {
+        --ascii-skeleton: #6E6B62;
+        --ascii-accent: #EDE9E1;
       }
       .sk-init-shimmer {
-        background: linear-gradient(
-          90deg,
-          var(--sk-init-base) 0%,
-          var(--sk-init-mid) 25%,
-          var(--sk-init-high) 50%,
-          var(--sk-init-mid) 75%,
-          var(--sk-init-base) 100%
-        );
-        background-size: 200% 100%;
-        animation: sk-init-anim 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        position: relative;
         display: block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        white-space: pre;
+        color: var(--ascii-skeleton);
+        background-color: var(--sk-init-surface);
+        border: 1px solid var(--sk-init-border-subtle);
         border-radius: 6px;
+        overflow: hidden;
+        user-select: none;
+        pointer-events: none;
+        contain: inline-size layout paint style;
+        box-sizing: border-box;
+      }
+      @keyframes sk-ascii-wave {
+        0%, 100% {
+          opacity: 0.42;
+          filter: brightness(0.92);
+        }
+        50% {
+          opacity: 0.95;
+          filter: brightness(1.22);
+        }
+      }
+      .sk-init-shimmer {
+        animation: sk-ascii-wave 1.8s ease-in-out infinite;
       }
       /* Top Navbar: Kích thước 1:1 */
       .sk-init-nav {
@@ -187,7 +209,53 @@
         gap: 24px;
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
       }
-      @media (max-width: 1180px) {
+            /* Landing Skeleton 1:1 cho trang / và /landing */
+      .sk-init-landing-shell {
+        min-height: 100vh;
+        width: 100%;
+        display: none;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+      .sk-init-landing-nav {
+        height: 64px;
+        border-bottom: 1px solid var(--sk-init-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 clamp(20px, 4vw, 48px);
+        box-sizing: border-box;
+      }
+      .sk-init-landing-hero {
+        padding: 64px 20px 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .sk-init-landing-grid {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 24px 20px 60px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .sk-init-landing-card {
+        background-color: var(--sk-init-surface);
+        border: 1px solid var(--sk-init-border);
+        border-radius: 12px;
+        padding: 24px;
+        min-height: 190px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-sizing: border-box;
+      }
+@media (max-width: 1180px) {
         .sk-init-nav { padding: 12px 24px; }
         .sk-init-main { padding: 16px 20px 40px; }
         .sk-init-dash-split,
@@ -441,9 +509,9 @@
       <div id="sk-init-auth-view" class="sk-init-auth-shell" style="display: none;" aria-hidden="true">
         <div class="sk-init-auth-card">
           <!-- Banner thông báo kết nối -->
-          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; background-color: var(--sk-init-base);">
-            <span class="sk-init-shimmer" style="width: 8px; height: 8px; border-radius: 50%;"></span>
-            <span class="sk-init-shimmer" style="width: 260px; height: 12px;"></span>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: 6px; background-color: var(--sk-init-surface); border: 1px solid var(--sk-init-border); margin-bottom: 16px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #F59E0B; display: inline-block;"></span>
+            <span style="font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--ascii-accent, #222220);">Máy chủ đang khởi động... Đang tự động kết nối</span>
           </div>
 
           <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--sk-init-border-subtle);">
@@ -475,34 +543,120 @@
           </div>
         </div>
       </div>
+
+      <!-- Landing Skeleton 1:1 cho Landing Page (domain gốc) -->
+      <div id="sk-init-landing-view" class="sk-init-landing-shell">
+        <header class="sk-init-landing-nav">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="sk-init-shimmer" style="width: 32px; height: 32px; border-radius: 50%;"></span>
+            <span class="sk-init-shimmer" style="width: 130px; height: 20px; border-radius: 4px;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="sk-init-shimmer" style="width: 36px; height: 36px; border-radius: 8px;"></span>
+            <span class="sk-init-shimmer" style="width: 100px; height: 36px; border-radius: 8px;"></span>
+            <span class="sk-init-shimmer" style="width: 120px; height: 36px; border-radius: 8px;"></span>
+          </div>
+        </header>
+
+        <section class="sk-init-landing-hero">
+          <span class="sk-init-shimmer" style="width: 240px; height: 26px; border-radius: 999px; margin-bottom: 16px;"></span>
+          <span class="sk-init-shimmer" style="width: 440px; height: 46px; border-radius: 8px; margin-bottom: 16px; max-width: 90%;"></span>
+          <span class="sk-init-shimmer" style="width: 580px; height: 18px; margin-bottom: 8px; max-width: 90%;"></span>
+          <span class="sk-init-shimmer" style="width: 400px; height: 18px; margin-bottom: 28px; max-width: 80%;"></span>
+
+          <div style="display: flex; gap: 14px; margin-bottom: 36px; flex-wrap: wrap; justify-content: center;">
+            <span class="sk-init-shimmer" style="width: 180px; height: 46px; border-radius: 10px;"></span>
+            <span class="sk-init-shimmer" style="width: 180px; height: 46px; border-radius: 10px;"></span>
+          </div>
+
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+            <div class="sk-init-stat-card" style="width: 140px; min-height: 64px; padding: 12px; align-items: center;">
+              <span class="sk-init-shimmer" style="width: 80px; height: 20px; margin-bottom: 4px;"></span>
+              <span class="sk-init-shimmer" style="width: 100px; height: 12px;"></span>
+            </div>
+            <div class="sk-init-stat-card" style="width: 140px; min-height: 64px; padding: 12px; align-items: center;">
+              <span class="sk-init-shimmer" style="width: 70px; height: 20px; margin-bottom: 4px;"></span>
+              <span class="sk-init-shimmer" style="width: 110px; height: 12px;"></span>
+            </div>
+            <div class="sk-init-stat-card" style="width: 140px; min-height: 64px; padding: 12px; align-items: center;">
+              <span class="sk-init-shimmer" style="width: 90px; height: 20px; margin-bottom: 4px;"></span>
+              <span class="sk-init-shimmer" style="width: 100px; height: 12px;"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="sk-init-landing-grid">
+          <div class="sk-init-landing-card"><span class="sk-init-shimmer" style="width: 36px; height: 36px; border-radius: 8px; margin-bottom: 12px;"></span><span class="sk-init-shimmer" style="width: 160px; height: 18px; margin-bottom: 8px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 13px; margin-bottom: 4px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 13px;"></span><span class="sk-init-shimmer" style="width: 110px; height: 28px; border-radius: 6px; margin-top: 18px;"></span></div>
+          <div class="sk-init-landing-card"><span class="sk-init-shimmer" style="width: 36px; height: 36px; border-radius: 8px; margin-bottom: 12px;"></span><span class="sk-init-shimmer" style="width: 160px; height: 18px; margin-bottom: 8px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 13px; margin-bottom: 4px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 13px;"></span><span class="sk-init-shimmer" style="width: 110px; height: 28px; border-radius: 6px; margin-top: 18px;"></span></div>
+          <div class="sk-init-landing-card"><span class="sk-init-shimmer" style="width: 36px; height: 36px; border-radius: 8px; margin-bottom: 12px;"></span><span class="sk-init-shimmer" style="width: 160px; height: 18px; margin-bottom: 8px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 13px; margin-bottom: 4px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 13px;"></span><span class="sk-init-shimmer" style="width: 110px; height: 28px; border-radius: 6px; margin-top: 18px;"></span></div>
+          <div class="sk-init-landing-card"><span class="sk-init-shimmer" style="width: 36px; height: 36px; border-radius: 8px; margin-bottom: 12px;"></span><span class="sk-init-shimmer" style="width: 160px; height: 18px; margin-bottom: 8px;"></span><span class="sk-init-shimmer" style="width: 100%; height: 13px; margin-bottom: 4px;"></span><span class="sk-init-shimmer" style="width: 75%; height: 13px;"></span><span class="sk-init-shimmer" style="width: 110px; height: 28px; border-radius: 6px; margin-top: 18px;"></span></div>
+        </section>
+      </div>
     </div>
 
-    <!-- Script tự động hiển thị skeleton tương ứng theo route trước khi React mount -->
+<!-- Script tự động hiển thị skeleton tương ứng theo route trước khi React mount -->
     <script>
       try {
         var p = window.location.pathname;
+        var navEl = document.querySelector('.sk-init-nav');
+        var mainEl = document.querySelector('.sk-init-main');
+        var authEl = document.getElementById('sk-init-auth-view');
+        var landingEl = document.getElementById('sk-init-landing-view');
+        var dashEl = document.getElementById('sk-init-dashboard-view');
+        var dayEl = document.getElementById('sk-init-day-view');
+        var token = null;
+        try { token = localStorage.getItem('accessTokenClient'); } catch (err) {}
+
         if (p.indexOf('/sign-in') !== -1 || p.indexOf('/sign-up') !== -1 || p.indexOf('/verify-email') !== -1) {
-          var navEl = document.querySelector('.sk-init-nav');
-          var mainEl = document.querySelector('.sk-init-main');
-          var authEl = document.getElementById('sk-init-auth-view');
-          if (navEl) navEl.style.display = 'none';
-          if (mainEl) mainEl.style.display = 'none';
-          if (authEl) {
-            authEl.style.display = 'flex';
-            if (p.indexOf('/sign-up') !== -1) {
-              var cfm = document.getElementById('sk-init-auth-confirm');
-              var titleEl = document.getElementById('sk-init-auth-title');
-              if (cfm) cfm.style.display = 'flex';
-              if (titleEl) titleEl.style.width = '200px';
+          if (token) {
+            if (dashEl) dashEl.style.display = 'grid';
+          } else {
+            if (navEl) navEl.style.display = 'none';
+            if (mainEl) mainEl.style.display = 'none';
+            if (authEl) {
+              authEl.style.display = 'flex';
+              if (p.indexOf('/sign-up') !== -1) {
+                var cfm = document.getElementById('sk-init-auth-confirm');
+                var titleEl = document.getElementById('sk-init-auth-title');
+                if (cfm) cfm.style.display = 'flex';
+                if (titleEl) titleEl.style.width = '200px';
+              }
             }
           }
         } else if (p.indexOf('/day') !== -1) {
-          var dashEl = document.getElementById('sk-init-dashboard-view');
-          var dayEl = document.getElementById('sk-init-day-view');
           if (dashEl && dayEl) {
             dashEl.style.display = 'none';
             dayEl.style.display = 'grid';
           }
+        } else if (p === '/' || p.indexOf('/landing') !== -1) {
+          if (token) {
+            if (dashEl) dashEl.style.display = 'grid';
+          } else {
+            if (navEl) navEl.style.display = 'none';
+            if (mainEl) mainEl.style.display = 'none';
+            if (landingEl) landingEl.style.display = 'flex';
+          }
+        } else if (p.indexOf('/tong-quan-thang') !== -1 || p.indexOf('/dashboard') !== -1) {
+          if (dashEl) dashEl.style.display = 'grid';
+        }
+
+        // Tự động chèn ma trận ASCII Dither vào toàn bộ skeleton pre-mount
+        var glyphRows = [
+          '░░░░▒░░░░░░░▒▒░░░▒░░░░░░░▒░░░░░░░░░▒░░░░░░░▒░░░░░░░░░░░░░░▒░▒▒░░▒░▒░░░░░▒░░░░░░░░░░░░▒▒░░░░░▒░░░▒░░░▒░░░░░░▒░░░░',
+          '░▒░░░░░░░░░░▒▒░░░░░░▒░░░░░░░░░░░░▒▒░░░░░░░░▒░░░░▒░░░░░░░░▒░░░░░▒░░░▒░░░░▒▒░░░░░░▒░░░░░░░░░▒░▒░░░░░░░▒░░▒░░░░░░░▒░░',
+          '░░░▒░░░▒░░▒▒▒░░▒░▒░▒░░▒▒▒░░░░░░░░░░▒░▒░▒░░▒░░░░░░░░▒░░▒▒░░░▒░░░░░░░░░░▒░▒░░░▒░░░░░▒░░░░░░░░░▒░░▒▒░░░▒░░░░░░░░░░░░░░',
+          '▒░░░░░░░░░░░░░░░░▒▒▒░░░░░▒░░░░░░░░░░░░░░░░░░░░▒░░▒░░░░▒░░░░░▒░░▒▒▒░░░░▒░░░░░░░░▒░░░░░░░░░░░░░░▒░░░░░░▒░░░░░░░▒▒░░░░'
+        ];
+        var shimmers = document.querySelectorAll('.sk-init-shimmer');
+        for (var i = 0; i < shimmers.length; i++) {
+          var el = shimmers[i];
+          var h = parseInt(el.style.height || '16', 10);
+          var rows = Math.max(1, Math.round(h / 12));
+          var t = '';
+          for (var r = 0; r < rows; r++) {
+            t += (r > 0 ? '\n' : '') + glyphRows[(i + r) % glyphRows.length];
+          }
+          el.textContent = t;
         }
       } catch (e) {}
     </script>

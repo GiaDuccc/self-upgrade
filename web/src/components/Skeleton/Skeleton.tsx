@@ -1,4 +1,5 @@
 import React from 'react';
+import { AsciiSkeleton } from 'ascii-reveal';
 import './Skeleton.css';
 
 interface SkeletonBoxProps {
@@ -7,7 +8,12 @@ interface SkeletonBoxProps {
   borderRadius?: string | number;
   className?: string;
   style?: React.CSSProperties;
+  rows?: number;
+  variant?: 'dither' | 'scan' | 'braille' | 'terminal';
+  circle?: boolean;
 }
+
+const GLYPH_CELL_PX = 12;
 
 export const SkeletonBox: React.FC<SkeletonBoxProps> = ({
   width = '100%',
@@ -15,17 +21,57 @@ export const SkeletonBox: React.FC<SkeletonBoxProps> = ({
   borderRadius,
   className = '',
   style = {},
+  rows,
+  variant = 'dither',
+  circle,
 }) => {
+  const isCircle = circle || borderRadius === '50%';
+
+  // Resolve the box height in px so the glyph grid can tile it exactly.
+  let heightPx: number | null = null;
+  if (typeof height === 'number') {
+    heightPx = height;
+  } else if (typeof height === 'string') {
+    const m = height.trim().match(/^([\d.]+)px$/);
+    if (m) heightPx = parseFloat(m[1]);
+  }
+
+  // Always render a glyph block (never text lines, which clip in short boxes).
+  // `rows` glyph lines at fontSize = height/rows fill the box top-to-bottom.
+  const computedRows =
+    rows ?? (heightPx != null ? Math.max(1, Math.round(heightPx / GLYPH_CELL_PX)) : 1);
+  const fontSize = heightPx != null ? Math.max(6, heightPx / computedRows) : undefined;
+
+  // `--ars-radius` controls the inner .ars-block radius (the outer .ars wrapper
+  // only clips), so set both to the same value for a 1:1 match with the real UI.
+  // `999px` stays as-is (the browser clamps it to a pill); only an explicit 50%
+  // (square avatars) or `circle` becomes a true circle.
+  const radiusValue = isCircle
+    ? '50%'
+    : borderRadius === undefined
+    ? 'var(--radius-sm, 6px)'
+    : typeof borderRadius === 'number'
+    ? `${borderRadius}px`
+    : borderRadius;
+
   return (
-    <span
-      className={`sk-box sk-shimmer-base ${className}`}
-      style={{
-        width,
-        height,
-        borderRadius: borderRadius !== undefined ? borderRadius : undefined,
-        ...style,
-      }}
-      aria-hidden="true"
+    <AsciiSkeleton
+      variant={variant}
+      rows={computedRows}
+      width={width}
+      height={height}
+      circle={isCircle}
+      className={`sk-box ${className}`}
+      style={
+        {
+          width,
+          height,
+          fontSize: fontSize != null ? `${fontSize}px` : undefined,
+          borderRadius: radiusValue,
+          ...style,
+          '--ars-radius': radiusValue,
+        } as React.CSSProperties
+      }
     />
   );
 };
@@ -124,7 +170,7 @@ export const DashboardSkeleton: React.FC = () => {
                     justifyContent: 'flex-end',
                   }}
                 >
-                  <SkeletonBox width="100%" height="100%" borderRadius="3px" />
+                  <SkeletonBox width="100%" height="100%" rows={Math.max(2, Math.round(h / 10))} borderRadius="3px" />
                 </div>
               ))}
             </div>
@@ -136,18 +182,45 @@ export const DashboardSkeleton: React.FC = () => {
               <div>
                 <SkeletonBox width="240px" height="18px" style={{ marginBottom: 4 }} />
                 <SkeletonBox width="280px" height="12px" style={{ marginBottom: 8 }} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <SkeletonBox width="110px" height="28px" borderRadius="6px" />
-                  <SkeletonBox width="90px" height="28px" borderRadius="6px" />
+                <div className="segmented-toggle" aria-hidden="true">
+                  <SkeletonBox width="88px" height="24px" borderRadius="4px" />
+                  <SkeletonBox width="80px" height="24px" borderRadius="4px" />
                 </div>
               </div>
             </div>
-            <div className="sk-donut-canvas">
-              <div className="sk-donut-circle-shape sk-shimmer-base" />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 240 }}>
-                <SkeletonBox width="100%" height="16px" />
-                <SkeletonBox width="85%" height="16px" />
-                <SkeletonBox width="70%" height="16px" />
+            <div className="donut-chart-layout">
+              <div className="donut-svg-container">
+                <SkeletonBox width="150px" height="150px" circle />
+                <div className="donut-center-info">
+                  <SkeletonBox width="46px" height="24px" />
+                  <SkeletonBox width="88px" height="11px" />
+                </div>
+              </div>
+              <div className="donut-legend">
+                <div className="legend-row">
+                  <div className="legend-left">
+                    <span className="legend-swatch" style={{ backgroundColor: 'var(--text-primary)' }} />
+                    <SkeletonBox width="92px" height="12px" />
+                    <SkeletonBox width="66px" height="10px" />
+                  </div>
+                  <SkeletonBox width="30px" height="12px" />
+                </div>
+                <div className="legend-row">
+                  <div className="legend-left">
+                    <span className="legend-swatch" style={{ backgroundColor: 'var(--level-none)' }} />
+                    <SkeletonBox width="80px" height="12px" />
+                    <SkeletonBox width="70px" height="10px" />
+                  </div>
+                  <SkeletonBox width="30px" height="12px" />
+                </div>
+                <div className="legend-row">
+                  <div className="legend-left">
+                    <span className="legend-swatch" style={{ backgroundColor: 'var(--border-subtle)' }} />
+                    <SkeletonBox width="52px" height="12px" />
+                    <SkeletonBox width="76px" height="10px" />
+                  </div>
+                  <SkeletonBox width="52px" height="12px" />
+                </div>
               </div>
             </div>
           </div>
@@ -174,14 +247,20 @@ export const DashboardSkeleton: React.FC = () => {
               <div key={dayNum} className="day-cell-card sk-day-cell">
                 <div className="day-cell-top">
                   <div className="day-cell-number-wrap">
-                    <SkeletonBox width="24px" height="20px" />
-                    <SkeletonBox width="22px" height="12px" />
+                    <SkeletonBox width="24px" height="18px" />
+                    <SkeletonBox width="22px" height="11px" />
                   </div>
-                  {dayNum % 7 === 0 && <SkeletonBox width="45px" height="16px" borderRadius="999px" />}
+                  {dayNum % 7 === 0 && <SkeletonBox width="45px" height="15px" borderRadius="4px" />}
                 </div>
-                <SkeletonBox width="75%" height="18px" borderRadius="999px" />
+                <div className="day-cell-middle">
+                  <SkeletonBox width="38px" height="17px" />
+                  <SkeletonBox width="58px" height="15px" borderRadius="999px" />
+                </div>
                 <SkeletonBox width="100%" height="5px" borderRadius="999px" />
-                <SkeletonBox width="60%" height="12px" />
+                <div className="day-cell-footer">
+                  <SkeletonBox width="64px" height="11px" />
+                  <SkeletonBox width="34px" height="11px" />
+                </div>
               </div>
             ))}
           </div>
@@ -385,3 +464,109 @@ export const AuthSkeleton: React.FC<{ mode?: 'signin' | 'signup' }> = ({ mode = 
     </div>
   );
 };
+
+export const LandingSkeleton: React.FC = () => {
+  return (
+    <div className="lp-shell" role="status" aria-label="Loading landing page...">
+      {/* NAVBAR SKELETON */}
+      <header className="lp-nav">
+        <div className="lp-nav-inner">
+          <div className="lp-brand" style={{ pointerEvents: 'none' }}>
+            <SkeletonBox width="30px" height="30px" circle />
+            <SkeletonBox width="140px" height="18px" />
+          </div>
+          <div className="lp-nav-actions" style={{ pointerEvents: 'none' }}>
+            <SkeletonBox width="36px" height="36px" borderRadius="6px" />
+            <SkeletonBox width="105px" height="36px" borderRadius="6px" />
+            <SkeletonBox width="130px" height="36px" borderRadius="6px" />
+          </div>
+        </div>
+      </header>
+
+      {/* HERO SKELETON */}
+      <section className="lp-hero">
+        <div className="lp-hero-inner" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <SkeletonBox width="260px" height="26px" borderRadius="999px" style={{ marginBottom: 16 }} />
+          <SkeletonBox width="460px" height="48px" style={{ marginBottom: 16, maxWidth: '90%' }} />
+          <SkeletonBox width="580px" height="20px" style={{ marginBottom: 8, maxWidth: '90%' }} />
+          <SkeletonBox width="420px" height="20px" style={{ marginBottom: 28, maxWidth: '80%' }} />
+
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 40 }}>
+            <SkeletonBox width="180px" height="46px" borderRadius="6px" />
+            <SkeletonBox width="180px" height="46px" borderRadius="6px" />
+          </div>
+
+          <div className="lp-hero-stats">
+            <div className="lp-stat">
+              <SkeletonBox width="72px" height="18px" />
+              <SkeletonBox width="96px" height="11px" />
+            </div>
+            <div className="lp-stat">
+              <SkeletonBox width="62px" height="18px" />
+              <SkeletonBox width="104px" height="11px" />
+            </div>
+            <div className="lp-stat">
+              <SkeletonBox width="80px" height="18px" />
+              <SkeletonBox width="92px" height="11px" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES GRID SKELETON */}
+      <section className="lp-section">
+        <div className="lp-section-inner">
+          <div className="lp-section-head" style={{ alignItems: 'center', textAlign: 'center' }}>
+            <SkeletonBox width="200px" height="28px" style={{ margin: '0 auto 8px' }} />
+            <SkeletonBox width="420px" height="16px" style={{ margin: '0 auto', maxWidth: '90%' }} />
+          </div>
+
+          <div className="lp-features-grid">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="lp-feature-grid-item">
+                <div className="lp-feature-card" style={{ pointerEvents: 'none' }}>
+                  <SkeletonBox width="42px" height="42px" borderRadius="6px" />
+                  <SkeletonBox width="160px" height="16px" />
+                  <SkeletonBox width="100%" height="13px" />
+                  <SkeletonBox width="80%" height="13px" />
+                  <SkeletonBox
+                    width="118px"
+                    height="32px"
+                    borderRadius="6px"
+                    style={{ marginTop: 'auto' }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export const SessionRestoreSkeleton: React.FC<{ hint?: string }> = ({ hint }) => (
+  <div className="session-restore-skeleton" role="status" aria-label="Loading...">
+    <div className="session-restore-inner">
+      <div className="server-reconnect-banner" style={{ margin: 0, padding: '10px 18px', maxWidth: '440px' }}>
+        <span className="reconnect-pulse-dot" />
+        <span style={{ fontSize: '0.82rem' }}>
+          {hint || 'Máy chủ đang khởi động... Đang tự động kết nối'}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <SkeletonBox width="52px" height="52px" circle />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <SkeletonBox width="200px" height="22px" />
+          <SkeletonBox width="140px" height="13px" />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+        <SkeletonBox width="120px" height="38px" borderRadius="6px" />
+        <SkeletonBox width="140px" height="38px" borderRadius="6px" />
+      </div>
+    </div>
+  </div>
+);

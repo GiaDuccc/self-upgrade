@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { AsciiReveal } from 'ascii-reveal';
 import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -838,8 +839,9 @@ export const DayDetail: React.FC = () => {
     ) || localizedOptions.emotionalStates[2];
 
   return (
-    <div className="day-split-page-wrapper" id="day-detail-panel">
-      <div className="day-split-container">
+    <AsciiReveal>
+      <div className="day-split-page-wrapper" id="day-detail-panel">
+        <div className="day-split-container">
         {/* KHUNG 1 (BÊN TRÁI): ĐIỀU HƯỚNG, NỘI DUNG, ĐIỂM SỐ, VÀ GHI CHÚ NGÀY BÊN DƯỚI */}
         <section className="day-detail-section day-split-left-col">
           {/* Thanh điều hướng nhanh chuyển ngày & Thẻ ngày */}
@@ -1708,7 +1710,8 @@ export const DayDetail: React.FC = () => {
         onSaveStates={handleSaveDayStates}
         isSaving={isSavingStates}
       />
-    </div>
+      </div>
+    </AsciiReveal>
   );
 };
 

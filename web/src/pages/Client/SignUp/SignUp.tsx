@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AsciiReveal } from 'ascii-reveal';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { UserPlus, Mail, Lock, ArrowLeft } from 'lucide-react';
@@ -92,15 +93,14 @@ export const SignUp: React.FC = () => {
     }
   };
 
-  // Nếu Backend chưa khởi động xong (Render cold-start hoặc chưa chạy BE) -> hiển thị Skeleton loading 1:1
-  if (!isServerReady) {
-    return <AuthSkeleton mode="signup" />;
-  }
-
   return (
-    <div className="auth-page-shell">
-      <div className="auth-card">
-        <div className="auth-brand-header">
+    <AsciiReveal loading={!isServerReady}>
+      {!isServerReady ? (
+        <AuthSkeleton mode="signup" />
+      ) : (
+        <div className="auth-page-shell">
+        <div className="auth-card">
+          <div className="auth-brand-header">
           <img src="/logo.png" alt="Self Upgrade" className="auth-logo-img" />
           <div>
             <h1 className="auth-title">ĐĂNG KÝ TÀI KHOẢN</h1>
@@ -186,7 +186,9 @@ export const SignUp: React.FC = () => {
             <span>Đã có tài khoản? Quay lại Đăng nhập</span>
           </Link>
         </div>
+        </div>
       </div>
-    </div>
+      )}
+    </AsciiReveal>
   );
 };

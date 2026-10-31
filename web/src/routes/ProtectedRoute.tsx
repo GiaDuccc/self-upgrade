@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { isTransientNetworkError, tryRefreshTokenClient } from '~/apis/axiosClient';
+import { AsciiReveal } from 'ascii-reveal';
+import { SessionRestoreSkeleton } from '~/components/Skeleton/Skeleton';
 
 export const ProtectedRoute: React.FC = () => {
   const [isChecking, setIsChecking] = useState<boolean>(() => {
@@ -62,29 +64,20 @@ export const ProtectedRoute: React.FC = () => {
 
   if (isChecking) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          backgroundColor: 'var(--bg-primary, #FAF7F2)',
-          color: 'var(--text-secondary, #5C5A55)',
-          fontSize: '0.9rem',
-        }}
-      >
-        <div className="spinner-sm" style={{ width: 28, height: 28 }} />
-        {isWaitingForServer && (
-          <span>Máy chủ đang khởi động, đang tự động khôi phục phiên đăng nhập...</span>
-        )}
-      </div>
+      <AsciiReveal loading={true}>
+        <SessionRestoreSkeleton
+          hint={
+            isWaitingForServer
+              ? 'Máy chủ đang khởi động, đang tự động khôi phục phiên đăng nhập...'
+              : undefined
+          }
+        />
+      </AsciiReveal>
     );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/sign-in" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   return <Outlet />;
